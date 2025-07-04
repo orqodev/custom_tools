@@ -1,4 +1,4 @@
-# Updated Python Houdini Tool: Spaceship Visualizer with working switch, hide roles, and rotation offset
+# Updated Python Houdini Tool: Spaceship Visualizer with batch_import support and per-point Object Merge + Real Geometry Loading
 
 import hou
 import json
@@ -12,45 +12,26 @@ def create_spaceship_visualizer():
 
     # === PARAMETERS ===
     geo.addSpareParmTuple(hou.StringParmTemplate('json_path', 'JSON Path', 1, default_value=["$HIP/spaceship_layout.json"], string_type=hou.stringParmType.FileReference))
-    geo.addSpareParmTuple(hou.StringParmTemplate('asset_dir', 'Asset Directory', 1, default_value=["$HIP/assets"], string_type=hou.stringParmType.FileReference))
     geo.addSpareParmTuple(hou.StringParmTemplate('batch_import_node', 'Batch Import Node', 1, default_value=["/obj/batch_import"], string_type=hou.stringParmType.NodeReference))
     geo.addSpareParmTuple(hou.ToggleParmTemplate('use_proxy', 'Use Proxy Geometry', default_value=True))
-    geo.addSpareParmTuple(hou.ToggleParmTemplate('rotate_parts', 'Random Rotation', default_value=False))
-    geo.addSpareParmTuple(hou.StringParmTemplate('hide_roles', 'Hide Roles (comma-separated)', 1, default_value=[""], string_type=hou.stringParmType.Regular))
-    geo.addSpareParmTuple(hou.FloatParmTemplate('rotation_offset', 'Rotation Offset', 3, default_value=(0.0, 0.0, 0.0)))
-    geo.addSpareParmTuple(hou.ButtonParmTemplate('generate_layout', 'Generate Spaceship Layout'))
 
     # === PYTHON SOP: Load Layout ===
     python_sop = geo.createNode('python', 'load_spaceship_layout')
     python_script = """
-import json, os, hou, random, math
+import json, os, hou
 node = hou.pwd()
 geo = node.geometry()
 geo_node = node.parent()
 
-# Get parameters from parent geo node
-json_path_parm = geo_node.parm('json_path')
-hide_roles_parm = geo_node.parm('hide_roles')
-offset_parm = geo_node.parmTuple('rotation_offset')
-rotate_parts_parm = geo_node.parm('rotate_parts')
-
-if None in (json_path_parm, hide_roles_parm, offset_parm, rotate_parts_parm):
-    raise hou.NodeError("Missing required parameters on parent geo node.")
-
-json_path = json_path_parm.eval()
-hide_roles = [r.strip() for r in hide_roles_parm.eval().split(',') if r.strip()]
-offset = offset_parm.eval()
-rotate_parts = rotate_parts_parm.eval()
-
+json_path = geo_node.parm('json_path').eval()
+batch_import_node = geo_node.parm('batch_import_node').eval()
 layout_data = json.load(open(json_path))
 
-# Ensure attributes exist before assignment
 geo.addAttrib(hou.attribType.Point, 'name', '')
 geo.addAttrib(hou.attribType.Point, 'role', '')
-geo.addAttrib(hou.attribType.Point, 'size_type', '')
-geo.addAttrib(hou.attribType.Point, 'scale', 1.0)
-geo.addAttrib(hou.attribType.Point, 'rotation', (0.0, 0.0, 0.0))
-geo.addAttrib(hou.attribType.Point, 'visible', 1)
+geo.addAttrib(hou.attribType.Point, 'asset_node', '')
+
+batch_node = hou.node(batch_import_node)
 
 for part in layout_data:
     pt = geo.createPoint()
@@ -59,64 +40,71 @@ for part in layout_data:
 
     name = part.get('name', '')
     role = part.get('role', '')
-    size = part.get('size_type', '')
 
     pt.setAttribValue('name', name)
     pt.setAttribValue('role', role)
-    pt.setAttribValue('size_type', size)
 
-    scale = {'Big':3, 'Medium':2, 'Small':1}.get(size, 1)
-    pt.setAttribValue('scale', scale)
-    pt.setAttribValue('visible', int(role not in hide_roles))
-
-    rx, ry, rz = 0.0, 0.0, 0.0
-    if rotate_parts:
-        rx, ry, rz = random.uniform(0,360), random.uniform(0,360), random.uniform(0,360)
-        if role == 'wing': rx, rz = 0.0, 0.0
-        if role == 'engine': ry, rx, rz = 180.0, random.uniform(-15,15), random.uniform(-15,15)
-    elif role == 'engine': ry = 180.0
-
-    rx += offset[0]; ry += offset[1]; rz += offset[2]
-    pt.setAttribValue('rotation', (rx, ry, rz))
+    asset_path = ''
+    if batch_node:
+        for child in batch_node.children():
+            if name in child.name():
+                asset_path = child.path()
+                break
+    pt.setAttribValue('asset_node', asset_path)
 """
     python_sop.parm('python').set(python_script)
 
-    # === BLAST SOP: Remove Hidden ===
-    blast_sop = geo.createNode('blast', 'remove_hidden')
-    blast_sop.setInput(0, python_sop)
-    blast_sop.parm('group').set('@visible==0')
+    # === PYTHON SOP: Create Object Merge Nodes per Point ===
+    load_geo_sop = geo.createNode('python', 'create_object_merges')
+    load_geo_sop.setInput(0, python_sop)
 
-    # === BOX SOP: Proxy ===
-    box = geo.createNode('box', 'proxy_box')
-    box.parmTuple('size').set((1,1,1))
+    load_geo_script = """
+import hou
+node = hou.pwd()
+geo_node = node.parent()
+layout_geo = node.inputs()[0].geometry()
 
-    color = geo.createNode('attribwrangle', 'color_by_role')
-    color.setInput(0, box)
-    color.parm('snippet').set('''
-if (s@role == "core") @Cd = {1,0,0};
-else if (s@role == "wing") @Cd = {0,0,1};
-else if (s@role == "engine") @Cd = {1,1,0};
-else @Cd = {0.5,0.5,0.5};
-''')
+# Delete old object_merge and transform nodes
+for c in geo_node.children():
+    if c.type().name() in ['object_merge', 'xform', 'merge']:
+        try:
+            c.destroy()
+        except hou.OperationFailed:
+            print(f"Could not delete node: {c.path()} (may be cooking)")
 
-    # === SWITCH SOP: Proxy or Real ===
+merge = geo_node.createNode('merge', 'merge_parts')
+
+for i, pt in enumerate(layout_geo.points()):
+    asset_path = pt.attribValue('asset_node')
+    if not asset_path:
+        continue
+
+    merge_node = geo_node.createNode('object_merge', f"merge_{i}")
+    merge_node.parm('objpath1').set(asset_path)
+    merge_node.parm('xformtype').set(1)
+
+    # Add transform node for positioning
+    transform_node = geo_node.createNode('xform', f"transform_{i}")
+    transform_node.setInput(0, merge_node)
+
+    translate = pt.position()
+    transform_node.parmTuple('t').set((translate[0], translate[1], translate[2]))
+
+    merge.setNextInput(transform_node)
+
+node.setInput(0, merge)
+"""
+    load_geo_sop.parm('python').set(load_geo_script)
+
+    proxy_box = geo.createNode('box', 'proxy_box')
+
     switch = geo.createNode('switch', 'proxy_or_real')
-    switch.setInput(0, color)
-    switch.setInput(1, box)  # placeholder for real geometry or future SOP
+    switch.setInput(0, proxy_box)
+    switch.setInput(1, load_geo_sop)
     switch.parm('input').setExpression('1 - ch("../use_proxy")')
 
-    # === COPY TO POINTS ===
-    copy = geo.createNode('copytopoints', 'copy_to_points')
-    copy.setInput(0, switch)
-    copy.setInput(1, blast_sop)
-    copy.parm('usepointattrib').set(1)
-    copy.parm('pointattrib').set('scale')
-    copy.parm('userotation').set(True)
-    copy.parm('rotationattrib').set('rotation')
-
-    # === OUT ===
     out = geo.createNode('null', 'OUT')
-    out.setInput(0, copy)
+    out.setInput(0, switch)
     out.setDisplayFlag(True)
     out.setRenderFlag(True)
 
