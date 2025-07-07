@@ -1,1 +1,7 @@
 .idea/*
+
+# Test files - ignore all test files to avoid pushing them
+test_*.py
+**/test_*.py
+*/test_*.py
+*test*.py

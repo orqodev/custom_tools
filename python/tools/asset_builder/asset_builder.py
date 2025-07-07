@@ -111,7 +111,7 @@ def _prepare_imported_asset(parent, name, extension, path, full_path):
             return
 
         # Create processing nodes
-        transform_node = parent.createNode("xform", f"center_{name}")
+        transform_node = parent.createNode("xform", f"transform_{name}")
         normal_node = parent.createNode("normal", f"normals_{name}")
         material_node = parent.createNode("material", f"assign_material_{name}")
         
@@ -120,7 +120,7 @@ def _prepare_imported_asset(parent, name, extension, path, full_path):
         proxy_color = parent.createNode("color", f"proxy_color_{name}")
         
         # Create collision/sim version
-        convex_hull = parent.createNode("convexhull", f"collision_{name}")
+        convex_hull = parent.createNode("shrinkwrap::2.0", f"collision_{name}")
         
         # Create output nulls for different versions
         render_output = parent.createNode("null", "RENDER_OUTPUT")
