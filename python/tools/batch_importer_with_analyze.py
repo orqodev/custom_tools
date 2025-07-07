@@ -333,8 +333,12 @@ except Exception as e:
                     hou.ui.setStatusMessage(f"Warning: Could not create socket node for {asset_name}: {str(e)}", hou.severityType.Warning)
                     final_node = material_node
 
+            # Add pack node for visualization after final node
+            pack_node = geo_node.createNode('pack', node_name=asset_name + '_pack')
+            pack_node.setInput(0, final_node)
+
             # Calculate bounding box information for JSON export
-            bbox_size, diagonal, volume, size_type = calculate_bbox(final_node)
+            bbox_size, diagonal, volume, size_type = calculate_bbox(pack_node)
 
             # Add analysis result to the list
             analysis_result = {
@@ -349,7 +353,7 @@ except Exception as e:
             analysis_results.append(analysis_result)
 
             # Connect to the merge node
-            merge_node.setInput(add_to_merge, final_node)
+            merge_node.setInput(add_to_merge, pack_node)
             add_to_merge += 1
 
         # Organize nodes in the network editor
@@ -359,9 +363,13 @@ except Exception as e:
         merge_node.setDisplayFlag(True)
         merge_node.setRenderFlag(True)
 
+        # Add labs::align_and_distribute::1.0 node after merge
+        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute::1.0', 'align_and_distribute')
+        align_and_distribute_node.setInput(0, merge_node)
+
         # Add a null node at the end for cleaner output
         output_node = geo_node.createNode('null', 'OUT')
-        output_node.setInput(0, merge_node)
+        output_node.setInput(0, align_and_distribute_node)
         output_node.setDisplayFlag(True)
         output_node.setRenderFlag(True)
         output_node.setPosition(merge_node.position() + hou.Vector2(0, -1))

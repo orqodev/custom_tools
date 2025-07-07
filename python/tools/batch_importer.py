@@ -156,7 +156,12 @@ def batch_importer():
             # Create material node with proper naming
             material_node = geo_node.createNode('material', node_name=asset_name + '_mat')
             material_node.setInput(0, transform_node)
-            merge_node.setInput(add_to_merge, material_node)
+
+            # Add pack node for visualization after material node
+            pack_node = geo_node.createNode('pack', node_name=asset_name + '_pack')
+            pack_node.setInput(0, material_node)
+
+            merge_node.setInput(add_to_merge, pack_node)
             add_to_merge += 1
 
         # Organize nodes in the network editor
@@ -166,9 +171,13 @@ def batch_importer():
         merge_node.setDisplayFlag(True)
         merge_node.setRenderFlag(True)
 
+        # Add labs::align_and_distribute::1.0 node after merge
+        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute::1.0', 'align_and_distribute')
+        align_and_distribute_node.setInput(0, merge_node)
+
         # Add a null node at the end for cleaner output
         output_node = geo_node.createNode('null', 'OUT')
-        output_node.setInput(0, merge_node)
+        output_node.setInput(0, align_and_distribute_node)
         output_node.setDisplayFlag(True)
         output_node.setRenderFlag(True)
         output_node.setPosition(merge_node.position() + hou.Vector2(0, -1))
