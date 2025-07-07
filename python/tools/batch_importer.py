@@ -164,15 +164,13 @@ def batch_importer():
             merge_node.setInput(add_to_merge, pack_node)
             add_to_merge += 1
 
-        # Organize nodes in the network editor
-        geo_node.layoutChildren()
-
         # Set display/render flags on the merge node
         merge_node.setDisplayFlag(True)
         merge_node.setRenderFlag(True)
 
         # Add labs::align_and_distribute node after merge
         align_and_distribute_node = geo_node.createNode('labs::align_and_distribute', 'align_and_distribute')
+        align_and_distribute_node.parm('sort_by').set(1)
         align_and_distribute_node.setInput(0, merge_node)
 
         # Add a null node at the end for cleaner output
@@ -180,7 +178,9 @@ def batch_importer():
         output_node.setInput(0, align_and_distribute_node)
         output_node.setDisplayFlag(True)
         output_node.setRenderFlag(True)
-        output_node.setPosition(merge_node.position() + hou.Vector2(0, -1))
+
+        # Organize nodes in the network editor
+        geo_node.layoutChildren()
 
         # Show completion message with import statistics
         hou.ui.displayMessage(
