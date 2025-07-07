@@ -2,6 +2,7 @@ import hou
 import os
 import math
 import json
+from tools.socket_placement import socket_generator
 
 
 def batch_importer():
@@ -95,18 +96,13 @@ def batch_importer():
         max_dim = max(bbox_size)
 
         if volume <= 2000 and max_dim <= 20:
-            size_type = "Small"
+            size_type = "small"
         elif volume <= 20000 and max_dim <= 80:
-            size_type = "Medium"
+            size_type = "medium"
         else:
-            size_type = "Big"
+            size_type = "big"
 
         return bbox_size, diagonal, volume, size_type
-
-
-
-
-
 
     if select_directory:
         files_name = select_directory.split(';')
@@ -160,6 +156,19 @@ def batch_importer():
             except ValueError:
                 hou.ui.displayMessage("Invalid spacing value. Using default spacing of 10.0.", buttons=('OK',))
                 spacing = 10.0
+
+        # Ask user if they want to generate sockets for spaceship assembly
+        generate_sockets = False
+        socket_button_pressed = hou.ui.displayMessage(
+            "Do you want to generate connection sockets for spaceship assembly?\n\n"
+            "This will add socket points to each imported part for automatic connection placement.",
+            buttons=("Yes, Generate Sockets", "No, Skip Sockets"),
+            default_choice=0,
+            title="Socket Generation Option"
+        )
+
+        if socket_button_pressed == 0:  # User clicked "Yes, Generate Sockets"
+            generate_sockets = True
 
         for index, file_name in enumerate(files_name):
             # Update progress message for large imports
@@ -291,8 +300,41 @@ else
             material_node = geo_node.createNode('material', node_name=asset_name + '_mat')
             material_node.setInput(0, attrib_wrangle)
 
+            # Generate sockets if requested by user
+            final_node = material_node
+            if generate_sockets:
+                try:
+                    # Create a Python SOP node to generate sockets
+                    socket_node = geo_node.createNode('python', node_name=asset_name + '_sockets')
+                    socket_node.setInput(0, material_node)
+
+                    # Set the Python script for socket generation
+                    socket_script = f'''
+import hou
+from tools.socket_placement import socket_generator
+
+node = hou.pwd()
+geo = node.geometry()
+
+# Get part name for socket generation
+part_name = "{asset_name}"
+
+# Generate sockets using the socket generator
+try:
+    socket_generator.generate_default_sockets(geo, part_name)
+    print(f"Generated sockets for part: {{part_name}}")
+except Exception as e:
+    print(f"Error generating sockets for {{part_name}}: {{str(e)}}")
+'''
+                    socket_node.parm('python').set(socket_script)
+                    final_node = socket_node
+
+                except Exception as e:
+                    hou.ui.setStatusMessage(f"Warning: Could not create socket node for {asset_name}: {str(e)}", hou.severityType.Warning)
+                    final_node = material_node
+
             # Calculate bounding box information for JSON export
-            bbox_size, diagonal, volume, size_type = calculate_bbox(material_node)
+            bbox_size, diagonal, volume, size_type = calculate_bbox(final_node)
 
             # Add analysis result to the list
             analysis_result = {
@@ -307,7 +349,7 @@ else
             analysis_results.append(analysis_result)
 
             # Connect to the merge node
-            merge_node.setInput(add_to_merge, material_node)
+            merge_node.setInput(add_to_merge, final_node)
             add_to_merge += 1
 
         # Organize nodes in the network editor
