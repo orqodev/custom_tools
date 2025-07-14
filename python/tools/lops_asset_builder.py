@@ -83,6 +83,8 @@ def create_component_builder(selected_directory=None):
             create_organized_net_note(f"Asset {asset_name.upper()}", nodes_to_layout,hou.Vector2(0, 5))
             # Select the Component Output
             comp_out.setSelected(True, clear_all_selected=True)
+
+
             # Create light rig
             light_rig_nodes_to_layout, merge_node = lops_light_rig.create_three_point_light()
             # Light Rig Nodes to layout
@@ -96,6 +98,7 @@ def create_component_builder(selected_directory=None):
             camera_python_script = create_camera_lookdev(stage_context, asset_name)
             # Connect script
             camera_python_script.setInput(0, camera_render)
+
             # Create Karma nodes
             karma_settings,usdrender_rop = create_karma_nodes(stage_context)
             karma_settings.setInput(0, camera_python_script)
