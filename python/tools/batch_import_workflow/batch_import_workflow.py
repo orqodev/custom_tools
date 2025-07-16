@@ -124,8 +124,9 @@ class BatchImportWorkflow:
         for i, asset_path in enumerate(asset_paths):
             file_node = self.subnet.createNode("file", f"file_{i+1}")
 
-            # Set the file path directly - no expressions, no parameter references
-            file_node.parm("file").set(asset_path)
+            # Link file node to the corresponding asset_info parameter
+            # This allows users to change the path via the asset_info parameter
+            file_node.parm("file").setExpression(f'chs("../asset_info_{i+1}")')
 
             # Position nodes with proper spacing
             spacing = max(2, 20 // num_assets) if num_assets > 0 else 2
@@ -261,7 +262,7 @@ class BatchImportWorkflow:
 
         ptg.append(transform_folder)
 
-        # Add asset information folder (read-only info about imported assets)
+        # Add asset information folder (editable asset paths that control file nodes)
         if asset_paths:
             info_folder = hou.FolderParmTemplate("asset_info", "Asset Information", folder_type=hou.folderType.Tabs)
 
@@ -271,10 +272,11 @@ class BatchImportWorkflow:
                     f"Asset {i+1} Path",
                     1,
                     default_value=(asset_path,),
-                    string_type=hou.stringParmType.Regular,
-                    help=f"Path to imported asset {i+1}"
+                    string_type=hou.stringParmType.FileReference,
+                    file_type=hou.fileType.Geometry,
+                    help=f"Editable path to imported asset {i+1} - changes will be reflected in file node"
                 )
-                asset_info.setDisableWhen("{ 1 == 1 }")  # Always disabled (read-only)
+                # Remove the setDisableWhen to make parameters editable
                 info_folder.addParmTemplate(asset_info)
 
             ptg.append(info_folder)
