@@ -6,13 +6,14 @@ class BatchImportWorkflow:
     """
     Creates a streamlined iterative workflow for batch importing multiple asset groups.
     Each asset group gets its own subnetwork with unique naming and parameter prefixing
-    to avoid cross-talk between groups.
+    to avoid cross-talk between groups. All subnetworks are connected to a final merge node.
     """
 
     def __init__(self):
         self.geo_node = None
         self.asset_groups = []  # List of asset group data
         self.group_counter = 0
+        self.merge_node = None  # Merge node to connect all subnetworks
 
     def create_workflow(self):
         """
@@ -21,7 +22,8 @@ class BatchImportWorkflow:
         2. Create the main GEO node
         3. Iteratively import asset groups until user says "No"
         4. Create one subnetwork per asset group with unique naming
-        5. Show final summary only
+        5. Create merge node and connect all subnetworks
+        6. Show final summary only
         """
         # Step 1: Ask for GEO node name
         geo_node_name = self._get_geo_node_name()
@@ -32,13 +34,17 @@ class BatchImportWorkflow:
         # Step 3: Iteratively import asset groups
         self._import_asset_groups_iteratively()
 
-        # Step 4: Layout all nodes
+        # Step 4: Create merge node and connect all subnetworks
+        if self.asset_groups:
+            self._create_merge_node()
+
+        # Step 5: Layout all nodes
         self.geo_node.layoutChildren()
         for group_data in self.asset_groups:
             if group_data['subnet']:
                 group_data['subnet'].layoutChildren()
 
-        # Step 5: Show final summary (optional)
+        # Step 6: Show final summary (optional)
         self._show_final_summary()
 
         return self.geo_node
@@ -320,6 +326,34 @@ class BatchImportWorkflow:
                     subnet_param_name = f"{subnet_param}{component}"
                     transform_node.parm(xform_param).setExpression(f'ch("../{subnet_param_name}")')
 
+    def _create_merge_node(self):
+        """
+        Create a merge node and connect all asset group subnetworks to it.
+        This allows all subnetworks to be combined into a single output.
+        """
+        if not self.asset_groups:
+            return
+
+        # Create merge node
+        self.merge_node = self.geo_node.createNode('merge', 'asset_groups_merge')
+
+        # Connect each subnetwork to the merge node
+        for i, group_data in enumerate(self.asset_groups):
+            subnet = group_data['subnet']
+            if subnet:
+                self.merge_node.setInput(i, subnet)
+
+        # Position merge node below all subnetworks
+        # Calculate position based on number of groups
+        num_groups = len(self.asset_groups)
+        merge_x_pos = (num_groups - 1) * 4  # Spread based on number of groups
+        merge_y_pos = -2  # Position below subnetworks
+        self.merge_node.setPosition([merge_x_pos, merge_y_pos])
+
+        # Set display and render flags on merge node
+        self.merge_node.setDisplayFlag(True)
+        self.merge_node.setRenderFlag(True)
+
     def _show_final_summary(self):
         """Show a single final success summary (optional)."""
         if not self.asset_groups:
@@ -330,6 +364,7 @@ class BatchImportWorkflow:
             f"",
             f"GEO Node: {self.geo_node.path()}",
             f"Total Asset Groups: {len(self.asset_groups)}",
+            f"Merge Node: {self.merge_node.path() if self.merge_node else 'None'}",
             f""
         ]
 
@@ -346,7 +381,8 @@ class BatchImportWorkflow:
             f"• Each asset group has its own subnetwork with unique parameters",
             f"• Use the switch parameter to change between assets within each group",
             f"• Use transform parameters to position/scale each group independently",
-            f"• Parameters are prefixed by group name to avoid conflicts"
+            f"• Parameters are prefixed by group name to avoid conflicts",
+            f"• All asset groups are merged together in the final merge node"
         ])
 
         hou.ui.displayMessage(
