@@ -4,245 +4,267 @@ import os
 
 class BatchImportWorkflow:
     """
-    Creates a workflow with a Geo node containing a subnetwork for batch importing assets.
-    The subnetwork includes UI controls for asset paths, file nodes, switch node, and transform node.
+    Creates a streamlined iterative workflow for batch importing multiple asset groups.
+    Each asset group gets its own subnetwork with unique naming and parameter prefixing
+    to avoid cross-talk between groups.
     """
 
     def __init__(self):
         self.geo_node = None
-        self.subnet = None
-        self.file_nodes = []
-        self.switch_node = None
-        self.transform_node = None
-        self.output_node = None
+        self.asset_groups = []  # List of asset group data
+        self.group_counter = 0
 
     def create_workflow(self):
         """
-        Creates the complete batch import workflow with the new refactored approach:
-        1. First import assets and get their paths
-        2. Generate the subnetwork structure based on actual assets
-        3. Then populate parent parameters based on the generated subnetwork
+        Creates the streamlined iterative batch import workflow:
+        1. Ask for GEO node name
+        2. Create the main GEO node
+        3. Iteratively import asset groups until user says "No"
+        4. Create one subnetwork per asset group with unique naming
+        5. Show final summary only
         """
-        # Create the main Geo node
-        self._create_geo_node()
+        # Step 1: Ask for GEO node name
+        geo_node_name = self._get_geo_node_name()
 
-        # Step 1: First import assets and get their paths
-        asset_paths = self._import_assets()
+        # Step 2: Create the main Geo node with user-specified name
+        self._create_geo_node(geo_node_name)
 
-        # Step 2: Generate the subnetwork structure based on actual assets
-        self._generate_subnetwork_from_assets(asset_paths)
+        # Step 3: Iteratively import asset groups
+        self._import_asset_groups_iteratively()
 
-        # Step 3: Populate parent parameters based on the generated subnetwork
-        self._populate_parent_parameters(asset_paths)
-
-        # Layout nodes
+        # Step 4: Layout all nodes
         self.geo_node.layoutChildren()
-        self.subnet.layoutChildren()
+        for group_data in self.asset_groups:
+            if group_data['subnet']:
+                group_data['subnet'].layoutChildren()
+
+        # Step 5: Show final summary (optional)
+        self._show_final_summary()
 
         return self.geo_node
 
-    def _create_geo_node(self):
-        """Create the main Geo node."""
+    def _get_geo_node_name(self):
+        """Ask user for the GEO node name."""
+        try:
+            geo_name = hou.ui.readInput(
+                "Enter name for the top-level GEO node:",
+                initial_contents="batch_import_workflow",
+                title="Batch Import Workflow - GEO Node Name"
+            )
+            if geo_name[0] == 0:  # User clicked OK
+                return geo_name[1].strip() or "batch_import_workflow"
+            else:  # User cancelled
+                return "batch_import_workflow"
+        except:
+            return "batch_import_workflow"
+
+    def _create_geo_node(self, node_name):
+        """Create the main Geo node with specified name."""
         obj = hou.node('/obj')
-        self.geo_node = obj.createNode('geo', node_name='batch_import_workflow')
+        self.geo_node = obj.createNode('geo', node_name=node_name)
 
         # Remove default file node
         for child in self.geo_node.children():
             child.destroy()
 
-    def _import_assets(self):
+    def _import_asset_groups_iteratively(self):
         """
-        Step 1: Import assets and get their paths from user selection.
-        This is the first step in the refactored workflow.
+        Iteratively import asset groups until user says "No".
+        Each iteration creates a new asset group with its own subnetwork.
+        """
+        while True:
+            self.group_counter += 1
 
-        Returns:
-            list: List of selected asset file paths from batch importer
-        """
+            # Import assets for this group
+            asset_paths = self._import_single_asset_group()
+
+            if not asset_paths:
+                # User cancelled or no files selected, break the loop
+                self.group_counter -= 1
+                break
+
+            # Get or generate group name
+            group_name = self._get_asset_group_name(asset_paths)
+
+            # Create subnetwork for this group
+            subnet = self._create_asset_group_subnetwork(group_name, asset_paths)
+
+            # Store group data
+            group_data = {
+                'name': group_name,
+                'asset_paths': asset_paths,
+                'subnet': subnet,
+                'group_id': self.group_counter
+            }
+            self.asset_groups.append(group_data)
+
+            # Ask if user wants to add another group (no extra pop-ups otherwise)
+            if not self._ask_for_another_group():
+                break
+
+    def _import_single_asset_group(self):
+        """Import assets for a single asset group."""
         try:
-            # Get file selection from user using the same logic as batch_importer
             default_directory = hou.text.expandString('$HIP')
             select_directory = hou.ui.selectFile(
                 start_directory=default_directory,
-                title="Select the files you want to import for the workflow",
+                title=f"Select files for Asset Group {self.group_counter}",
                 file_type=hou.fileType.Geometry,
                 multiple_select=True
             )
 
             if select_directory:
-                # Split the selected files and return as list
                 files_name = select_directory.split(';')
-                # Strip whitespace and return up to 10 files (max supported)
                 asset_paths = [file_path.strip() for file_path in files_name[:10]]
-
-                hou.ui.displayMessage(
-                    f"Selected {len(asset_paths)} asset files for the workflow",
-                    title="Batch Import Workflow - Step 1: Assets Imported"
-                )
-
                 return asset_paths
             else:
-                # User cancelled selection - provide default empty workflow
-                hou.ui.displayMessage(
-                    "No files selected. Creating empty workflow template.",
-                    severity=hou.severityType.Message,
-                    title="Batch Import Workflow"
-                )
                 return []
 
         except Exception as e:
-            hou.ui.displayMessage(
-                f"Error during file selection: {str(e)}",
-                severity=hou.severityType.Error,
-                title="Batch Import Workflow"
-            )
+            # Suppress error dialogs, just return empty list
             return []
 
-    def _generate_subnetwork_from_assets(self, asset_paths):
+    def _get_asset_group_name(self, asset_paths):
         """
-        Step 2: Generate the subnetwork structure based on actual assets.
-        This creates the subnetwork and builds the internal network directly with asset paths.
+        Get group name - either auto-generated from first file's basename
+        or user-supplied name.
+        """
+        # Auto-generate name from first file's basename
+        if asset_paths:
+            first_file = asset_paths[0]
+            auto_name = os.path.splitext(os.path.basename(first_file))[0]
+        else:
+            auto_name = f"group_{self.group_counter}"
+
+        try:
+            user_input = hou.ui.readInput(
+                f"Enter name for Asset Group {self.group_counter}:",
+                initial_contents=auto_name,
+                title="Asset Group Name"
+            )
+            if user_input[0] == 0:  # User clicked OK
+                return user_input[1].strip() or auto_name
+            else:  # User cancelled
+                return auto_name
+        except:
+            return auto_name
+
+    def _ask_for_another_group(self):
+        """Ask once whether the user wants to add another group."""
+        try:
+            result = hou.ui.displayMessage(
+                "Do you want to add another asset group?",
+                buttons=("Yes", "No"),
+                severity=hou.severityType.Message,
+                title="Continue Import?"
+            )
+            return result == 0  # 0 = Yes, 1 = No
+        except:
+            return False  # Default to No if there's an error
+
+    def _create_asset_group_subnetwork(self, group_name, asset_paths):
+        """
+        Create a subnetwork for an asset group with unique naming and parameter prefixing.
 
         Args:
-            asset_paths (list): List of asset file paths from step 1
+            group_name (str): Name for the asset group
+            asset_paths (list): List of asset file paths
+
+        Returns:
+            hou.Node: The created subnet node
         """
-        # Create the subnetwork
-        self.subnet = self.geo_node.createNode('subnet', node_name='asset_importer')
+        # Create subnet with unique name
+        subnet_name = f"{group_name}_group"
+        subnet = self.geo_node.createNode('subnet', node_name=subnet_name)
 
-        # If no assets were selected, create a minimal template
-        if not asset_paths:
-            hou.ui.displayMessage(
-                "No assets selected. Creating minimal template structure.",
-                title="Batch Import Workflow - Step 2: Subnetwork Generated"
-            )
-            self._create_minimal_template()
-            return
-
-        # Create file nodes directly with asset paths (no parameter expressions)
-        self.file_nodes = []
+        # Create internal network structure
+        file_nodes = []
         num_assets = len(asset_paths)
 
+        # Create file nodes
         for i, asset_path in enumerate(asset_paths):
-            file_node = self.subnet.createNode("file", f"file_{i+1}")
+            file_node = subnet.createNode("file", f"file_{i+1}")
 
-            # Link file node to the corresponding asset_info parameter
-            # This allows users to change the path via the asset_info parameter
-            file_node.parm("file").setExpression(f'chs("../asset_info_{i+1}")')
+            # Link to parameter with group prefix to avoid cross-talk
+            param_name = f"{group_name}_asset_{i+1}"
+            file_node.parm("file").setExpression(f'chs("../{param_name}")')
 
-            # Position nodes with proper spacing
+            # Position nodes
             spacing = max(2, 20 // num_assets) if num_assets > 0 else 2
             file_node.setPosition([i * spacing, 0])
-            self.file_nodes.append(file_node)
+            file_nodes.append(file_node)
 
         # Create switch node
-        self.switch_node = self.subnet.createNode("switch", "asset_switch_node")
+        switch_node = subnet.createNode("switch", f"{group_name}_switch")
 
-        # Connect all file nodes to switch node
-        for i, file_node in enumerate(self.file_nodes):
-            self.switch_node.setInput(i, file_node)
+        # Connect file nodes to switch
+        for i, file_node in enumerate(file_nodes):
+            switch_node.setInput(i, file_node)
 
         # Position switch node
         switch_x_pos = (num_assets - 1) * spacing + 4 if num_assets > 0 else 10
-        self.switch_node.setPosition([switch_x_pos, -2])
+        switch_node.setPosition([switch_x_pos, -2])
 
         # Create transform node
-        self.transform_node = self.subnet.createNode("xform", "transform_node")
-        self.transform_node.setInput(0, self.switch_node)
-        self.transform_node.setPosition([switch_x_pos, -4])
+        transform_node = subnet.createNode("xform", f"{group_name}_transform")
+        transform_node.setInput(0, switch_node)
+        transform_node.setPosition([switch_x_pos, -4])
 
         # Create output node
-        self.output_node = self.subnet.createNode("output", "OUTPUT")
-        self.output_node.setInput(0, self.transform_node)
-        self.output_node.setPosition([switch_x_pos, -6])
+        output_node = subnet.createNode("output", "OUTPUT")
+        output_node.setInput(0, transform_node)
+        output_node.setPosition([switch_x_pos, -6])
 
-        # Set display and render flags on output
-        self.output_node.setDisplayFlag(True)
-        self.output_node.setRenderFlag(True)
+        # Set display and render flags
+        output_node.setDisplayFlag(True)
+        output_node.setRenderFlag(True)
 
-        hou.ui.displayMessage(
-            f"Generated subnetwork with {num_assets} file nodes, switch, transform, and output.",
-            title="Batch Import Workflow - Step 2: Subnetwork Generated"
-        )
+        # Create parameters with group prefixing
+        self._create_group_parameters(subnet, group_name, asset_paths, switch_node, transform_node)
 
-    def _create_minimal_template(self):
-        """Create a minimal template structure when no assets are selected."""
-        # Create a single file node as template
-        file_node = self.subnet.createNode("file", "file_template")
-        file_node.setPosition([0, 0])
-        self.file_nodes = [file_node]
+        return subnet
 
-        # Create switch node
-        self.switch_node = self.subnet.createNode("switch", "asset_switch_node")
-        self.switch_node.setInput(0, file_node)
-        self.switch_node.setPosition([4, -2])
-
-        # Create transform node
-        self.transform_node = self.subnet.createNode("xform", "transform_node")
-        self.transform_node.setInput(0, self.switch_node)
-        self.transform_node.setPosition([4, -4])
-
-        # Create output node
-        self.output_node = self.subnet.createNode("output", "OUTPUT")
-        self.output_node.setInput(0, self.transform_node)
-        self.output_node.setPosition([4, -6])
-
-        # Set display and render flags on output
-        self.output_node.setDisplayFlag(True)
-        self.output_node.setRenderFlag(True)
-
-    def _populate_parent_parameters(self, asset_paths):
+    def _create_group_parameters(self, subnet, group_name, asset_paths, switch_node, transform_node):
         """
-        Step 3: Populate parent parameters based on the generated subnetwork.
-        This creates parameters on both the subnet and parent geo node to control the workflow.
+        Create parameters for an asset group with proper prefixing to avoid cross-talk.
 
         Args:
-            asset_paths (list): List of asset file paths from step 1
+            subnet (hou.Node): The subnet node
+            group_name (str): Name of the asset group
+            asset_paths (list): List of asset file paths
+            switch_node (hou.Node): The switch node
+            transform_node (hou.Node): The transform node
         """
-        # First, create subnet parameters based on what was actually generated
-        self._create_subnet_parameters(asset_paths)
-
-        # Then, create parent geo node parameters and link them to subnet
-        self._create_parent_parameters(asset_paths)
-
-        # Finally, link the subnet nodes to the parameters
-        self._link_nodes_to_parameters(asset_paths)
-
-        hou.ui.displayMessage(
-            f"Populated parameters for {len(asset_paths)} assets with proper channel linking.",
-            title="Batch Import Workflow - Step 3: Parameters Populated"
-        )
-
-    def _create_subnet_parameters(self, asset_paths):
-        """Create parameters on the subnet based on actual generated content."""
-        ptg = self.subnet.parmTemplateGroup()
+        ptg = subnet.parmTemplateGroup()
 
         # Add separator
-        separator = hou.SeparatorParmTemplate("sep1", "Asset Import Settings")
+        separator = hou.SeparatorParmTemplate(f"{group_name}_sep", f"{group_name} Settings")
         ptg.append(separator)
 
-        # Add asset switch parameter based on actual number of assets
+        # Add asset switch parameter with group prefix
         num_assets = len(asset_paths) if asset_paths else 1
         switch_parm = hou.IntParmTemplate(
-            "asset_switch",
-            "Asset Switch",
+            f"{group_name}_switch",
+            f"{group_name} Switch",
             1,
             default_value=(0,),
             min=0,
             max=max(0, num_assets - 1),
-            help=f"Switch between {num_assets} imported assets"
+            help=f"Switch between {num_assets} assets in {group_name}"
         )
         ptg.append(switch_parm)
 
-        # Add transform parameters as vectors (3 lines instead of 9)
-        transform_folder = hou.FolderParmTemplate("transform", "Transform", folder_type=hou.folderType.Tabs)
+        # Add transform parameters with group prefix
+        transform_folder = hou.FolderParmTemplate(f"{group_name}_transform", f"{group_name} Transform", folder_type=hou.folderType.Tabs)
 
         # Translation vector parameter
-        translate = hou.FloatParmTemplate("t", "Translate", 3, default_value=(0, 0, 0))
+        translate = hou.FloatParmTemplate(f"{group_name}_t", "Translate", 3, default_value=(0, 0, 0))
 
         # Rotation vector parameter  
-        rotate = hou.FloatParmTemplate("r", "Rotate", 3, default_value=(0, 0, 0))
+        rotate = hou.FloatParmTemplate(f"{group_name}_r", "Rotate", 3, default_value=(0, 0, 0))
 
         # Scale vector parameter
-        scale = hou.FloatParmTemplate("s", "Scale", 3, default_value=(1, 1, 1))
+        scale = hou.FloatParmTemplate(f"{group_name}_s", "Scale", 3, default_value=(1, 1, 1))
 
         transform_folder.addParmTemplate(translate)
         transform_folder.addParmTemplate(rotate)
@@ -250,135 +272,107 @@ class BatchImportWorkflow:
 
         ptg.append(transform_folder)
 
-        # Add asset information folder (editable asset paths that control file nodes)
+        # Add asset information folder with group prefix
         if asset_paths:
-            info_folder = hou.FolderParmTemplate("asset_info", "Asset Information", folder_type=hou.folderType.Tabs)
+            info_folder = hou.FolderParmTemplate(f"{group_name}_info", f"{group_name} Assets", folder_type=hou.folderType.Tabs)
 
             for i, asset_path in enumerate(asset_paths):
                 asset_info = hou.StringParmTemplate(
-                    f"asset_info_{i+1}",
-                    f"Asset {i+1} Path",
+                    f"{group_name}_asset_{i+1}",
+                    f"Asset {i+1}",
                     1,
                     default_value=(asset_path,),
                     string_type=hou.stringParmType.FileReference,
                     file_type=hou.fileType.Geometry,
-                    help=f"Editable path to imported asset {i+1} - changes will be reflected in file node"
+                    help=f"Path to asset {i+1} in {group_name}"
                 )
-                # Remove the setDisableWhen to make parameters editable
                 info_folder.addParmTemplate(asset_info)
 
             ptg.append(info_folder)
 
-        self.subnet.setParmTemplateGroup(ptg)
+        # Apply parameters to subnet
+        subnet.setParmTemplateGroup(ptg)
 
-    def _create_parent_parameters(self, asset_paths):
-        """Create parameters on the parent geo node and link them to subnet."""
-        parent_ptg = self.geo_node.parmTemplateGroup()
+        # Link nodes to parameters with group prefixing
+        self._link_group_nodes_to_parameters(subnet, group_name, switch_node, transform_node)
 
-        # Add separator for exported parameters
-        separator = hou.SeparatorParmTemplate("exported_controls", "Asset Controls")
-        parent_ptg.append(separator)
+    def _link_group_nodes_to_parameters(self, subnet, group_name, switch_node, transform_node):
+        """Link nodes to parameters with group prefixing."""
+        # Link switch node
+        if switch_node:
+            switch_node.parm("input").setExpression(f'ch("../{group_name}_switch")')
 
-        # Export asset switch parameter
-        num_assets = len(asset_paths) if asset_paths else 1
-        switch_parm = hou.IntParmTemplate(
-            "asset_switch_control",
-            "Asset Switch",
-            1,
-            default_value=(0,),
-            min=0,
-            max=max(0, num_assets - 1),
-            help=f"Switch between {num_assets} imported assets"
-        )
-        parent_ptg.append(switch_parm)
-
-        # Export transform parameters as vectors (3 lines instead of 9)
-        transform_folder = hou.FolderParmTemplate("asset_transform", "Asset Transform", folder_type=hou.folderType.Tabs)
-
-        # Translation vector parameter
-        translate = hou.FloatParmTemplate("asset_t", "Translate", 3, default_value=(0, 0, 0))
-
-        # Rotation vector parameter
-        rotate = hou.FloatParmTemplate("asset_r", "Rotate", 3, default_value=(0, 0, 0))
-
-        # Scale vector parameter
-        scale = hou.FloatParmTemplate("asset_s", "Scale", 3, default_value=(1, 1, 1))
-
-        transform_folder.addParmTemplate(translate)
-        transform_folder.addParmTemplate(rotate)
-        transform_folder.addParmTemplate(scale)
-
-        parent_ptg.append(transform_folder)
-
-        # Apply the parameter template group to the parent geo node
-        self.geo_node.setParmTemplateGroup(parent_ptg)
-
-    def _link_nodes_to_parameters(self, asset_paths):
-        """Link the generated nodes to the parameters for proper control."""
-        # Link subnet parameters to parent parameters
-        self.subnet.parm("asset_switch").setExpression('ch("../asset_switch_control")')
-
-        # Link transform vector parameters using hou.parmTuple()
-        transform_vector_mappings = [
-            ("t", "asset_t"),      # (subnet_param, parent_param)
-            ("r", "asset_r"),
-            ("s", "asset_s")
-        ]
-
-        # Link subnet vector parameters to parent vector parameters using parmTuple
-        for subnet_param, parent_param in transform_vector_mappings:
-            subnet_tuple = self.subnet.parmTuple(subnet_param)
-            parent_tuple = self.geo_node.parmTuple(parent_param)
-
-            # Link each component of the tuple using proper component names (x, y, z)
-            components = ["x", "y", "z"]
-            for i, component in enumerate(components):
-                subnet_tuple[i].setExpression(f'ch("../{parent_param}{component}")')
-
-        # Link switch node to subnet parameter
-        if self.switch_node:
-            self.switch_node.parm("input").setExpression('ch("../asset_switch")')
-
-        # Link transform node to subnet vector parameters using parmTuple
-        if self.transform_node:
-            xform_mappings = [
-                ("t", "t"),    # (xform_param_base, subnet_param)
-                ("r", "r"),
-                ("s", "s")
+        # Link transform node using vector parameters with group prefix
+        if transform_node:
+            transform_mappings = [
+                ("t", f"{group_name}_t"),
+                ("r", f"{group_name}_r"),
+                ("s", f"{group_name}_s")
             ]
 
-            for xform_base, subnet_param in xform_mappings:
-                subnet_tuple = self.subnet.parmTuple(subnet_param)
+            for xform_base, subnet_param in transform_mappings:
+                subnet_tuple = subnet.parmTuple(subnet_param)
 
-                # Link each component: tx->tx, ty->ty, tz->tz, etc.
+                # Link each component
                 xform_components = ["x", "y", "z"]
                 for i, component in enumerate(xform_components):
                     xform_param = f"{xform_base}{component}"
                     subnet_param_name = f"{subnet_param}{component}"
-                    self.transform_node.parm(xform_param).setExpression(f'ch("../{subnet_param_name}")')
+                    transform_node.parm(xform_param).setExpression(f'ch("../{subnet_param_name}")')
+
+    def _show_final_summary(self):
+        """Show a single final success summary (optional)."""
+        if not self.asset_groups:
+            return
+
+        summary_lines = [
+            f"Batch Import Workflow completed successfully!",
+            f"",
+            f"GEO Node: {self.geo_node.path()}",
+            f"Total Asset Groups: {len(self.asset_groups)}",
+            f""
+        ]
+
+        for i, group_data in enumerate(self.asset_groups, 1):
+            summary_lines.extend([
+                f"Group {i}: {group_data['name']}",
+                f"  Subnet: {group_data['subnet'].path()}",
+                f"  Assets: {len(group_data['asset_paths'])} files",
+                f""
+            ])
+
+        summary_lines.extend([
+            f"Instructions:",
+            f"• Each asset group has its own subnetwork with unique parameters",
+            f"• Use the switch parameter to change between assets within each group",
+            f"• Use transform parameters to position/scale each group independently",
+            f"• Parameters are prefixed by group name to avoid conflicts"
+        ])
+
+        hou.ui.displayMessage(
+            "\n".join(summary_lines),
+            title="Batch Import Workflow - Complete"
+        )
+
+
+
+
 
 
 def create_batch_import_workflow():
     """
-    Main function to create the batch import workflow.
-    This is the function that should be called to create the complete workflow.
+    Main function to create the streamlined iterative batch import workflow.
+    This creates a tool that lets the artist:
+    - Name the top-level GEO node when the tool starts
+    - Iteratively import any number of "asset groups"
+    - Ask once whether to add another group after each batch
+    - Stop when they answer "No"
+    - Create one subnetwork per asset group with unique naming
+    - Use parameter prefixing to avoid cross-talk between groups
+    - Suppress intermediate dialogs, show only final summary
     """
     workflow = BatchImportWorkflow()
     geo_node = workflow.create_workflow()
-
-    hou.ui.displayMessage(
-        f"Batch Import Workflow created successfully!\n\n"
-        f"Geo Node: {geo_node.path()}\n"
-        f"Subnetwork: {workflow.subnet.path()}\n\n"
-        f"Instructions:\n"
-        f"1. Click 'Run Batch Importer' to select files\n"
-        f"2. Adjust 'Number of Asset Paths' if needed\n"
-        f"3. Use 'Asset Switch' to change between assets\n"
-        f"4. Use Transform parameters to position/scale\n"
-        f"5. The output is connected to the OUTPUT node",
-        title="Workflow Created"
-    )
-
     return geo_node
 
 
