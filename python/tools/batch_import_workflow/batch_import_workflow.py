@@ -232,33 +232,21 @@ class BatchImportWorkflow:
         )
         ptg.append(switch_parm)
 
-        # Add transform parameters
+        # Add transform parameters as vectors (3 lines instead of 9)
         transform_folder = hou.FolderParmTemplate("transform", "Transform", folder_type=hou.folderType.Tabs)
 
-        # Translation parameters
-        tx = hou.FloatParmTemplate("tx", "Translate X", 1, default_value=(0,))
-        ty = hou.FloatParmTemplate("ty", "Translate Y", 1, default_value=(0,))
-        tz = hou.FloatParmTemplate("tz", "Translate Z", 1, default_value=(0,))
+        # Translation vector parameter
+        translate = hou.FloatParmTemplate("t", "Translate", 3, default_value=(0, 0, 0))
 
-        # Rotation parameters
-        rx = hou.FloatParmTemplate("rx", "Rotate X", 1, default_value=(0,))
-        ry = hou.FloatParmTemplate("ry", "Rotate Y", 1, default_value=(0,))
-        rz = hou.FloatParmTemplate("rz", "Rotate Z", 1, default_value=(0,))
+        # Rotation vector parameter  
+        rotate = hou.FloatParmTemplate("r", "Rotate", 3, default_value=(0, 0, 0))
 
-        # Scale parameters
-        sx = hou.FloatParmTemplate("sx", "Scale X", 1, default_value=(1,))
-        sy = hou.FloatParmTemplate("sy", "Scale Y", 1, default_value=(1,))
-        sz = hou.FloatParmTemplate("sz", "Scale Z", 1, default_value=(1,))
+        # Scale vector parameter
+        scale = hou.FloatParmTemplate("s", "Scale", 3, default_value=(1, 1, 1))
 
-        transform_folder.addParmTemplate(tx)
-        transform_folder.addParmTemplate(ty)
-        transform_folder.addParmTemplate(tz)
-        transform_folder.addParmTemplate(rx)
-        transform_folder.addParmTemplate(ry)
-        transform_folder.addParmTemplate(rz)
-        transform_folder.addParmTemplate(sx)
-        transform_folder.addParmTemplate(sy)
-        transform_folder.addParmTemplate(sz)
+        transform_folder.addParmTemplate(translate)
+        transform_folder.addParmTemplate(rotate)
+        transform_folder.addParmTemplate(scale)
 
         ptg.append(transform_folder)
 
@@ -304,33 +292,21 @@ class BatchImportWorkflow:
         )
         parent_ptg.append(switch_parm)
 
-        # Export transform parameters in a folder
+        # Export transform parameters as vectors (3 lines instead of 9)
         transform_folder = hou.FolderParmTemplate("asset_transform", "Asset Transform", folder_type=hou.folderType.Tabs)
 
-        # Translation parameters
-        tx = hou.FloatParmTemplate("asset_tx", "Translate X", 1, default_value=(0,))
-        ty = hou.FloatParmTemplate("asset_ty", "Translate Y", 1, default_value=(0,))
-        tz = hou.FloatParmTemplate("asset_tz", "Translate Z", 1, default_value=(0,))
+        # Translation vector parameter
+        translate = hou.FloatParmTemplate("asset_t", "Translate", 3, default_value=(0, 0, 0))
 
-        # Rotation parameters
-        rx = hou.FloatParmTemplate("asset_rx", "Rotate X", 1, default_value=(0,))
-        ry = hou.FloatParmTemplate("asset_ry", "Rotate Y", 1, default_value=(0,))
-        rz = hou.FloatParmTemplate("asset_rz", "Rotate Z", 1, default_value=(0,))
+        # Rotation vector parameter
+        rotate = hou.FloatParmTemplate("asset_r", "Rotate", 3, default_value=(0, 0, 0))
 
-        # Scale parameters
-        sx = hou.FloatParmTemplate("asset_sx", "Scale X", 1, default_value=(1,))
-        sy = hou.FloatParmTemplate("asset_sy", "Scale Y", 1, default_value=(1,))
-        sz = hou.FloatParmTemplate("asset_sz", "Scale Z", 1, default_value=(1,))
+        # Scale vector parameter
+        scale = hou.FloatParmTemplate("asset_s", "Scale", 3, default_value=(1, 1, 1))
 
-        transform_folder.addParmTemplate(tx)
-        transform_folder.addParmTemplate(ty)
-        transform_folder.addParmTemplate(tz)
-        transform_folder.addParmTemplate(rx)
-        transform_folder.addParmTemplate(ry)
-        transform_folder.addParmTemplate(rz)
-        transform_folder.addParmTemplate(sx)
-        transform_folder.addParmTemplate(sy)
-        transform_folder.addParmTemplate(sz)
+        transform_folder.addParmTemplate(translate)
+        transform_folder.addParmTemplate(rotate)
+        transform_folder.addParmTemplate(scale)
 
         parent_ptg.append(transform_folder)
 
@@ -342,39 +318,44 @@ class BatchImportWorkflow:
         # Link subnet parameters to parent parameters
         self.subnet.parm("asset_switch").setExpression('ch("../asset_switch_control")')
 
-        # Link transform parameters
-        transform_params = [
-            ("tx", "asset_tx"),
-            ("ty", "asset_ty"), 
-            ("tz", "asset_tz"),
-            ("rx", "asset_rx"),
-            ("ry", "asset_ry"),
-            ("rz", "asset_rz"),
-            ("sx", "asset_sx"),
-            ("sy", "asset_sy"),
-            ("sz", "asset_sz")
+        # Link transform vector parameters using hou.parmTuple()
+        transform_vector_mappings = [
+            ("t", "asset_t"),      # (subnet_param, parent_param)
+            ("r", "asset_r"),
+            ("s", "asset_s")
         ]
 
-        for subnet_param, parent_param in transform_params:
-            self.subnet.parm(subnet_param).setExpression(f'ch("../{parent_param}")')
+        # Link subnet vector parameters to parent vector parameters using parmTuple
+        for subnet_param, parent_param in transform_vector_mappings:
+            subnet_tuple = self.subnet.parmTuple(subnet_param)
+            parent_tuple = self.geo_node.parmTuple(parent_param)
+
+            # Link each component of the tuple using proper component names (x, y, z)
+            components = ["x", "y", "z"]
+            for i, component in enumerate(components):
+                subnet_tuple[i].setExpression(f'ch("../{parent_param}{component}")')
 
         # Link switch node to subnet parameter
         if self.switch_node:
             self.switch_node.parm("input").setExpression('ch("../asset_switch")')
 
-        # Link transform node to subnet parameters
+        # Link transform node to subnet vector parameters using parmTuple
         if self.transform_node:
-            for param_name, subnet_param in transform_params:
-                self.transform_node.parm(param_name).setExpression(f'ch("../{param_name}")')
+            xform_mappings = [
+                ("t", "t"),    # (xform_param_base, subnet_param)
+                ("r", "r"),
+                ("s", "s")
+            ]
 
-    # OLD METHODS - No longer used in refactored workflow
-    # These methods have been replaced by the new 3-step approach:
-    # 1. _import_assets() 
-    # 2. _generate_subnetwork_from_assets()
-    # 3. _populate_parent_parameters()
+            for xform_base, subnet_param in xform_mappings:
+                subnet_tuple = self.subnet.parmTuple(subnet_param)
 
-    # These old methods are replaced by the new _populate_parent_parameters() approach
-    # which creates parameters based on actual generated content rather than templates
+                # Link each component: tx->tx, ty->ty, tz->tz, etc.
+                xform_components = ["x", "y", "z"]
+                for i, component in enumerate(xform_components):
+                    xform_param = f"{xform_base}{component}"
+                    subnet_param_name = f"{subnet_param}{component}"
+                    self.transform_node.parm(xform_param).setExpression(f'ch("../{subnet_param_name}")')
 
 
 def create_batch_import_workflow():
