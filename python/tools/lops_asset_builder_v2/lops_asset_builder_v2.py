@@ -112,6 +112,150 @@ def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     return comp_geo, material_lib, comp_material, comp_out
 
 
+def _create_group_parameters(parent_node, node_name, asset_paths, switch_node, transform_node):
+    """
+    Create parameters for multi-asset switch workflow.
+    Inspired by batch_import_workflow.py, this function adds UI controls
+    for switching between assets and controlling transforms.
+
+    Args:
+        parent_node (hou.Node): The parent node to add parameters to
+        node_name (str): Name of the asset group
+        asset_paths (list): List of asset file paths
+        switch_node (hou.Node): The switch node to control
+        transform_node (hou.Node): The transform node to control
+    """
+    try:
+        ptg = parent_node.parmTemplateGroup()
+
+        # Add separator for multi-asset controls
+        separator = hou.SeparatorParmTemplate(f"{node_name}_multi_sep", f"{node_name} Multi-Asset Controls")
+        ptg.append(separator)
+
+        # Add asset switch parameter
+        num_assets = len(asset_paths) if asset_paths else 1
+        switch_parm = hou.IntParmTemplate(
+            f"{node_name}_asset_switch",
+            f"Selected Asset Index",
+            1,
+            default_value=(0,),
+            min=0,
+            max=max(0, num_assets - 1),
+            help=f"Switch between {num_assets} imported assets"
+        )
+        ptg.append(switch_parm)
+
+        # Add transform controls folder
+        transform_folder = hou.FolderParmTemplate(
+            f"{node_name}_transform", 
+            f"Asset Transform", 
+            folder_type=hou.folderType.Tabs
+        )
+
+        # Translation vector parameter
+        translate = hou.FloatParmTemplate(
+            f"{node_name}_translate", 
+            "Translate", 
+            3, 
+            default_value=(0, 0, 0)
+        )
+
+        # Rotation vector parameter  
+        rotate = hou.FloatParmTemplate(
+            f"{node_name}_rotate", 
+            "Rotate", 
+            3, 
+            default_value=(0, 0, 0)
+        )
+
+        # Scale vector parameter
+        scale = hou.FloatParmTemplate(
+            f"{node_name}_scale", 
+            "Scale", 
+            3, 
+            default_value=(1, 1, 1)
+        )
+
+        transform_folder.addParmTemplate(translate)
+        transform_folder.addParmTemplate(rotate)
+        transform_folder.addParmTemplate(scale)
+        ptg.append(transform_folder)
+
+        # Add asset information folder
+        if asset_paths and len(asset_paths) > 1:
+            info_folder = hou.FolderParmTemplate(
+                f"{node_name}_assets_info", 
+                f"Asset Files", 
+                folder_type=hou.folderType.Tabs
+            )
+
+            for i, asset_path in enumerate(asset_paths):
+                asset_info = hou.StringParmTemplate(
+                    f"{node_name}_asset_file_{i}",
+                    f"Asset {i+1}",
+                    1,
+                    default_value=(asset_path,),
+                    string_type=hou.stringParmType.FileReference,
+                    file_type=hou.fileType.Geometry,
+                    help=f"Path to asset file {i+1}"
+                )
+                info_folder.addParmTemplate(asset_info)
+
+            ptg.append(info_folder)
+
+        # Apply parameters to parent node
+        parent_node.setParmTemplateGroup(ptg)
+
+        # Link nodes to parameters
+        _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
+
+    except Exception as e:
+        hou.ui.displayMessage(f"Error creating group parameters: {str(e)}", 
+                              severity=hou.severityType.Error)
+
+
+def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node):
+    """
+    Link switch and transform nodes to the UI parameters.
+
+    Args:
+        parent_node (hou.Node): The parent node with parameters (componentgeometry node)
+        node_name (str): Name of the asset group
+        switch_node (hou.Node): The switch node to control (inside sopnet/geo)
+        transform_node (hou.Node): The transform node to control (inside sopnet/geo)
+    """
+    try:
+        # Link switch node to parameter
+        # Switch node is at: /stage/componentgeometry/sopnet/geo/switch_node
+        # Parameters are at: /stage/componentgeometry/
+        # So we need to go up 3 levels: ../../../
+        if switch_node:
+            switch_node.parm("input").setExpression(f'ch("../../../{node_name}_asset_switch")')
+
+        # Link transform node using vector parameters
+        # Transform node is at: /stage/componentgeometry/sopnet/geo/transform_node
+        # Parameters are at: /stage/componentgeometry/
+        # So we need to go up 3 levels: ../../../
+        if transform_node:
+            transform_mappings = [
+                ("t", f"{node_name}_translate"),
+                ("r", f"{node_name}_rotate"),
+                ("s", f"{node_name}_scale")
+            ]
+
+            for xform_base, parent_param in transform_mappings:
+                # Link each component
+                xform_components = ["x", "y", "z"]
+                for i, component in enumerate(xform_components):
+                    xform_param = f"{xform_base}{component}"
+                    parent_param_name = f"{parent_param}{component}"
+                    transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
+
+    except Exception as e:
+        hou.ui.displayMessage(f"Error linking nodes to parameters: {str(e)}", 
+                              severity=hou.severityType.Error)
+
+
 def _prepare_imported_asset(parent, selected_directory, path, out_node, node_name):
     '''
 
@@ -138,16 +282,22 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         # Create the file nodes that imports the assets
         filenames = selected_directory.split(";")
         file_nodes = []
+        asset_paths = []
         switch_node = parent.createNode("switch", f"switch_{node_name}")
-        switch_node.setParms("input","")
-        for i,filename in enumerate(filenames):
+
+        for i, filename in enumerate(filenames):
             # Get asset name and extension
-            path, filename = os.path.split(filename.strip())
+            file_path, filename = os.path.split(filename.strip())
             asset_name = filename.split(".")[0]
             extension = filename.split(".")[-1]
             if ".bgeo.sc" in filename:
                 asset_name = filename.split(".")[0]
                 extension = "bgeo.sc"
+
+            # Store full path for parameters
+            full_asset_path = f"{file_path}/{filename}"
+            asset_paths.append(full_asset_path)
+
             file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
             if extension in file_extension:
                 file_import = parent.createNode("file", f"import_{asset_name}")
@@ -156,11 +306,16 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
                 file_import = parent.createNode("alembic", f"import_{asset_name}")
                 parm_name = "filename"
             else:
-                return
-            # Set Parms for main nodes
-            file_import.parm(parm_name).set(f"{path}/{asset_name}.{extension}")
-            switch_node.setInput(i, file_import)
+                continue
 
+            # Set Parms for main nodes
+            file_import.parm(parm_name).set(full_asset_path)
+            switch_node.setInput(i, file_import)
+            file_nodes.append(file_import)
+
+        # Create transform node for external control (like in batch_import_workflow)
+        transform_node = parent.createNode("xform", f"transform_{node_name}")
+        transform_node.setInput(0, switch_node)
 
         # Create the main nodes
         match_size = parent.createNode("matchsize", f"matchsize_{node_name}")
@@ -188,8 +343,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         remove_points.parm("remove").set(True)
 
-        # Connect Main nodes
-        match_size.setInput(0, switch_node)
+        # Connect Main nodes - now using transform_node instead of switch_node directly
+        match_size.setInput(0, transform_node)
         attrib_wrangler.setInput(0, match_size)
         attrib_delete.setInput(0, attrib_wrangler)
         remove_points.setInput(0, attrib_delete)
@@ -258,6 +413,21 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         parent.layoutChildren()
 
+        # Create UI parameters for multi-asset switch workflow
+        # This adds controls to the top-level componentgeometry node
+        top_level_parent = out_node.parent()  # Get the stage context
+        comp_geo_node = None
+
+        # Find the componentgeometry node to add parameters to
+        for node in top_level_parent.children():
+            if node.type().name() == "componentgeometry" and node_name in node.name():
+                comp_geo_node = node
+                break
+
+        if comp_geo_node and len(asset_paths) > 1:
+            # Only create multi-asset parameters if we have multiple assets
+            _create_group_parameters(comp_geo_node, node_name, asset_paths, switch_node, transform_node)
+
     except Exception as e:
         hou.ui.displayMessage(f"An error happened in prepare imported assets: {str(e)}",
                               severity=hou.severityType.Error)
@@ -275,9 +445,9 @@ def create_camera_lookdev(parent,asset_name):
 from tools import lops_lookdev_camera
 
 import importlib
-    
+
 importlib.reload(lops_lookdev_camera)
-    
+
 lops_lookdev_camera.create_lookdev_camera("{asset_name}")
 '''
     # Prepare the Sim setup
