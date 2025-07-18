@@ -6,6 +6,7 @@ from pxr import Usd, UsdGeom
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
+from tools.lops_light_rig_pipeline import setup_light_rig_pipeline
 
 
 class LopsAssetBuilderWorkflow:
@@ -35,10 +36,12 @@ class LopsAssetBuilderWorkflow:
         2. Iteratively import asset groups until user says "No"
         3. Create component builder for each asset group
         4. Create merge node and connect all component outputs
-        5. Show final summary
+        5. Create node scope wrapper
+        6. Setup optional light rig pipeline
+        7. Show final summary
         """
         # Step 1: Initialize stage context
-        self.stage_context = hou.node("/stage")
+        self._initialize_stage_context()
 
         # Step 2: Iteratively import asset groups
         self._import_asset_groups_iteratively()
@@ -50,51 +53,14 @@ class LopsAssetBuilderWorkflow:
         # Step 4: Layout all nodes
         self._layout_all_nodes()
 
+        # Step 5: Create node scope wrapper
+        scope_name = self._create_node_scope()
 
+        # Step 6: Setup optional light rig pipeline
+        self._setup_light_rig_pipeline(scope_name)
 
+        # Step 7: Show final summary
         self._show_final_summary()
-
-        # Select the Component Output
-        self.merge_node.setSelected(True, clear_all_selected=True)
-        # Ask the user for an assembly name
-        default_name = "ASSET"
-        rv = hou.ui.readInput(
-            f"Enter a name for the top-level **Scope** prim (default: {default_name})",
-            buttons=("OK", "Cancel"),
-            title="LOPS Asset Builder – Scope Name",
-            initial_contents=default_name)
-        if rv[0] != 0:   # Cancel
-            assembly_name = default_name
-        else:
-            assembly_name = rv[1].strip() or default_name
-
-        # Insert a Scope prim (not Xform)
-        assembly = self.stage_context.createNode("scope", f"{assembly_name}_scope")
-        assembly.parm("primpath").set(f"/{assembly_name}")
-        assembly.setInput(0, self.merge_node)          # merge → scope
-        assembly.setGenericFlag(hou.nodeFlag.Display, True)
-        assembly.setSelected(True,clear_all_selected=True)
-        # Create light rig
-        light_rig_nodes_to_layout, graft_branch = lops_light_rig.create_three_point_light()
-        # Light Rig Nodes to layout
-        # Set Display Flag
-        graft_branch.setGenericFlag(hou.nodeFlag.Display, True)
-        # Create Camera Node
-        camera_render = self.stage_context.createNode('camera','camera_render')
-        camera_render.setInput(0,graft_branch)
-        # Create Python Script
-
-        camera_python_script = create_camera_lookdev(self.stage_context, assembly_name)
-        # Connect script
-        camera_python_script.setInput(0, camera_render)
-
-        # Create Karma nodes
-        karma_settings,usdrender_rop = create_karma_nodes(self.stage_context)
-        karma_settings.setInput(0, camera_python_script)
-        usdrender_rop.setInput(0, karma_settings)
-        # Karma Nodes to layout
-        karma_nodes = [camera_render,camera_python_script,karma_settings,usdrender_rop]
-        self.stage_context.layoutChildren(items=karma_nodes)
 
         return self.stage_context
 
@@ -851,6 +817,59 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             hou.ui.displayMessage(f"Error laying out nodes: {str(e)}",
                                   severity=hou.severityType.Error)
 
+    def _initialize_stage_context(self):
+        """Initialize the stage context for the workflow."""
+        self.stage_context = hou.node("/stage")
+
+    def _create_node_scope(self):
+        """
+        Create node scope wrapper with user input for scope name.
+        Returns the scope name for use in other methods.
+        """
+        try:
+            # Select the merge node if it exists
+            if self.merge_node:
+                self.merge_node.setSelected(True, clear_all_selected=True)
+
+            # Ask the user for a scope name
+            default_name = "ASSET"
+            rv = hou.ui.readInput(
+                f"Enter a name for the top-level **Scope** prim (default: {default_name})",
+                buttons=("OK", "Cancel"),
+                title="LOPS Asset Builder – Scope Name",
+                initial_contents=default_name)
+
+            if rv[0] != 0:   # Cancel
+                scope_name = default_name
+            else:
+                scope_name = rv[1].strip() or default_name
+
+            # Insert a Scope prim (not Xform)
+            node_scope = self.stage_context.createNode("scope", f"{scope_name}_scope")
+            node_scope.parm("primpath").set(f"/{scope_name}")
+            node_scope.setInput(0, self.merge_node)          # merge → scope
+            node_scope.setGenericFlag(hou.nodeFlag.Display, True)
+            node_scope.setSelected(True, clear_all_selected=True)
+
+            return scope_name
+
+        except Exception as e:
+            hou.ui.displayMessage(f"Error creating node scope: {str(e)}",
+                                  severity=hou.severityType.Error)
+            return "ASSET"  # Return default name on error
+
+    def _setup_light_rig_pipeline(self, scope_name):
+        """
+        Setup optional light rig pipeline with user prompt.
+        Creates light rig, camera, and Karma render setup if user chooses to.
+        Uses the external lops_light_rig_pipeline script.
+        """
+        # Call the external script function
+        setup_light_rig_pipeline(
+            stage_context=self.stage_context,
+            scope_name=scope_name,
+            auto_prompt=True
+        )
 
     def _show_final_summary(self):
         """Show final summary of the workflow."""
@@ -877,7 +896,6 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             hou.ui.displayMessage(f"Error showing summary: {str(e)}",
                                   severity=hou.severityType.Error)
 
-
 def create_lops_asset_builder_workflow():
     """
     Main entry point for the LOPS Asset Builder Workflow.
@@ -890,7 +908,6 @@ def create_lops_asset_builder_workflow():
         hou.ui.displayMessage(f"Error in LOPS Asset Builder Workflow: {str(e)}",
                               severity=hou.severityType.Error)
         return None
-
 
 # For backwards compatibility and easy access
 def main():
