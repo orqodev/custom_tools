@@ -48,28 +48,28 @@ def create_component_builder(selected_directory=None):
             comp_out.setSelected(True, clear_all_selected=True)
 
 
-            # # Create light rig
-            # light_rig_nodes_to_layout, merge_node = lops_light_rig.create_three_point_light()
-            # # Light Rig Nodes to layout
-            # create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(-1, 0))
-            # # Set Display Flag
-            # comp_out.setGenericFlag(hou.nodeFlag.Display, True)
-            # # Create Camera Node
-            # camera_render = stage_context.createNode('camera','camera_render')
-            # camera_render.setInput(0,merge_node)
-            # # Create Python Script
-            # camera_python_script = create_camera_lookdev(stage_context, asset_name)
-            # # Connect script
-            # camera_python_script.setInput(0, camera_render)
-            #
-            # # Create Karma nodes
-            # karma_settings,usdrender_rop = create_karma_nodes(stage_context)
-            # karma_settings.setInput(0, camera_python_script)
-            # usdrender_rop.setInput(0, karma_settings)
-            # # Karma Nodes to layout
-            # karma_nodes = [camera_render,camera_python_script,karma_settings,usdrender_rop]
-            # stage_context.layoutChildren(items=karma_nodes)
-            # create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
+            # Create light rig
+            light_rig_nodes_to_layout, merge_node = lops_light_rig.create_three_point_light()
+            # Light Rig Nodes to layout
+            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(-1, 0))
+            # Set Display Flag
+            comp_out.setGenericFlag(hou.nodeFlag.Display, True)
+            # Create Camera Node
+            camera_render = stage_context.createNode('camera','camera_render')
+            camera_render.setInput(0,merge_node)
+            # Create Python Script
+            camera_python_script = create_camera_lookdev(stage_context, node_name)
+            # Connect script
+            camera_python_script.setInput(0, camera_render)
+
+            # Create Karma nodes
+            karma_settings,usdrender_rop = create_karma_nodes(stage_context)
+            karma_settings.setInput(0, camera_python_script)
+            usdrender_rop.setInput(0, karma_settings)
+            # Karma Nodes to layout
+            karma_nodes = [camera_render,camera_python_script,karma_settings,usdrender_rop]
+            stage_context.layoutChildren(items=karma_nodes)
+            create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
 
     except Exception as e:
         hou.ui.displayMessage(f"An error happened in create component builder: {str(e)}",
