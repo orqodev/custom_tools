@@ -1,4 +1,4 @@
-change all base on this import os
+import os
 import hou
 import voptoolutils
 from typing import List, Type
