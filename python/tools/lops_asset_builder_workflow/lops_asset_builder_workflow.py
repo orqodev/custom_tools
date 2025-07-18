@@ -73,7 +73,7 @@ class LopsAssetBuilderWorkflow:
         assembly.parm("primpath").set(f"/{assembly_name}")
         assembly.setInput(0, self.merge_node)          # merge → scope
         assembly.setGenericFlag(hou.nodeFlag.Display, True)
-        self.merge_node.setGenericFlag(hou.nodeFlag.Display, False)
+        assembly.setSelected(True,clear_all_selected=True)
         # Create light rig
         light_rig_nodes_to_layout, graft_branch = lops_light_rig.create_three_point_light()
         # Light Rig Nodes to layout
