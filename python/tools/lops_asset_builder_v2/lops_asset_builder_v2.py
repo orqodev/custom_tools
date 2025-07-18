@@ -24,7 +24,6 @@ def create_component_builder(selected_directory=None):
     path, filename = os.path.split(selected_directory.split(";")[0])
 
     try:
-        print("rock and roll")
         if os.path.exists(path):
             # Define context
             stage_context = hou.node("/stage")
