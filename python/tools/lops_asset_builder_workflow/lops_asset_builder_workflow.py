@@ -1,10 +1,11 @@
-import os
+change all base on this import os
 import hou
 import voptoolutils
 from typing import List, Type
 from pxr import Usd, UsdGeom
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
+from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
 
 
 class LopsAssetBuilderWorkflow:
@@ -49,8 +50,51 @@ class LopsAssetBuilderWorkflow:
         # Step 4: Layout all nodes
         self._layout_all_nodes()
 
-        # Step 5: Show final summary
+
+
         self._show_final_summary()
+
+        # Select the Component Output
+        self.merge_node.setSelected(True, clear_all_selected=True)
+        # Ask the user for an assembly name
+        default_name = "ASSET"
+        rv = hou.ui.readInput(
+            f"Enter a name for the top-level **Scope** prim (default: {default_name})",
+            buttons=("OK", "Cancel"),
+            title="LOPS Asset Builder – Scope Name",
+            initial_contents=default_name)
+        if rv[0] != 0:   # Cancel
+            assembly_name = default_name
+        else:
+            assembly_name = rv[1].strip() or default_name
+
+        # Insert a Scope prim (not Xform)
+        assembly = self.stage_context.createNode("scope", f"{assembly_name}_scope")
+        assembly.parm("primpath").set(f"/{assembly_name}")
+        assembly.setInput(0, self.merge_node)          # merge → scope
+        assembly.setGenericFlag(hou.nodeFlag.Display, True)
+        self.merge_node.setGenericFlag(hou.nodeFlag.Display, False)
+        # Create light rig
+        light_rig_nodes_to_layout, graft_branch = lops_light_rig.create_three_point_light()
+        # Light Rig Nodes to layout
+        # Set Display Flag
+        graft_branch.setGenericFlag(hou.nodeFlag.Display, True)
+        # Create Camera Node
+        camera_render = self.stage_context.createNode('camera','camera_render')
+        camera_render.setInput(0,graft_branch)
+        # Create Python Script
+
+        camera_python_script = create_camera_lookdev(self.stage_context, assembly_name)
+        # Connect script
+        camera_python_script.setInput(0, camera_render)
+
+        # Create Karma nodes
+        karma_settings,usdrender_rop = create_karma_nodes(self.stage_context)
+        karma_settings.setInput(0, camera_python_script)
+        usdrender_rop.setInput(0, karma_settings)
+        # Karma Nodes to layout
+        karma_nodes = [camera_render,camera_python_script,karma_settings,usdrender_rop]
+        self.stage_context.layoutChildren(items=karma_nodes)
 
         return self.stage_context
 
@@ -178,7 +222,7 @@ class LopsAssetBuilderWorkflow:
             }
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error importing asset group: {str(e)}", 
+            hou.ui.displayMessage(f"Error importing asset group: {str(e)}",
                                   severity=hou.severityType.Error)
             return None
 
@@ -260,7 +304,7 @@ class LopsAssetBuilderWorkflow:
             }
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error creating component builder for group {asset_data['group_name']}: {str(e)}", 
+            hou.ui.displayMessage(f"Error creating component builder for group {asset_data['group_name']}: {str(e)}",
                                   severity=hou.severityType.Error)
             return None
 
@@ -462,7 +506,7 @@ class LopsAssetBuilderWorkflow:
             return switch_node, transform_node
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error preparing imported asset: {str(e)}", 
+            hou.ui.displayMessage(f"Error preparing imported asset: {str(e)}",
                                   severity=hou.severityType.Error)
             return None, None
 
@@ -501,32 +545,32 @@ class LopsAssetBuilderWorkflow:
 
             # Add transform controls folder
             transform_folder = hou.FolderParmTemplate(
-                f"{node_name}_transform", 
-                f"Asset Transform", 
+                f"{node_name}_transform",
+                f"Asset Transform",
                 folder_type=hou.folderType.Tabs
             )
 
             # Translation vector parameter
             translate = hou.FloatParmTemplate(
-                f"{node_name}_translate", 
-                "Translate", 
-                3, 
+                f"{node_name}_translate",
+                "Translate",
+                3,
                 default_value=(0, 0, 0)
             )
 
             # Rotation vector parameter  
             rotate = hou.FloatParmTemplate(
-                f"{node_name}_rotate", 
-                "Rotate", 
-                3, 
+                f"{node_name}_rotate",
+                "Rotate",
+                3,
                 default_value=(0, 0, 0)
             )
 
             # Scale vector parameter
             scale = hou.FloatParmTemplate(
-                f"{node_name}_scale", 
-                "Scale", 
-                3, 
+                f"{node_name}_scale",
+                "Scale",
+                3,
                 default_value=(1, 1, 1)
             )
 
@@ -538,8 +582,8 @@ class LopsAssetBuilderWorkflow:
             # Add asset information folder
             if asset_paths and len(asset_paths) > 1:
                 info_folder = hou.FolderParmTemplate(
-                    f"{node_name}_assets_info", 
-                    f"Asset Files", 
+                    f"{node_name}_assets_info",
+                    f"Asset Files",
                     folder_type=hou.folderType.Tabs
                 )
 
@@ -564,7 +608,7 @@ class LopsAssetBuilderWorkflow:
             self._link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error creating group parameters: {str(e)}", 
+            hou.ui.displayMessage(f"Error creating group parameters: {str(e)}",
                                   severity=hou.severityType.Error)
 
     def _link_group_nodes_to_parameters(self, parent_node, node_name, switch_node, transform_node):
@@ -605,7 +649,7 @@ class LopsAssetBuilderWorkflow:
                         transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error linking nodes to parameters: {str(e)}", 
+            hou.ui.displayMessage(f"Error linking nodes to parameters: {str(e)}",
                                   severity=hou.severityType.Error)
 
     def _create_materials(self, parent, folder_textures, material_lib, expected_names):
@@ -659,7 +703,7 @@ class LopsAssetBuilderWorkflow:
                             texture_list=texture_list
                         )
                         create_material.create_materialx()
-                    hou.ui.displayMessage(f"Created {materials_created_length} materials in {material_lib.path()}", 
+                    hou.ui.displayMessage(f"Created {materials_created_length} materials in {material_lib.path()}",
                                           severity=hou.severityType.Message)
                     return True
                 else:
@@ -782,7 +826,7 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             self.merge_node.setGenericFlag(hou.nodeFlag.Display, True)
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error creating final merge node: {str(e)}", 
+            hou.ui.displayMessage(f"Error creating final merge node: {str(e)}",
                                   severity=hou.severityType.Error)
 
     def _layout_all_nodes(self):
@@ -804,7 +848,7 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             self.stage_context.layoutChildren()
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error laying out nodes: {str(e)}", 
+            hou.ui.displayMessage(f"Error laying out nodes: {str(e)}",
                                   severity=hou.severityType.Error)
 
 
@@ -812,7 +856,7 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
         """Show final summary of the workflow."""
         try:
             if not self.asset_groups:
-                hou.ui.displayMessage("No asset groups were created.", 
+                hou.ui.displayMessage("No asset groups were created.",
                                       severity=hou.severityType.Warning)
                 return
 
@@ -825,12 +869,12 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             if self.merge_node:
                 summary_text += f"\nAll groups connected to final merge node: {self.merge_node.name()}"
 
-            hou.ui.displayMessage(summary_text, 
+            hou.ui.displayMessage(summary_text,
                                   severity=hou.severityType.Message,
                                   title="LOPS Asset Builder Workflow - Complete")
 
         except Exception as e:
-            hou.ui.displayMessage(f"Error showing summary: {str(e)}", 
+            hou.ui.displayMessage(f"Error showing summary: {str(e)}",
                                   severity=hou.severityType.Error)
 
 
@@ -843,7 +887,7 @@ def create_lops_asset_builder_workflow():
         workflow = LopsAssetBuilderWorkflow()
         return workflow.create_workflow()
     except Exception as e:
-        hou.ui.displayMessage(f"Error in LOPS Asset Builder Workflow: {str(e)}", 
+        hou.ui.displayMessage(f"Error in LOPS Asset Builder Workflow: {str(e)}",
                               severity=hou.severityType.Error)
         return None
 
