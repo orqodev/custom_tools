@@ -8,6 +8,7 @@ import colorsys
 import random
 from typing import List, Type
 from pxr import Usd,UsdGeom
+from modules.misc_utils import _sanitize
 
 
 def create_component_builder(selected_directory=None):
@@ -40,10 +41,10 @@ def create_component_builder(selected_directory=None):
 
             # Create nodes for the component builder setup
 
-            comp_geo = stage_context.createNode("componentgeometry", f"{asset_name}_geo")
-            material_lib = stage_context.createNode("materiallibrary", f"{asset_name}_mtl")
-            comp_material = stage_context.createNode("componentmaterial", f"{asset_name}_assign")
-            comp_out = stage_context.createNode("componentoutput", asset_name)
+            comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
+            material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{asset_name}_mtl"))
+            comp_material = stage_context.createNode("componentmaterial", _sanitize(f"{asset_name}_assign"))
+            comp_out = stage_context.createNode("componentoutput", _sanitize(asset_name))
 
             comp_geo.parm("geovariantname").set(asset_name)
             material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
@@ -53,7 +54,7 @@ def create_component_builder(selected_directory=None):
             comp_material_edit = comp_material.node("edit")
             output_node = comp_material_edit.node("output0")
 
-            assign_material = comp_material_edit.createNode("assignmaterial", f"{asset_name}_assign")
+            assign_material = comp_material_edit.createNode("assignmaterial", _sanitize(f"{asset_name}_assign"))
             # SET PARMS
             assign_material.setParms({
                 "primpattern1": "%type:Mesh",
@@ -136,19 +137,19 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
         # Create the file node that imports the asset
         file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
         if extension in file_extension:
-            file_import = parent.createNode("file", f"import_{name}")
+            file_import = parent.createNode("file", _sanitize(f"import_{name}"))
             parm_name = "file"
         elif extension == "abc":
-            file_import = parent.createNode("alembic", f"import_{name}")
+            file_import = parent.createNode("alembic", _sanitize(f"import_{name}"))
             parm_name = "filename"
         else:
             return
 
         # Create the main nodes
-        match_size = parent.createNode("matchsize", f"matchsize_{name}")
+        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{name}"))
         attrib_wrangler = parent.createNode("attribwrangle", "convert_mat_to_name")
         attrib_delete = parent.createNode("attribdelete", "keep_P_N_UV_NAME")
-        remove_points = parent.createNode("add", f"remove_points")
+        remove_points = parent.createNode("add", _sanitize(f"remove_points"))
 
         # Set Parms for main nodes
         file_import.parm(parm_name).set(f"{path}/{name}.{extension}")
@@ -161,7 +162,7 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
 
         attrib_wrangler.setParms({
             "class": 1,
-            "snippet": 'string material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+            "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
         })
 
         attrib_delete.setParms({
@@ -185,7 +186,7 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
         attrib_colour = parent.createNode("attribwrangle", "set_color")
         color_node = parent.createNode("color", "unique_color")
         attrib_promote = parent.createNode("attribpromote", "promote_Cd")
-        attrib_delete_name = parent.createNode("attribdelete", f"delete_asset_name")
+        attrib_delete_name = parent.createNode("attribdelete", _sanitize(f"delete_asset_name"))
         name_node = parent.createNode("name", "name")
         # Set parms for proxy setup
         poly_reduce.parm("percentage").set(5)
@@ -260,9 +261,9 @@ def create_camera_lookdev(parent,asset_name):
 from tools import lops_lookdev_camera
 
 import importlib
-    
+
 importlib.reload(lops_lookdev_camera)
-    
+
 lops_lookdev_camera.create_lookdev_camera("{asset_name}")
 '''
     # Prepare the Sim setup

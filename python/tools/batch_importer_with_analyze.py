@@ -2,6 +2,7 @@ import hou
 import os
 import math
 import json
+from modules.misc_utils import _sanitize
 
 
 def batch_importer():
@@ -41,7 +42,7 @@ def batch_importer():
         Returns:
             hou.Node: The created transform node
         """
-        transform_node = geo_node.createNode('xform', node_name=asset_name + 'x_form')
+        transform_node = geo_node.createNode('xform', node_name=_sanitize(asset_name + 'x_form'))
         if set_scale:
             transform_node.parm('scale').set(scale_value)
 
@@ -194,47 +195,47 @@ def batch_importer():
             # Handle different file types
             if asset_type.lower() in ["abc", "abcs"]:
                 # Alembic files
-                new_alembic_loader = geo_node.createNode('alembic', node_name=asset_name)
+                new_alembic_loader = geo_node.createNode('alembic', node_name=_sanitize(asset_name))
                 new_alembic_loader.parm('fileName').set(file_name)
-                unpack_node = geo_node.createNode('unpack', node_name=asset_name + '_unpack')
+                unpack_node = geo_node.createNode('unpack', node_name=_sanitize(asset_name + '_unpack'))
                 unpack_node.setInput(0, new_alembic_loader)
                 transform_node = create_transformer_node(set_scale, scale_value, unpack_node, position_x, position_z)
 
             elif asset_type.lower() in ["fbx"]:
                 # FBX files
-                new_fbx_loader = geo_node.createNode('file', node_name=asset_name)
+                new_fbx_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_fbx_loader.parm('file').set(file_name)
                 # Add FBX-specific parameters if needed
                 transform_node = create_transformer_node(set_scale, scale_value, new_fbx_loader, position_x, position_z)
 
             elif asset_type.lower() in ["usd", "usda", "usdc"]:
                 # USD files
-                new_usd_loader = geo_node.createNode('usdimport', node_name=asset_name)
+                new_usd_loader = geo_node.createNode('usdimport', node_name=_sanitize(asset_name))
                 new_usd_loader.parm('filepath').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_usd_loader, position_x, position_z)
 
             elif asset_type.lower() in ["obj"]:
                 # OBJ files
-                new_obj_loader = geo_node.createNode('file', node_name=asset_name)
+                new_obj_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_obj_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_obj_loader, position_x, position_z)
 
             elif asset_type.lower() in ["bgeo", "bgeo.sc", "sc"]:
                 # Houdini geometry files
-                new_bgeo_loader = geo_node.createNode('file', node_name=asset_name)
+                new_bgeo_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_bgeo_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_bgeo_loader, position_x, position_z)
 
             else:
                 # Generic file loader for other types
                 hou.ui.setStatusMessage(f"Using generic loader for file type: {asset_type}", hou.severityType.Message)
-                new_file_loader = geo_node.createNode('file', node_name=asset_name)
+                new_file_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_file_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_file_loader, position_x, position_z)
 
             # Add a Measure SOP to calculate bounding box
             try:
-                measure_node = geo_node.createNode('measure', node_name=asset_name + '_measure')
+                measure_node = geo_node.createNode('measure', node_name=_sanitize(asset_name + '_measure'))
                 if measure_node is not None:
                     measure_node.setInput(0, transform_node)
 
@@ -243,17 +244,17 @@ def batch_importer():
                     measure_node.parm('boundingattrib').set('bboxsize')  # Attribute name
 
                     # Add an Attribute Wrangle SOP to classify size
-                    attrib_wrangle = geo_node.createNode('attribwrangle', node_name=asset_name + '_size_classify')
+                    attrib_wrangle = geo_node.createNode('attribwrangle', node_name=_sanitize(asset_name + '_size_classify'))
                     attrib_wrangle.setInput(0, measure_node)
                 else:
                     # Fallback if measure_node is None
                     hou.ui.setStatusMessage(f"Warning: Could not create measure node for {asset_name}. Using transform node directly.", hou.severityType.Warning)
-                    attrib_wrangle = geo_node.createNode('attribwrangle', node_name=asset_name + '_size_classify')
+                    attrib_wrangle = geo_node.createNode('attribwrangle', node_name=_sanitize(asset_name + '_size_classify'))
                     attrib_wrangle.setInput(0, transform_node)
             except Exception as e:
                 # Fallback if there's an error creating the measure node
                 hou.ui.setStatusMessage(f"Error creating measure node: {str(e)}. Using transform node directly.", hou.severityType.Warning)
-                attrib_wrangle = geo_node.createNode('attribwrangle', node_name=asset_name + '_size_classify')
+                attrib_wrangle = geo_node.createNode('attribwrangle', node_name=_sanitize(asset_name + '_size_classify'))
                 attrib_wrangle.setInput(0, transform_node)
 
             # Set the VEX code for size classification
@@ -284,14 +285,14 @@ else
             attrib_wrangle.parm('snippet').set(vex_code)
 
             # Create material node with proper naming
-            material_node = geo_node.createNode('material', node_name=asset_name + '_mat')
+            material_node = geo_node.createNode('material', node_name=_sanitize(asset_name + '_mat'))
             material_node.setInput(0, attrib_wrangle)
 
             # Use material node as final node
             final_node = material_node
 
             # Add pack node for visualization after final node
-            pack_node = geo_node.createNode('pack', node_name=asset_name + '_pack')
+            pack_node = geo_node.createNode('pack', node_name=_sanitize(asset_name + '_pack'))
             pack_node.setInput(0, final_node)
 
             # Calculate bounding box information for JSON export

@@ -1,5 +1,6 @@
 import hou
 import os
+from modules.misc_utils import _sanitize
 
 
 class BatchImportWorkflow:
@@ -67,7 +68,7 @@ class BatchImportWorkflow:
     def _create_geo_node(self, node_name):
         """Create the main Geo node with specified name."""
         obj = hou.node('/obj')
-        self.geo_node = obj.createNode('geo', node_name=node_name)
+        self.geo_node = obj.createNode('geo', node_name=_sanitize(node_name))
 
         # Remove default file node
         for child in self.geo_node.children():
@@ -181,7 +182,7 @@ class BatchImportWorkflow:
         """
         # Create subnet with unique name
         subnet_name = f"{group_name}_group"
-        subnet = self.geo_node.createNode('subnet', node_name=subnet_name)
+        subnet = self.geo_node.createNode('subnet', node_name=_sanitize(subnet_name))
 
         # Create internal network structure
         file_nodes = []
@@ -189,7 +190,7 @@ class BatchImportWorkflow:
 
         # Create file nodes
         for i, asset_path in enumerate(asset_paths):
-            file_node = subnet.createNode("file", f"file_{i+1}")
+            file_node = subnet.createNode("file", _sanitize(f"file_{i+1}"))
 
             # Link to parameter with group prefix to avoid cross-talk
             param_name = f"{group_name}_asset_{i+1}"
@@ -201,7 +202,7 @@ class BatchImportWorkflow:
             file_nodes.append(file_node)
 
         # Create switch node
-        switch_node = subnet.createNode("switch", f"{group_name}_switch")
+        switch_node = subnet.createNode("switch", _sanitize(f"{group_name}_switch"))
 
         # Connect file nodes to switch
         for i, file_node in enumerate(file_nodes):
@@ -212,12 +213,12 @@ class BatchImportWorkflow:
         switch_node.setPosition([switch_x_pos, -2])
 
         # Create transform node
-        transform_node = subnet.createNode("xform", f"{group_name}_transform")
+        transform_node = subnet.createNode("xform", _sanitize(f"{group_name}_transform"))
         transform_node.setInput(0, switch_node)
         transform_node.setPosition([switch_x_pos, -4])
 
         # Create output node
-        output_node = subnet.createNode("output", "OUTPUT")
+        output_node = subnet.createNode("output", _sanitize("OUTPUT"))
         output_node.setInput(0, transform_node)
         output_node.setPosition([switch_x_pos, -6])
 
@@ -335,7 +336,7 @@ class BatchImportWorkflow:
             return
 
         # Create merge node
-        self.merge_node = self.geo_node.createNode('merge', 'asset_groups_merge')
+        self.merge_node = self.geo_node.createNode('merge', _sanitize('asset_groups_merge'))
 
         # Connect each subnetwork to the merge node
         for i, group_data in enumerate(self.asset_groups):
