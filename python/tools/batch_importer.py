@@ -1,6 +1,7 @@
 import hou
 import os
 import math
+from modules.misc_utils import _sanitize
 
 
 
@@ -40,7 +41,7 @@ def batch_importer():
         Returns:
             hou.Node: The created transform node
         """
-        transform_node = geo_node.createNode('xform', node_name=asset_name + 'x_form')
+        transform_node = geo_node.createNode('xform', node_name=_sanitize(asset_name + 'x_form'))
         if set_scale:
             transform_node.parm('scale').set(scale_value)
 
@@ -115,50 +116,50 @@ def batch_importer():
             # Handle different file types
             if asset_type.lower() in ["abc", "abcs"]:
                 # Alembic files
-                new_alembic_loader = geo_node.createNode('alembic', node_name=asset_name)
+                new_alembic_loader = geo_node.createNode('alembic', node_name=_sanitize(asset_name))
                 new_alembic_loader.parm('fileName').set(file_name)
-                unpack_node = geo_node.createNode('unpack', node_name=asset_name + '_unpack')
+                unpack_node = geo_node.createNode('unpack', node_name=_sanitize(asset_name + '_unpack'))
                 unpack_node.setInput(0, new_alembic_loader)
                 transform_node = create_transformer_node(set_scale, scale_value, unpack_node)
 
             elif asset_type.lower() in ["fbx"]:
                 # FBX files
-                new_fbx_loader = geo_node.createNode('file', node_name=asset_name)
+                new_fbx_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_fbx_loader.parm('file').set(file_name)
                 # Add FBX-specific parameters if needed
                 transform_node = create_transformer_node(set_scale, scale_value, new_fbx_loader)
 
             elif asset_type.lower() in ["usd", "usda", "usdc"]:
                 # USD files
-                new_usd_loader = geo_node.createNode('usdimport', node_name=asset_name)
+                new_usd_loader = geo_node.createNode('usdimport', node_name=_sanitize(asset_name))
                 new_usd_loader.parm('filepath').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_usd_loader)
 
             elif asset_type.lower() in ["obj"]:
                 # OBJ files
-                new_obj_loader = geo_node.createNode('file', node_name=asset_name)
+                new_obj_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_obj_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_obj_loader)
 
             elif asset_type.lower() in ["bgeo", "bgeo.sc", "sc"]:
                 # Houdini geometry files
-                new_bgeo_loader = geo_node.createNode('file', node_name=asset_name)
+                new_bgeo_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_bgeo_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_bgeo_loader)
 
             else:
                 # Generic file loader for other types
                 hou.ui.setStatusMessage(f"Using generic loader for file type: {asset_type}", hou.severityType.Message)
-                new_file_loader = geo_node.createNode('file', node_name=asset_name)
+                new_file_loader = geo_node.createNode('file', node_name=_sanitize(asset_name))
                 new_file_loader.parm('file').set(file_name)
                 transform_node = create_transformer_node(set_scale, scale_value, new_file_loader)
 
             # Create material node with proper naming
-            material_node = geo_node.createNode('material', node_name=asset_name + '_mat')
+            material_node = geo_node.createNode('material', node_name=_sanitize(asset_name + '_mat'))
             material_node.setInput(0, transform_node)
 
             # Add pack node for visualization after material node
-            pack_node = geo_node.createNode('pack', node_name=asset_name + '_pack')
+            pack_node = geo_node.createNode('pack', node_name=_sanitize(asset_name + '_pack'))
             pack_node.setInput(0, material_node)
 
             merge_node.setInput(add_to_merge, pack_node)

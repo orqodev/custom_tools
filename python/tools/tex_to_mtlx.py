@@ -11,6 +11,7 @@ import threading
 from PySide2 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from modules.misc_utils import _sanitize
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
@@ -527,7 +528,7 @@ class MtlxMaterial:
         existing_material = self.node_lib.node(material_name)
         if existing_material:
             existing_material.destroy()
-        mtlx_subnet = self.node_lib.createNode("subnet", material_name)
+        mtlx_subnet = self.node_lib.createNode("subnet", _sanitize(material_name))
         subnet_context = self.node_lib.node(mtlx_subnet.name())
         delete_subnet_output = subnet_context.allItems()
         for index, item in enumerate(delete_subnet_output):
@@ -639,8 +640,8 @@ class MtlxMaterial:
 
         # Create main nodes
 
-        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", self.material_to_create + "_mtlxSurface")
-        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", self.material_to_create + "_mtlxDisplacement")
+        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", _sanitize(self.material_to_create + "_mtlxSurface"))
+        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", _sanitize(self.material_to_create + "_mtlxDisplacement"))
 
         # Create output nodes
 
@@ -662,7 +663,7 @@ class MtlxMaterial:
             node - output connector node
             '''
 
-        node = context.createNode("subnetconnector", f"{output_type}_output")
+        node = context.createNode("subnetconnector", _sanitize(f"{output_type}_output"))
         node.parm("connectorkind").set("output")
         node.parm("parmname").set(output_type)
         node.parm("parmlabel").set(output_type.capitalize())
@@ -682,11 +683,11 @@ class MtlxMaterial:
 
         if not material_lib_info.get('UDIM', True):
             nodes = {
-                'coord': subnet_context.createNode("mtlxtexcoord", f"{self.material_to_create}_texcoord"),
-                'scale': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_scale"),
-                'rotate': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_rotation"),
-                'offset': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_offset"),
-                'place2d': subnet_context.createNode("mtlxplace2d", f"{self.material_to_create}_place2d"),
+                'coord': subnet_context.createNode("mtlxtexcoord", _sanitize(f"{self.material_to_create}_texcoord")),
+                'scale': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_scale")),
+                'rotate': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_rotation")),
+                'offset': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_offset")),
+                'place2d': subnet_context.createNode("mtlxplace2d", _sanitize(f"{self.material_to_create}_place2d")),
             }
 
             nodes['scale'].parm('value').set(1)
@@ -742,7 +743,7 @@ class MtlxMaterial:
         node_type = "mtlximage" if material_lib_info.get("UDIM", False) else "mtlxtiledimage"
 
         # Create the node
-        texture_node = subnet_context.createNode(node_type, texture_info["name"])
+        texture_node = subnet_context.createNode(node_type, _sanitize(texture_info["name"]))
 
         # Setup base texture_path
         texture_path = self._get_texture_path(texture_info['name'], material_lib_info)
@@ -856,7 +857,7 @@ class MtlxMaterial:
 
     def _setup_color_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup for colour texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_CC")
+        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_CC"))
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -867,13 +868,13 @@ class MtlxMaterial:
 
     def _setup_roughness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the roughness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
+        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         mtlx_standard_surf.setInput(input_index, range_node)
 
     def _setup_glossiness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the glossiness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
+        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         range_node.parm("outlow").set(1)
         range_node.parm("outhigh").set(0)
@@ -881,7 +882,7 @@ class MtlxMaterial:
 
     def _setup_sss_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the SSS texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
+        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -893,7 +894,7 @@ class MtlxMaterial:
 
     def _setup_mask_texture(self, texture_node):
         ''' Setup for user or mask texture'''
-        separate_node = texture_node.parent().createNode("mtlxseparate3c", texture_node.name() + "_SPLIT")
+        separate_node = texture_node.parent().createNode("mtlxseparate3c", _sanitize(texture_node.name() + "_SPLIT"))
         separate_node.setInput(0, texture_node)
 
     def _setup_bump_normal(self, subnet_context, mtlx_standard_surf, material_lib_info, place2d):

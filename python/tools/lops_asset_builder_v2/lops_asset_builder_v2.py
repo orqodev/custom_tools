@@ -8,6 +8,7 @@ import colorsys
 import random
 from typing import List, Type
 from pxr import Usd,UsdGeom
+from modules.misc_utils import _sanitize
 
 
 def create_component_builder(selected_directory=None):
@@ -76,10 +77,10 @@ def create_component_builder(selected_directory=None):
 
 def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
-    comp_geo = stage_context.createNode("componentgeometry", f"{node_name}_geo")
-    material_lib = stage_context.createNode("materiallibrary", f"{node_name}_mtl")
-    comp_material = stage_context.createNode("componentmaterial", f"{node_name}_assign")
-    comp_out = stage_context.createNode("componentoutput", node_name)
+    comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{node_name}_geo"))
+    material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl"))
+    comp_material = stage_context.createNode("componentmaterial", _sanitize(f"{node_name}_assign"))
+    comp_out = stage_context.createNode("componentoutput", _sanitize(node_name))
 
     comp_geo.parm("geovariantname").set(node_name)
     material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
@@ -89,7 +90,7 @@ def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     comp_material_edit = comp_material.node("edit")
     output_node = comp_material_edit.node("output0")
 
-    assign_material = comp_material_edit.createNode("assignmaterial", f"{node_name}_assign")
+    assign_material = comp_material_edit.createNode("assignmaterial", _sanitize(f"{node_name}_assign"))
     # SET PARMS
     assign_material.setParms({
         "primpattern1": "%type:Mesh",
@@ -282,7 +283,7 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         filenames = selected_directory.split(";")
         file_nodes = []
         asset_paths = []
-        switch_node = parent.createNode("switch", f"switch_{node_name}")
+        switch_node = parent.createNode("switch", _sanitize(f"switch_{node_name}"))
 
         for i, filename in enumerate(filenames):
             # Get asset name and extension
@@ -299,10 +300,10 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
             file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
             if extension in file_extension:
-                file_import = parent.createNode("file", f"import_{asset_name}")
+                file_import = parent.createNode("file", _sanitize(f"import_{asset_name}"))
                 parm_name = "file"
             elif extension == "abc":
-                file_import = parent.createNode("alembic", f"import_{asset_name}")
+                file_import = parent.createNode("alembic", _sanitize(f"import_{asset_name}"))
                 parm_name = "filename"
             else:
                 continue
@@ -313,14 +314,14 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
             file_nodes.append(file_import)
 
         # Create transform node for external control (like in batch_import_workflow)
-        transform_node = parent.createNode("xform", f"transform_{node_name}")
+        transform_node = parent.createNode("xform", _sanitize(f"transform_{node_name}"))
         transform_node.setInput(0, switch_node)
 
         # Create the main nodes
-        match_size = parent.createNode("matchsize", f"matchsize_{node_name}")
+        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{node_name}"))
         attrib_wrangler = parent.createNode("attribwrangle", "convert_mat_to_name")
         attrib_delete = parent.createNode("attribdelete", "keep_P_N_UV_NAME")
-        remove_points = parent.createNode("add", f"remove_points")
+        remove_points = parent.createNode("add", _sanitize(f"remove_points"))
 
         match_size.setParms({
             "justify_x": 0,
@@ -330,7 +331,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         attrib_wrangler.setParms({
             "class": 1,
-            "snippet": 'string material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+            "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+
         })
 
         attrib_delete.setParms({
@@ -354,7 +356,7 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         attrib_colour = parent.createNode("attribwrangle", "set_color")
         color_node = parent.createNode("color", "unique_color")
         attrib_promote = parent.createNode("attribpromote", "promote_Cd")
-        attrib_delete_name = parent.createNode("attribdelete", f"delete_asset_name")
+        attrib_delete_name = parent.createNode("attribdelete", _sanitize(f"delete_asset_name"))
         name_node = parent.createNode("name", "name")
         # Set parms for proxy setup
         poly_reduce.parm("percentage").set(5)

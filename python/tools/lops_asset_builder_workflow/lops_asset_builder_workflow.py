@@ -378,7 +378,8 @@ class LopsAssetBuilderWorkflow:
 
             attrib_wrangler.setParms({
                 "class": 1,
-                "snippet": 'string material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+                "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+
             })
 
             attrib_delete.setParms({

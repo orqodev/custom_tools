@@ -1,5 +1,5 @@
 import hou
-
+from modules.misc_utils import _sanitize
 def split_geo():
     selected_node = hou.selectedNodes()
     obj = hou.node("obj")
@@ -50,16 +50,17 @@ def split_geo():
     for index, value in enumerate(unique_values):
         blast_node = None
         null_node = None
+        value = _sanitize(value)
         if is_primitives:
-            blast_node = parent_node.createNode('blast', node_name=f"{value}_{index}")
-            blast_node.parm('group').set(f"@name={value}")
+            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"{value}_{index}"))
+            blast_node.parm('group').set(f"@name={_sanitize(value)}")
             blast_node.parm('grouptype').set(4)
-            null_node = parent_node.createNode("null", f"{value}_OUT")
+            null_node = parent_node.createNode("null", _sanitize(f"{value}_OUT"))
         else:
-            blast_node = parent_node.createNode('blast', node_name=f"POINT_{value}")
+            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"POINT_{value}"))
             blast_node.parm('group').set(str(value))
             blast_node.parm('grouptype').set(3)
-            null_node = parent_node.createNode("null", f"POINT_{value}_OUT")
+            null_node = parent_node.createNode("null", _sanitize(f"POINT_{value}_OUT"))
         blast_node.parm('negate').set(True)
         blast_node.setInput(0, selected_node)
         null_node.setInput(0, blast_node)
@@ -70,4 +71,3 @@ def split_geo():
     parent_node.layoutChildren(items=node_to_layout)
     merge_node.setDisplayFlag(True)
     merge_node.setRenderFlag(True)
-
