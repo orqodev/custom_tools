@@ -1,5 +1,6 @@
 import hou
 import os
+from modules.misc_utils import _sanitize
 
 
 class LopsGroupImporter:
@@ -178,7 +179,7 @@ class LopsGroupImporter:
         """
         # Create subnet with unique name
         subnet_name = f"{group_name}_group"
-        subnet = self.stage_node.createNode('subnet', node_name=subnet_name)
+        subnet = self.stage_node.createNode('subnet', node_name=_sanitize(subnet_name))
 
         # Create componentgeometry nodes for each asset (adapted from lops_asset_builder)
         component_nodes = []
@@ -187,7 +188,7 @@ class LopsGroupImporter:
         for i, asset_path in enumerate(asset_paths):
             # Create componentgeometry node for each asset
             asset_name = os.path.splitext(os.path.basename(asset_path))[0]
-            comp_geo = subnet.createNode("componentgeometry", f"{asset_name}_geo_{i+1}")
+            comp_geo = subnet.createNode("componentgeometry", _sanitize(f"{asset_name}_geo_{i+1}"))
             comp_geo.parm("geovariantname").set(f"{asset_name}_{i+1}")
 
             # Prepare the imported asset using sopnet workflow
@@ -199,7 +200,7 @@ class LopsGroupImporter:
             component_nodes.append(comp_geo)
 
         # Create switch node to select between assets
-        switch_node = subnet.createNode("switch", f"{group_name}_switch")
+        switch_node = subnet.createNode("switch", _sanitize(f"{group_name}_switch"))
 
         # Connect component nodes to switch
         for i, comp_node in enumerate(component_nodes):
@@ -210,12 +211,12 @@ class LopsGroupImporter:
         switch_node.setPosition([switch_x_pos, -3])
 
         # Create transform node for positioning
-        transform_node = subnet.createNode("xform", f"{group_name}_transform")
+        transform_node = subnet.createNode("xform", _sanitize(f"{group_name}_transform"))
         transform_node.setInput(0, switch_node)
         transform_node.setPosition([switch_x_pos, -6])
 
         # Create material assignment node
-        material_assign = subnet.createNode("assignmaterial", f"{group_name}_materials")
+        material_assign = subnet.createNode("assignmaterial", _sanitize(f"{group_name}_materials"))
         material_assign.setInput(0, transform_node)
         material_assign.setInput(1, self.material_library)
         material_assign.setPosition([switch_x_pos, -9])
@@ -262,21 +263,21 @@ class LopsGroupImporter:
             # Create the file import node based on extension
             file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
             if asset_extension in file_extension:
-                file_import = sopnet_geo.createNode("file", f"import_{asset_name}")
+                file_import = sopnet_geo.createNode("file", _sanitize(f"import_{asset_name}"))
                 parm_name = "file"
             elif asset_extension == "abc":
-                file_import = sopnet_geo.createNode("alembic", f"import_{asset_name}")
+                file_import = sopnet_geo.createNode("alembic", _sanitize(f"import_{asset_name}"))
                 parm_name = "filename"
             else:
                 # For unsupported extensions, create a file node anyway
-                file_import = sopnet_geo.createNode("file", f"import_{asset_name}")
+                file_import = sopnet_geo.createNode("file", _sanitize(f"import_{asset_name}"))
                 parm_name = "file"
 
             # Set the file path
             file_import.parm(parm_name).set(asset_path)
 
             # Create main processing nodes (adapted from lops_asset_builder)
-            match_size = sopnet_geo.createNode("matchsize", f"matchsize_{asset_name}")
+            match_size = sopnet_geo.createNode("matchsize", _sanitize(f"matchsize_{asset_name}"))
             attrib_wrangler = sopnet_geo.createNode("attribwrangle", "convert_mat_to_name")
             attrib_delete = sopnet_geo.createNode("attribdelete", "keep_P_N_UV_NAME")
             remove_points = sopnet_geo.createNode("add", f"remove_points")
