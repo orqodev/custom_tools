@@ -7,6 +7,7 @@ from pxr import Usd, UsdGeom
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
 from tools.lops_light_rig_pipeline import setup_light_rig_pipeline
+from modules.misc_utils import _sanitize
 
 
 class LopsAssetBuilderWorkflow:
@@ -277,10 +278,10 @@ class LopsAssetBuilderWorkflow:
     def _create_initial_nodes(self, node_name):
         """Create initial nodes for the component builder setup."""
         # Create nodes for the component builder setup
-        comp_geo = self.stage_context.createNode("componentgeometry", f"{node_name}_geo")
-        material_lib = self.stage_context.createNode("materiallibrary", f"{node_name}_mtl")
-        comp_material = self.stage_context.createNode("componentmaterial", f"{node_name}_assign")
-        comp_out = self.stage_context.createNode("componentoutput", node_name)
+        comp_geo = self.stage_context.createNode("componentgeometry", _sanitize(f"{node_name}_geo"))
+        material_lib = self.stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl"))
+        comp_material = self.stage_context.createNode("componentmaterial", _sanitize(f"{node_name}_assign"))
+        comp_out = self.stage_context.createNode("componentoutput", _sanitize(node_name))
 
         comp_geo.parm("geovariantname").set(node_name)
         material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
@@ -290,7 +291,7 @@ class LopsAssetBuilderWorkflow:
         comp_material_edit = comp_material.node("edit")
         output_node = comp_material_edit.node("output0")
 
-        assign_material = comp_material_edit.createNode("assignmaterial", f"{node_name}_assign")
+        assign_material = comp_material_edit.createNode("assignmaterial", _sanitize(f"{node_name}_assign"))
         # SET PARMS
         assign_material.setParms({
             "primpattern1": "%type:Mesh",
@@ -327,7 +328,7 @@ class LopsAssetBuilderWorkflow:
             # Create the file nodes that import the assets
             file_nodes = []
             processed_paths = []
-            switch_node = parent_sop.createNode("switch", f"switch_{node_name}")
+            switch_node = parent_sop.createNode("switch", _sanitize(f"switch_{node_name}"))
 
             for i, asset_path in enumerate(asset_paths):
                 asset_path = asset_path.strip()
@@ -348,10 +349,10 @@ class LopsAssetBuilderWorkflow:
 
                 file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
                 if extension in file_extension:
-                    file_import = parent_sop.createNode("file", f"import_{asset_name}")
+                    file_import = parent_sop.createNode("file", _sanitize(f"import_{asset_name}"))
                     parm_name = "file"
                 elif extension == "abc":
-                    file_import = parent_sop.createNode("alembic", f"import_{asset_name}")
+                    file_import = parent_sop.createNode("alembic", _sanitize(f"import_{asset_name}"))
                     parm_name = "filename"
                 else:
                     continue
@@ -362,13 +363,13 @@ class LopsAssetBuilderWorkflow:
                 file_nodes.append(file_import)
 
             # Create the main processing nodes
-            match_size = parent_sop.createNode("matchsize", f"matchsize_{node_name}")
+            match_size = parent_sop.createNode("matchsize", _sanitize(f"matchsize_{node_name}"))
             attrib_wrangler = parent_sop.createNode("attribwrangle", "convert_mat_to_name")
             attrib_delete = parent_sop.createNode("attribdelete", "keep_P_N_UV_NAME")
             remove_points = parent_sop.createNode("add", f"remove_points")
 
             # Create transform node for external control (after remove_points)
-            transform_node = parent_sop.createNode("xform", f"transform_{node_name}")
+            transform_node = parent_sop.createNode("xform", _sanitize(f"transform_{node_name}"))
 
             match_size.setParms({
                 "justify_x": 0,
