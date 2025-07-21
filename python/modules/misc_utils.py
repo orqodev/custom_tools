@@ -1,6 +1,8 @@
 import hou
 import loputils
 import re
+import unicodedata
+from typing import Optional, Set
 
 def _is_in_solaris():
     ''' Checks if the current context is Stage'''
@@ -91,3 +93,38 @@ def sanitize_all_prim_string_attribs(geo: hou.Geometry):
             cleaned = _sanitize(raw_val)
             if cleaned != raw_val:
                 prim.setAttribValue(attrib, cleaned)
+
+
+def slugify(text: str, drop_tokens: Optional[Set[str]] = None) -> str:
+    """
+    Normalize material names so that Geometry prims and MaterialX subnets align automatically.
+
+    Args:
+        text: The input text to slugify
+        drop_tokens: Set of tokens to drop. If None, uses default set.
+
+    Returns:
+        Normalized string with tokens joined by underscores
+    """
+    if drop_tokens is None:
+        drop_tokens = {"base", "bake", "baked", "bake1", "pbr"}
+
+    # Lower-case and unicode-normalize
+    text = text.lower()
+    text = unicodedata.normalize('NFKD', text)
+    # Remove diacritical marks after normalization
+    text = ''.join(c for c in text if not unicodedata.combining(c))
+
+    # Replace any non-alphanumeric run with "_" (underscore)
+    text = re.sub(r'[^a-z0-9]+', '_', text)
+
+    # Split into tokens and drop unwanted ones
+    tokens = [token for token in text.split('_') if token and token not in drop_tokens]
+
+    # Trim trailing 4-digit UDIM if present (e.g., "material_1001" -> "material")
+    # Only do this if the last token is exactly 4 digits starting with 1 (1xxx pattern)
+    if tokens and re.match(r'^1\d{3}$', tokens[-1]):
+        tokens = tokens[:-1]
+
+    # Join the remaining tokens with "_"
+    return '_'.join(tokens)

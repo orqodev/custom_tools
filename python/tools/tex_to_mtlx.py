@@ -11,7 +11,7 @@ import threading
 from PySide2 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import _sanitize
+from modules.misc_utils import slugify
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
@@ -339,6 +339,11 @@ class TxToMtlx(QtWidgets.QMainWindow):
             hou.ui.displayMessage(f"Please select at least one material.", severity=hou.severityType.Error)
             return
 
+        # Show sanitization dialog
+        sanitize_options = self._show_sanitization_dialog()
+        if sanitize_options is None:  # User cancelled
+            return
+
         self.progress_bar.setMaximum(len(selected_rows))
         progress_bar_default = 0
         # Common data
@@ -346,6 +351,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
             'mtlTX': self.mtlTX,
             'path': self.node_path,
             'node': self.node_lib,
+            'sanitize_options': sanitize_options,
         }
 
         for index in selected_rows:
@@ -359,9 +365,86 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
         hou.ui.displayMessage(f"Material creation completed!!", severity=hou.severityType.Message)
 
+    def _show_sanitization_dialog(self):
+        """Show dialog to ask user about material name sanitization options"""
+
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Material Name Sanitization")
+        dialog.setModal(True)
+        dialog.resize(400, 250)
+
+        layout = QtWidgets.QVBoxLayout(dialog)
+
+        # Title label
+        title_label = QtWidgets.QLabel("Material Name Sanitization Options")
+        title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
+        layout.addWidget(title_label)
+
+        # Sanitize checkbox
+        sanitize_checkbox = QtWidgets.QCheckBox("Enable material name sanitization")
+        sanitize_checkbox.setChecked(True)  # Default to enabled
+        layout.addWidget(sanitize_checkbox)
+
+        # Description label
+        desc_label = QtWidgets.QLabel(
+            "Sanitization will:\n"
+            "• Convert to lowercase and normalize unicode\n"
+            "• Remove trailing UDIM patterns (e.g., _1001)\n"
+            "• Replace non-alphanumeric characters with underscores\n"
+            "• Remove specified drop tokens"
+        )
+        desc_label.setStyleSheet("margin: 10px 0px; color: #666;")
+        layout.addWidget(desc_label)
+
+        # Custom drop tokens section
+        tokens_label = QtWidgets.QLabel("Custom drop tokens (comma-separated):")
+        layout.addWidget(tokens_label)
+
+        tokens_input = QtWidgets.QLineEdit()
+        tokens_input.setPlaceholderText("e.g., base,bake,baked,bake1,pbr,custom")
+        tokens_input.setText("base,bake,baked,bake1,pbr")  # Default tokens
+        layout.addWidget(tokens_input)
+
+        # Help label
+        help_label = QtWidgets.QLabel(
+            "Note: These tokens will be removed from material names during sanitization."
+        )
+        help_label.setStyleSheet("font-size: 11px; color: #888; margin-top: 5px;")
+        layout.addWidget(help_label)
+
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+
+        ok_button = QtWidgets.QPushButton("OK")
+        cancel_button = QtWidgets.QPushButton("Cancel")
+
+        button_layout.addStretch()
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
+
+        # Connect buttons
+        ok_button.clicked.connect(dialog.accept)
+        cancel_button.clicked.connect(dialog.reject)
+
+        # Show dialog and get result
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # Parse custom tokens
+            custom_tokens = set()
+            if tokens_input.text().strip():
+                custom_tokens = {token.strip().lower() for token in tokens_input.text().split(',') if token.strip()}
+
+            return {
+                'enabled': sanitize_checkbox.isChecked(),
+                'drop_tokens': custom_tokens if custom_tokens else None
+            }
+        else:
+            return None  # User cancelled
+
 class MtlxMaterial:
 
-    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list):
+    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None):
         self.material_to_create = mat
         self.mtlTX = mtlTX
         self.node_path = path
@@ -369,6 +452,7 @@ class MtlxMaterial:
         self.texture_list = texture_list
         self.imaketx_path = None
         self.folder_path = folder_path
+        self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
 
         self.init_constants()
         self._setup_imaketx()
@@ -518,17 +602,22 @@ class MtlxMaterial:
             subnet_context - subnet MtxMaterial to use as context to create the material and others nodes
         '''
 
-        # Add size to the name
-        material_name = (self.material_to_create + "_" +
-                         material_lib_info["Size"]
-                         if "Size" in material_lib_info
-                         else self.material_to_create)
+        # Create canonical name using sanitization options
+        if self.sanitize_options['enabled']:
+            # Use slugify with custom drop tokens if provided
+            canonical = slugify(self.material_to_create, self.sanitize_options['drop_tokens'])
+        else:
+            # Use original material name without sanitization
+            canonical = self.material_to_create
+
+        material_name = f"{canonical}_{material_lib_info['Size']}" \
+                        if 'Size' in material_lib_info else canonical
 
         # Remove existing material if it exists
         existing_material = self.node_lib.node(material_name)
         if existing_material:
             existing_material.destroy()
-        mtlx_subnet = self.node_lib.createNode("subnet", _sanitize(material_name))
+        mtlx_subnet = self.node_lib.createNode("subnet", material_name)
         subnet_context = self.node_lib.node(mtlx_subnet.name())
         delete_subnet_output = subnet_context.allItems()
         for index, item in enumerate(delete_subnet_output):
@@ -640,8 +729,8 @@ class MtlxMaterial:
 
         # Create main nodes
 
-        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", _sanitize(self.material_to_create + "_mtlxSurface"))
-        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", _sanitize(self.material_to_create + "_mtlxDisplacement"))
+        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify(self.material_to_create + "_mtlxSurface"))
+        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify(self.material_to_create + "_mtlxDisplacement"))
 
         # Create output nodes
 
@@ -663,7 +752,7 @@ class MtlxMaterial:
             node - output connector node
             '''
 
-        node = context.createNode("subnetconnector", _sanitize(f"{output_type}_output"))
+        node = context.createNode("subnetconnector", slugify(f"{output_type}_output"))
         node.parm("connectorkind").set("output")
         node.parm("parmname").set(output_type)
         node.parm("parmlabel").set(output_type.capitalize())
@@ -683,11 +772,11 @@ class MtlxMaterial:
 
         if not material_lib_info.get('UDIM', True):
             nodes = {
-                'coord': subnet_context.createNode("mtlxtexcoord", _sanitize(f"{self.material_to_create}_texcoord")),
-                'scale': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_scale")),
-                'rotate': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_rotation")),
-                'offset': subnet_context.createNode("mtlxconstant", _sanitize(f"{self.material_to_create}_offset")),
-                'place2d': subnet_context.createNode("mtlxplace2d", _sanitize(f"{self.material_to_create}_place2d")),
+                'coord': subnet_context.createNode("mtlxtexcoord", slugify(f"{self.material_to_create}_texcoord")),
+                'scale': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_scale")),
+                'rotate': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_rotation")),
+                'offset': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_offset")),
+                'place2d': subnet_context.createNode("mtlxplace2d", slugify(f"{self.material_to_create}_place2d")),
             }
 
             nodes['scale'].parm('value').set(1)
@@ -743,7 +832,7 @@ class MtlxMaterial:
         node_type = "mtlximage" if material_lib_info.get("UDIM", False) else "mtlxtiledimage"
 
         # Create the node
-        texture_node = subnet_context.createNode(node_type, _sanitize(texture_info["name"]))
+        texture_node = subnet_context.createNode(node_type, slugify(texture_info["name"]))
 
         # Setup base texture_path
         texture_path = self._get_texture_path(texture_info['name'], material_lib_info)
@@ -857,7 +946,7 @@ class MtlxMaterial:
 
     def _setup_color_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup for colour texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_CC"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_CC"))
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -868,13 +957,13 @@ class MtlxMaterial:
 
     def _setup_roughness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the roughness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         mtlx_standard_surf.setInput(input_index, range_node)
 
     def _setup_glossiness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the glossiness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         range_node.parm("outlow").set(1)
         range_node.parm("outhigh").set(0)
