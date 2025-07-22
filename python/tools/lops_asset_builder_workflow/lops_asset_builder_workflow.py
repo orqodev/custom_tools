@@ -174,8 +174,50 @@ class LopsAssetBuilderWorkflow:
             # Get group name from user
             group_name = self._get_asset_group_name(asset_paths)
 
-            # Check for texture folder
-            texture_folder = os.path.join(path, "maps").replace(os.sep, "/")
+            # Ask user to choose texture folder path instead of hardcoding "maps"
+            default_maps_folder = os.path.join(path, "maps").replace(os.sep, "/")
+
+            # Check if default maps folder exists
+            if os.path.exists(default_maps_folder):
+                # Ask user if they want to use default or choose custom path
+                choice = hou.ui.displayMessage(
+                    f"Found default 'maps' folder at:\n{default_maps_folder}\n\nDo you want to use this folder or choose a different one?",
+                    buttons=("Use Default", "Choose Different", "Cancel"),
+                    severity=hou.severityType.Message,
+                    default_choice=0
+                )
+
+                if choice == 0:  # Use Default
+                    texture_folder = default_maps_folder
+                elif choice == 1:  # Choose Different
+                    custom_folder = hou.ui.selectFile(
+                        title="Select folder containing textures",
+                        file_type=hou.fileType.Directory,
+                        multiple_select=False
+                    )
+                    if custom_folder:
+                        texture_folder = hou.text.expandString(custom_folder)
+                    else:
+                        hou.ui.displayMessage("No texture folder selected. Using default path.", severity=hou.severityType.Warning)
+                        texture_folder = default_maps_folder
+                else:  # Cancel
+                    return None
+            else:
+                # No default maps folder found, ask user to select one
+                hou.ui.displayMessage(
+                    f"No 'maps' folder found at:\n{default_maps_folder}\n\nPlease select the folder containing your textures.",
+                    severity=hou.severityType.Message
+                )
+                custom_folder = hou.ui.selectFile(
+                    title="Select folder containing textures",
+                    file_type=hou.fileType.Directory,
+                    multiple_select=False
+                )
+                if custom_folder:
+                    texture_folder = hou.text.expandString(custom_folder)
+                else:
+                    hou.ui.displayMessage("No texture folder selected. Using default path.", severity=hou.severityType.Warning)
+                    texture_folder = default_maps_folder
 
             # Extract material names from geometry files
             material_names = self._extract_material_names(asset_paths)
@@ -379,7 +421,7 @@ class LopsAssetBuilderWorkflow:
 
             attrib_wrangler.setParms({
                 "class": 1,
-                "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+                "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
 
             })
 

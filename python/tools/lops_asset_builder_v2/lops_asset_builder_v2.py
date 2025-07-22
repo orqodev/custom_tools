@@ -30,7 +30,51 @@ def create_component_builder(selected_directory=None):
             stage_context = hou.node("/stage")
             # Get the path and filename and the folder with the texturesRR
             node_name = _get_stage_node_name(filename)
-            folder_textures = os.path.join(path, "maps").replace(os.sep, "/")
+
+            # Ask user to choose texture folder path instead of hardcoding "maps"
+            default_maps_folder = os.path.join(path, "maps").replace(os.sep, "/")
+
+            # Check if default maps folder exists
+            if os.path.exists(default_maps_folder):
+                # Ask user if they want to use default or choose custom path
+                choice = hou.ui.displayMessage(
+                    f"Found default 'maps' folder at:\n{default_maps_folder}\n\nDo you want to use this folder or choose a different one?",
+                    buttons=("Use Default", "Choose Different", "Cancel"),
+                    severity=hou.severityType.Message,
+                    default_choice=0
+                )
+
+                if choice == 0:  # Use Default
+                    folder_textures = default_maps_folder
+                elif choice == 1:  # Choose Different
+                    custom_folder = hou.ui.selectFile(
+                        title="Select folder containing textures",
+                        file_type=hou.fileType.Directory,
+                        multiple_select=False
+                    )
+                    if custom_folder:
+                        folder_textures = hou.text.expandString(custom_folder)
+                    else:
+                        hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
+                        return
+                else:  # Cancel
+                    return
+            else:
+                # No default maps folder found, ask user to select one
+                hou.ui.displayMessage(
+                    f"No 'maps' folder found at:\n{default_maps_folder}\n\nPlease select the folder containing your textures.",
+                    severity=hou.severityType.Message
+                )
+                custom_folder = hou.ui.selectFile(
+                    title="Select folder containing textures",
+                    file_type=hou.fileType.Directory,
+                    multiple_select=False
+                )
+                if custom_folder:
+                    folder_textures = hou.text.expandString(custom_folder)
+                else:
+                    hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
+                    return
             comp_geo, material_lib, comp_material, comp_out = _create_inital_nodes(stage_context, node_name)
             # Nodes to layout
             nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
@@ -331,7 +375,7 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         attrib_wrangler.setParms({
             "class": 1,
-            "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+            "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
 
         })
 
