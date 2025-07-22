@@ -313,8 +313,6 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         None
     '''
 
-    print("_prepare_imported_assets")
-
     try:
         # Set the parent node where the nodes are going to be created
         parent = hou.node(parent.path() + "/sopnet/geo")
