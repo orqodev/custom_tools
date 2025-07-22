@@ -121,10 +121,5 @@ def slugify(text: str, drop_tokens: Optional[Set[str]] = None) -> str:
     # Split into tokens and drop unwanted ones
     tokens = [token for token in text.split('_') if token and token not in drop_tokens]
 
-    # Trim trailing 4-digit UDIM if present (e.g., "material_1001" -> "material")
-    # Only do this if the last token is exactly 4 digits starting with 1 (1xxx pattern)
-    if tokens and re.match(r'^1\d{3}$', tokens[-1]):
-        tokens = tokens[:-1]
-
     # Join the remaining tokens with "_"
     return '_'.join(tokens)

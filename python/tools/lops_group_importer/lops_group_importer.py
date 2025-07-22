@@ -291,7 +291,7 @@ class LopsGroupImporter:
 
             attrib_wrangler.setParms({
                 "class": 1,
-                "snippet": 's@shop_materialpath = replace(s@shop_materialpath, " ", "_");\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+                "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
 
             })
 

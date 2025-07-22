@@ -261,6 +261,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
                 if not texture_type:
                     continue
                 # Get UDIM and Size
+                material_name = slugify(material_name)
                 udim_match = self.UDIM_PATTERN.search(file)
                 size_match = self.SIZE_PATTERN.search(file)
                 # Update texture list
