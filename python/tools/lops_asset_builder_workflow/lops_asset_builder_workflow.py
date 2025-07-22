@@ -7,7 +7,7 @@ from pxr import Usd, UsdGeom
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
 from tools.lops_light_rig_pipeline import setup_light_rig_pipeline
-from modules.misc_utils import _sanitize
+from modules.misc_utils import _sanitize, slugify
 
 
 class LopsAssetBuilderWorkflow:
@@ -129,7 +129,7 @@ class LopsAssetBuilderWorkflow:
                         material_path = prim.stringAttribValue(shop_attrib)
                         if material_path:
                             # Extract basename from material path
-                            material_name = os.path.basename(material_path)
+                            material_name = slugify(os.path.basename(material_path))
                             if material_name:
                                 material_names.add(material_name)
 

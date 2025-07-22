@@ -110,6 +110,3 @@ for i, n in enumerate(nulls):
     )
 
     return topnet
-
-
-create_export_top_network()
