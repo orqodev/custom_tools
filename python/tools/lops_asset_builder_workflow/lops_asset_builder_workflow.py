@@ -7,6 +7,7 @@ from pxr import Usd, UsdGeom
 from PySide2 import QtCore, QtGui, QtWidgets as QtW
 import sys
 import io
+import json
 from contextlib import redirect_stdout, redirect_stderr
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
@@ -379,6 +380,14 @@ class _AssetGroupsDialog(QtW.QDialog):
         scope_layout.addWidget(self.asset_scope_edit)
         layout.addLayout(scope_layout)
 
+        # Load template button below the asset builder title
+        load_template_layout = QtW.QHBoxLayout()
+        self.load_template_btn = QtW.QPushButton("📂 Load Template")
+        self.load_template_btn.setToolTip("Load form template from JSON file")
+        load_template_layout.addWidget(self.load_template_btn)
+        load_template_layout.addStretch()
+        layout.addLayout(load_template_layout)
+
         # Instructions
         self.instructions = QtW.QLabel(
             "Define asset groups for the LOPS Asset Builder workflow.\n"
@@ -461,6 +470,11 @@ class _AssetGroupsDialog(QtW.QDialog):
         # Dialog buttons
         button_layout = QtW.QHBoxLayout()
 
+        # Save template button on the left
+        self.save_template_btn = QtW.QPushButton("💾 Save Template")
+        self.save_template_btn.setToolTip("Save current form as JSON template")
+        button_layout.addWidget(self.save_template_btn)
+
         self.ok_btn = QtW.QPushButton("OK")
         self.ok_btn.setDefault(True)  # Make OK button default
 
@@ -488,6 +502,10 @@ class _AssetGroupsDialog(QtW.QDialog):
         self.ok_btn.clicked.connect(self.accept)
         self.cancel_btn.clicked.connect(self.reject)
         self.close_btn.clicked.connect(self.close_dialog)
+
+        # Template buttons
+        self.save_template_btn.clicked.connect(self.save_template)
+        self.load_template_btn.clicked.connect(self.load_template)
 
         # Add group button connection
         self.add_group_btn.clicked.connect(self.add_group_widget)
@@ -573,6 +591,164 @@ class _AssetGroupsDialog(QtW.QDialog):
     def close_dialog(self):
         """Close the dialog when workflow is complete."""
         self.close()
+
+    def save_template(self):
+        """Save current form data as JSON template."""
+        try:
+            # Collect current form data
+            template_data = {
+                'asset_scope': self.asset_scope_edit.text().strip(),
+                'groups': []
+            }
+
+            # Collect data from all group widgets
+            for group_widget in self.group_widgets:
+                group_data = {
+                    'group_name': group_widget.name_edit.text().strip(),
+                    'asset_paths': [row.get_path() for row in group_widget.path_rows if row.get_path()],
+                    'texture_folder': group_widget.materials_folder_edit.text().strip()
+                }
+                template_data['groups'].append(group_data)
+
+            # Generate default filename based on Asset Builder input
+            asset_scope = self.asset_scope_edit.text().strip()
+            if asset_scope:
+                # Replace spaces and special characters with underscores, convert to lowercase
+                sanitized_scope = ''.join(c if c.isalnum() else '_' for c in asset_scope).lower()
+                # Remove multiple consecutive underscores
+                sanitized_scope = '_'.join(filter(None, sanitized_scope.split('_')))
+                # Check if sanitized result is empty (e.g., input was only special characters or whitespace)
+                if sanitized_scope:
+                    default_filename = f"{sanitized_scope}_template.json"
+                else:
+                    default_filename = "asset_builder_template.json"
+            else:
+                default_filename = "asset_builder_template.json"
+
+            # Open file dialog to save JSON
+            file_path, _ = QtW.QFileDialog.getSaveFileName(
+                self,
+                "Save Template",
+                default_filename,
+                "JSON Files (*.json);;All Files (*)"
+            )
+
+            if file_path:
+                with open(file_path, 'w') as f:
+                    json.dump(template_data, f, indent=2)
+
+                QtW.QMessageBox.information(
+                    self,
+                    "Template Saved",
+                    f"Template saved successfully to:\n{file_path}"
+                )
+
+        except Exception as e:
+            QtW.QMessageBox.critical(
+                self,
+                "Save Error",
+                f"Failed to save template:\n{str(e)}"
+            )
+
+    def load_template(self):
+        """Load form data from JSON template."""
+        try:
+            # Open file dialog to select JSON
+            file_path, _ = QtW.QFileDialog.getOpenFileName(
+                self,
+                "Load Template",
+                "",
+                "JSON Files (*.json);;All Files (*)"
+            )
+
+            if not file_path:
+                return
+
+            with open(file_path, 'r') as f:
+                template_data = json.load(f)
+
+            # Clear existing groups (keep at least one)
+            while len(self.group_widgets) > 1:
+                self.remove_group_widget(self.group_widgets[-1])
+
+            # Load asset scope
+            if 'asset_scope' in template_data:
+                self.asset_scope_edit.setText(template_data['asset_scope'])
+
+            # Load groups
+            if 'groups' in template_data and template_data['groups']:
+                # Update first group
+                first_group = self.group_widgets[0]
+                first_group_data = template_data['groups'][0]
+
+                # Set group name
+                if 'group_name' in first_group_data:
+                    first_group.name_edit.setText(first_group_data['group_name'])
+
+                # Set texture folder
+                if 'texture_folder' in first_group_data:
+                    first_group.materials_folder_edit.setText(first_group_data['texture_folder'])
+
+                # Set asset paths
+                if 'asset_paths' in first_group_data:
+                    paths = first_group_data['asset_paths']
+                    # Clear existing paths and add new ones
+                    while len(first_group.path_rows) > 1:
+                        first_group.remove_path_row(first_group.path_rows[-1])
+
+                    # Set first path
+                    if paths and len(first_group.path_rows) > 0:
+                        first_group.path_rows[0].set_path(paths[0])
+
+                    # Add additional paths
+                    for path in paths[1:]:
+                        first_group.add_path_row()
+                        first_group.path_rows[-1].set_path(path)
+
+                # Add remaining groups
+                for group_data in template_data['groups'][1:]:
+                    self.add_group_widget()
+                    new_group = self.group_widgets[-1]
+
+                    # Set group name
+                    if 'group_name' in group_data:
+                        new_group.name_edit.setText(group_data['group_name'])
+
+                    # Set texture folder
+                    if 'texture_folder' in group_data:
+                        new_group.materials_folder_edit.setText(group_data['texture_folder'])
+
+                    # Set asset paths
+                    if 'asset_paths' in group_data:
+                        paths = group_data['asset_paths']
+                        # Clear existing paths and add new ones
+                        while len(new_group.path_rows) > 1:
+                            new_group.remove_path_row(new_group.path_rows[-1])
+
+                        # Set first path
+                        if paths and len(new_group.path_rows) > 0:
+                            new_group.path_rows[0].set_path(paths[0])
+
+                        # Add additional paths
+                        for path in paths[1:]:
+                            new_group.add_path_row()
+                            new_group.path_rows[-1].set_path(path)
+
+            # Update OK button state
+            self.update_ok_button()
+
+            QtW.QMessageBox.information(
+                self,
+                "Template Loaded",
+                f"Template loaded successfully from:\n{file_path}"
+            )
+
+        except Exception as e:
+            QtW.QMessageBox.critical(
+                self,
+                "Load Error",
+                f"Failed to load template:\n{str(e)}"
+            )
 
     def start_processing_mode(self, total_groups):
         """Switch dialog to processing mode."""
