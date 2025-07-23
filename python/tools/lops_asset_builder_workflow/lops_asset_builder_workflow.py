@@ -450,8 +450,8 @@ class _AssetGroupsDialog(QtW.QDialog):
             }
         """)
         # Set both minimum and maximum height to ensure visibility - increased for more log content
-        self.log_display.setMinimumHeight(200)
-        self.log_display.setMaximumHeight(500)
+        self.log_display.setMinimumHeight(400)
+        self.log_display.setMaximumHeight(600)
         # Add some initial placeholder text to ensure the widget is visible
         self.log_display.setPlaceholderText("Processing logs will appear here...")
         progress_layout.addWidget(self.log_display)
