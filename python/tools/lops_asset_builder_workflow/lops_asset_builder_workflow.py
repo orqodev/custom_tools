@@ -693,15 +693,11 @@ class _AssetGroupsDialog(QtW.QDialog):
                 if 'asset_paths' in first_group_data:
                     paths = first_group_data['asset_paths']
                     # Clear existing paths and add new ones
-                    while len(first_group.path_rows) > 1:
+                    while len(first_group.path_rows) > 0:
                         first_group.remove_path_row(first_group.path_rows[-1])
 
-                    # Set first path
-                    if paths and len(first_group.path_rows) > 0:
-                        first_group.path_rows[0].set_path(paths[0])
-
-                    # Add additional paths
-                    for path in paths[1:]:
+                    # Add all paths (create path rows as needed)
+                    for path in paths:
                         first_group.add_path_row()
                         first_group.path_rows[-1].set_path(path)
 
@@ -722,15 +718,11 @@ class _AssetGroupsDialog(QtW.QDialog):
                     if 'asset_paths' in group_data:
                         paths = group_data['asset_paths']
                         # Clear existing paths and add new ones
-                        while len(new_group.path_rows) > 1:
+                        while len(new_group.path_rows) > 0:
                             new_group.remove_path_row(new_group.path_rows[-1])
 
-                        # Set first path
-                        if paths and len(new_group.path_rows) > 0:
-                            new_group.path_rows[0].set_path(paths[0])
-
-                        # Add additional paths
-                        for path in paths[1:]:
+                        # Add all paths (create path rows as needed)
+                        for path in paths:
                             new_group.add_path_row()
                             new_group.path_rows[-1].set_path(path)
 
