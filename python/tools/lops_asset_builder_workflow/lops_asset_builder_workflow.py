@@ -130,6 +130,11 @@ class _PathRow(QtW.QWidget):
 
     def set_path(self, path):
         """Set the file path with proper text eliding and tooltip."""
+        # Validate the path before setting it
+        if path and not self._validate_file_path(path):
+            print(f"⚠️  WARNING: Invalid file path detected and skipped: {path}")
+            return
+        
         self.path_edit.setText(path)
 
         # Set full path as tooltip for long paths
@@ -144,6 +149,28 @@ class _PathRow(QtW.QWidget):
                 self.path_edit.setCursorPosition(len(path))
         else:
             self.path_edit.setToolTip("Full path will be shown in tooltip")
+    
+    def _validate_file_path(self, path):
+        """
+        Validate if a file path is valid for use in the workflow.
+        Returns True if valid, False otherwise.
+        """
+        if not path or not isinstance(path, str):
+            return False
+        
+        path = path.strip()
+        
+        # Check for relative paths that look like node paths (common issue)
+        if path.startswith('./sopnet/') or path.startswith('sopnet/'):
+            return False
+        
+        # Check if it's an absolute path
+        if not os.path.isabs(path):
+            return False
+        
+        # Check if file exists (optional - might be too strict for some workflows)
+        # For now, we'll just validate the path format
+        return True
 
 
 class _GroupWidget(QtW.QWidget):
@@ -675,64 +702,70 @@ class _AssetGroupsDialog(QtW.QDialog):
             if 'asset_scope' in template_data:
                 self.asset_scope_edit.setText(template_data['asset_scope'])
 
-            # Load groups
+            # Track invalid paths for user feedback
+            invalid_paths = []
+            total_paths = 0
+
+            # Load groups - process all groups uniformly at the same time
             if 'groups' in template_data and template_data['groups']:
-                # Update first group
-                first_group = self.group_widgets[0]
-                first_group_data = template_data['groups'][0]
-
-                # Set group name
-                if 'group_name' in first_group_data:
-                    first_group.name_edit.setText(first_group_data['group_name'])
-
-                # Set texture folder
-                if 'texture_folder' in first_group_data:
-                    first_group.materials_folder_edit.setText(first_group_data['texture_folder'])
-
-                # Set asset paths
-                if 'asset_paths' in first_group_data:
-                    paths = first_group_data['asset_paths']
-                    # Clear existing paths and add new ones
-                    while len(first_group.path_rows) > 0:
-                        first_group.remove_path_row(first_group.path_rows[-1])
-
-                    # Add all paths (create path rows as needed)
-                    for path in paths:
-                        first_group.add_path_row()
-                        first_group.path_rows[-1].set_path(path)
-
-                # Add remaining groups
-                for group_data in template_data['groups'][1:]:
+                # Ensure we have enough group widgets for all template groups
+                groups_needed = len(template_data['groups'])
+                groups_available = len(self.group_widgets)
+                
+                # Add additional group widgets if needed
+                while groups_available < groups_needed:
                     self.add_group_widget()
-                    new_group = self.group_widgets[-1]
-
+                    groups_available += 1
+                
+                # Process all groups simultaneously in a single loop
+                for i, group_data in enumerate(template_data['groups']):
+                    current_group = self.group_widgets[i]
+                    
                     # Set group name
                     if 'group_name' in group_data:
-                        new_group.name_edit.setText(group_data['group_name'])
+                        current_group.name_edit.setText(group_data['group_name'])
 
                     # Set texture folder
                     if 'texture_folder' in group_data:
-                        new_group.materials_folder_edit.setText(group_data['texture_folder'])
+                        current_group.materials_folder_edit.setText(group_data['texture_folder'])
 
-                    # Set asset paths
+                    # Set asset paths with validation
                     if 'asset_paths' in group_data:
                         paths = group_data['asset_paths']
+                        total_paths += len(paths)
                         # Clear existing paths and add new ones
-                        while len(new_group.path_rows) > 0:
-                            new_group.remove_path_row(new_group.path_rows[-1])
+                        while len(current_group.path_rows) > 0:
+                            current_group.remove_path_row(current_group.path_rows[-1])
 
-                        # Add all paths (create path rows as needed)
+                        # Add all valid paths (create path rows as needed)
                         for path in paths:
-                            new_group.add_path_row()
-                            new_group.path_rows[-1].set_path(path)
+                            if self._validate_template_path(path):
+                                current_group.add_path_row()
+                                current_group.path_rows[-1].set_path(path)
+                            else:
+                                invalid_paths.append(path)
 
             # Update OK button state
             self.update_ok_button()
 
+            # Prepare success message with validation results
+            success_message = f"Template loaded successfully from:\n{file_path}"
+            
+            if invalid_paths:
+                valid_paths = total_paths - len(invalid_paths)
+                success_message += f"\n\n⚠️  Path Validation Results:"
+                success_message += f"\n• Valid paths loaded: {valid_paths}"
+                success_message += f"\n• Invalid paths skipped: {len(invalid_paths)}"
+                success_message += f"\n\nSkipped paths (likely node paths instead of file paths):"
+                for invalid_path in invalid_paths[:5]:  # Show first 5 invalid paths
+                    success_message += f"\n• {invalid_path}"
+                if len(invalid_paths) > 5:
+                    success_message += f"\n• ... and {len(invalid_paths) - 5} more"
+
             QtW.QMessageBox.information(
                 self,
                 "Template Loaded",
-                f"Template loaded successfully from:\n{file_path}"
+                success_message
             )
 
         except Exception as e:
@@ -741,6 +774,28 @@ class _AssetGroupsDialog(QtW.QDialog):
                 "Load Error",
                 f"Failed to load template:\n{str(e)}"
             )
+    
+    def _validate_template_path(self, path):
+        """
+        Validate if a file path from template is valid for use in the workflow.
+        Returns True if valid, False otherwise.
+        """
+        if not path or not isinstance(path, str):
+            return False
+        
+        path = path.strip()
+        
+        # Check for relative paths that look like node paths (common issue)
+        if path.startswith('./sopnet/') or path.startswith('sopnet/'):
+            return False
+        
+        # Check if it's an absolute path
+        if not os.path.isabs(path):
+            return False
+        
+        # For template loading, we'll be more lenient and not check file existence
+        # since files might be moved or on different systems
+        return True
 
     def start_processing_mode(self, total_groups):
         """Switch dialog to processing mode."""
