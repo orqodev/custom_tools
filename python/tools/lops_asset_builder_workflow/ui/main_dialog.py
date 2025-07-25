@@ -130,6 +130,12 @@ class AssetGroupsDialog(QtW.QDialog):
         template_layout.addWidget(self.load_template_btn)
 
         template_layout.addStretch()
+        
+        # Instructions button positioned in top right
+        self.instructions_btn = QtW.QPushButton("Instructions")
+        self.instructions_btn.clicked.connect(self.show_instructions)
+        template_layout.addWidget(self.instructions_btn)
+        
         main_layout.addLayout(template_layout)
 
         # Progress section (initially hidden) - restored old style
@@ -468,6 +474,11 @@ class AssetGroupsDialog(QtW.QDialog):
         """Close the dialog after successful processing."""
         self._save_window_geometry()
         super(AssetGroupsDialog, self).accept()
+
+    def show_instructions(self):
+        """Show the instructions dialog."""
+        instructions_dialog = InstructionsDialog(self)
+        instructions_dialog.exec_()
 
     def save_template(self):
         """Save current form data as a template."""

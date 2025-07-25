@@ -793,82 +793,144 @@ class LopsAssetBuilderWorkflow:
             return None, None
 
     def _create_group_parameters(self, parent_node, node_name, asset_paths, switch_node, transform_node):
-        """Create group parameters for asset selection and transformation."""
+        """
+        Create parameters for multi-asset switch workflow.
+        Inspired by batch_import_workflow.py, this function adds UI controls
+        for switching between assets and controlling transforms.
+
+        Args:
+            parent_node (hou.Node): The parent node to add parameters to
+            node_name (str): Name of the asset group
+            asset_paths (list): List of asset file paths
+            switch_node (hou.Node): The switch node to control
+            transform_node (hou.Node): The transform node to control
+        """
         try:
-            # Create parameter template group
-            ptg = hou.ParmTemplateGroup()
+            ptg = parent_node.parmTemplateGroup()
 
-            # Asset selection parameter
-            if len(asset_paths) > 1:
-                asset_names = [os.path.basename(path) for path in asset_paths]
-                menu_items = []
-                for i, name in enumerate(asset_names):
-                    menu_items.extend([str(i), name])
+            # Add separator for multi-asset controls
+            separator = hou.SeparatorParmTemplate(f"{node_name}_multi_sep", f"{node_name} Multi-Asset Controls")
+            ptg.append(separator)
 
-                asset_menu = hou.MenuParmTemplate(
-                    f"{node_name}_asset",
-                    f"{node_name} Asset",
-                    menu_items,
-                    default_value=0
-                )
-                ptg.append(asset_menu)
+            # Add asset switch parameter
+            num_assets = len(asset_paths) if asset_paths else 1
+            switch_parm = hou.IntParmTemplate(
+                f"{node_name}_asset_switch",
+                f"Selected Asset Index",
+                1,
+                default_value=(0,),
+                min=0,
+                max=max(0, num_assets - 1),
+                help=f"Switch between {num_assets} imported assets"
+            )
+            ptg.append(switch_parm)
 
-            # Transform parameters
-            translate_parm = hou.FloatParmTemplate(
+            # Add transform controls folder
+            transform_folder = hou.FolderParmTemplate(
+                f"{node_name}_transform",
+                f"Asset Transform",
+                folder_type=hou.folderType.Tabs
+            )
+
+            # Translation vector parameter
+            translate = hou.FloatParmTemplate(
                 f"{node_name}_translate",
-                f"{node_name} Translate",
+                "Translate",
                 3,
                 default_value=(0, 0, 0)
             )
-            ptg.append(translate_parm)
 
-            rotate_parm = hou.FloatParmTemplate(
+            # Rotation vector parameter
+            rotate = hou.FloatParmTemplate(
                 f"{node_name}_rotate",
-                f"{node_name} Rotate",
+                "Rotate",
                 3,
                 default_value=(0, 0, 0)
             )
-            ptg.append(rotate_parm)
 
-            scale_parm = hou.FloatParmTemplate(
+            # Scale vector parameter
+            scale = hou.FloatParmTemplate(
                 f"{node_name}_scale",
-                f"{node_name} Scale",
+                "Scale",
                 3,
                 default_value=(1, 1, 1)
             )
-            ptg.append(scale_parm)
 
-            # Add parameters to parent node
+            transform_folder.addParmTemplate(translate)
+            transform_folder.addParmTemplate(rotate)
+            transform_folder.addParmTemplate(scale)
+            ptg.append(transform_folder)
+
+            # Add asset information folder
+            if asset_paths and len(asset_paths) > 1:
+                info_folder = hou.FolderParmTemplate(
+                    f"{node_name}_assets_info",
+                    f"Asset Files",
+                    folder_type=hou.folderType.Tabs
+                )
+
+                for i, asset_path in enumerate(asset_paths):
+                    asset_info = hou.StringParmTemplate(
+                        f"{node_name}_asset_file_{i}",
+                        f"Asset {i+1}",
+                        1,
+                        default_value=(asset_path,),
+                        string_type=hou.stringParmType.FileReference,
+                        file_type=hou.fileType.Geometry,
+                        help=f"Path to asset file {i+1}"
+                    )
+                    info_folder.addParmTemplate(asset_info)
+
+                ptg.append(info_folder)
+
+            # Apply parameters to parent node
             parent_node.setParmTemplateGroup(ptg)
+
+            # Link nodes to parameters
+            self._link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
 
         except Exception as e:
             self._log_message(f"Error creating group parameters: {str(e)}", hou.severityType.Error)
 
     def _link_group_nodes_to_parameters(self, parent_node, node_name, switch_node, transform_node):
-        """Link group nodes to the created parameters."""
+        """
+        Link switch and transform nodes to the UI parameters.
+
+        Args:
+            parent_node (hou.Node): The parent node with parameters (componentgeometry node)
+            node_name (str): Name of the asset group
+            switch_node (hou.Node): The switch node to control (inside sopnet/geo)
+            transform_node (hou.Node): The transform node to control (inside sopnet/geo)
+        """
         try:
-            # Link switch node to asset selection parameter
-            if parent_node.parm(f"{node_name}_asset"):
-                switch_node.parm("input").setExpression(f'ch("../{node_name}_asset")')
+            # Link switch node to parameter
+            # Switch node is at: /stage/componentgeometry/sopnet/geo/switch_node
+            # Parameters are at: /stage/componentgeometry/
+            # So we need to go up 3 levels: ../../../
+            if switch_node:
+                switch_node.parm("input").setExpression(f'ch("../../../{node_name}_asset_switch")')
 
-            # Link transform node to transform parameters
-            if parent_node.parm(f"{node_name}_translate1"):
-                transform_node.parm("tx").setExpression(f'ch("../{node_name}_translate1")')
-                transform_node.parm("ty").setExpression(f'ch("../{node_name}_translate2")')
-                transform_node.parm("tz").setExpression(f'ch("../{node_name}_translate3")')
+            # Link transform node using vector parameters
+            # Transform node is at: /stage/componentgeometry/sopnet/geo/transform_node
+            # Parameters are at: /stage/componentgeometry/
+            # So we need to go up 3 levels: ../../../
+            if transform_node:
+                transform_mappings = [
+                    ("t", f"{node_name}_translate"),
+                    ("r", f"{node_name}_rotate"),
+                    ("s", f"{node_name}_scale")
+                ]
 
-            if parent_node.parm(f"{node_name}_rotate1"):
-                transform_node.parm("rx").setExpression(f'ch("../{node_name}_rotate1")')
-                transform_node.parm("ry").setExpression(f'ch("../{node_name}_rotate2")')
-                transform_node.parm("rz").setExpression(f'ch("../{node_name}_rotate3")')
-
-            if parent_node.parm(f"{node_name}_scale1"):
-                transform_node.parm("sx").setExpression(f'ch("../{node_name}_scale1")')
-                transform_node.parm("sy").setExpression(f'ch("../{node_name}_scale2")')
-                transform_node.parm("sz").setExpression(f'ch("../{node_name}_scale3")')
+                for xform_base, parent_param in transform_mappings:
+                    # Link each component
+                    xform_components = ["x", "y", "z"]
+                    for i, component in enumerate(xform_components):
+                        xform_param = f"{xform_base}{component}"
+                        parent_param_name = f"{parent_param}{component}"
+                        transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
 
         except Exception as e:
-            self._log_message(f"Error linking group nodes to parameters: {str(e)}", hou.severityType.Error)
+            self._log_message(f"Error linking nodes to parameters: {str(e)}", hou.severityType.Error)
 
     def _create_materials(self, parent, folder_textures, material_lib, expected_names):
         """
