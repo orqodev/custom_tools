@@ -155,7 +155,7 @@ class AssetGroupsDialog(QtW.QDialog):
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(100)
         self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setTextVisible(False)
         self.progress_bar.setStyleSheet("QProgressBar { height: 14px; margin: 0px; }")
         progress_layout.addWidget(self.progress_bar)
 
