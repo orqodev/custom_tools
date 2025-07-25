@@ -250,6 +250,7 @@ class AssetGroupsDialog(QtW.QDialog):
         self._safe_ui_operation(lambda: self.groups_label.setVisible(True))
         self._safe_ui_operation(lambda: self.save_template_btn.setVisible(True))
         self._safe_ui_operation(lambda: self.load_template_btn.setVisible(True))
+        self._safe_ui_operation(lambda: self.instructions_btn.setVisible(True))
 
     def _on_group_processed(self, group_index: int, group_name: str):
         """Handle group processed signal."""
@@ -632,6 +633,7 @@ class AssetGroupsDialog(QtW.QDialog):
             self._safe_ui_operation(lambda: self.groups_label.setVisible(False))
             self._safe_ui_operation(lambda: self.save_template_btn.setVisible(False))
             self._safe_ui_operation(lambda: self.load_template_btn.setVisible(False))
+            self._safe_ui_operation(lambda: self.instructions_btn.setVisible(False))
             self._safe_ui_operation(lambda: self.instructions.setText("Building assets for your project..."))
 
             # Show progress elements - with Qt object validity checks
