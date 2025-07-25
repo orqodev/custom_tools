@@ -205,22 +205,10 @@ class LopsAssetBuilderWorkflow:
             print(f"✅ Stage context initialized in {step2_time:.2f}s")
             print(f"📍 Stage context: {self.stage_context.path() if self.stage_context else 'None'}")
 
-            # Step 3: Create node scope
-            print("\n🏷️ STEP 3: Creating Node Scope")
+            # Step 3: Process each asset group
+            print(f"\n⚙️ STEP 3: Processing Asset Groups ({len(self.ui_result)} groups)")
             print("-" * 40)
             step3_start = time.time()
-
-            print(f"🔍 Creating scope from asset scope: '{self.asset_scope}'")
-            scope_name = self._create_node_scope()
-
-            step3_time = time.time() - step3_start
-            print(f"✅ Node scope created in {step3_time:.2f}s")
-            print(f"🏷️ Scope name: '{scope_name}'")
-
-            # Step 4: Process each asset group
-            print(f"\n⚙️ STEP 4: Processing Asset Groups ({len(self.ui_result)} groups)")
-            print("-" * 40)
-            step4_start = time.time()
 
             # Switch dialog to processing mode (old style)
             if self._is_dialog_valid():
@@ -291,14 +279,14 @@ class LopsAssetBuilderWorkflow:
                     self._log_message(f"Error processing group {group_name}: {str(e)}", hou.severityType.Error)
                     continue
 
-            step4_time = time.time() - step4_start
-            print(f"\n✅ Asset group processing completed in {step4_time:.2f}s")
+            step3_time = time.time() - step3_start
+            print(f"\n✅ Asset group processing completed in {step3_time:.2f}s")
             print(f"📊 Successfully created {len(component_outputs)} component outputs")
 
-            # Step 5: Create final merge node if we have multiple components
-            print(f"\n🔗 STEP 5: Creating Final Merge Node")
+            # Step 4: Create final merge node if we have multiple components
+            print(f"\n🔗 STEP 4: Creating Final Merge Node")
             print("-" * 40)
-            step5_start = time.time()
+            step4_start = time.time()
 
             if len(component_outputs) > 1:
                 print(f"🔍 Multiple components ({len(component_outputs)}) - creating merge node...")
@@ -326,19 +314,31 @@ class LopsAssetBuilderWorkflow:
             else:
                 print(f"❌ No component outputs available for merge")
 
-            step5_time = time.time() - step5_start
-            print(f"✅ Merge step completed in {step5_time:.2f}s")
+            step4_time = time.time() - step4_start
+            print(f"✅ Merge step completed in {step4_time:.2f}s")
 
-            # Step 6: Layout all nodes
-            print(f"\n📐 STEP 6: Layout All Nodes")
+            # Step 5: Layout all nodes
+            print(f"\n📐 STEP 5: Layout All Nodes")
             print("-" * 40)
-            step6_start = time.time()
+            step5_start = time.time()
 
             print(f"🔍 Laying out nodes in network...")
             self._layout_all_nodes()
 
+            step5_time = time.time() - step5_start
+            print(f"✅ Node layout completed in {step5_time:.2f}s")
+
+            # Step 6: Create node scope
+            print(f"\n🏷️ STEP 6: Creating Node Scope")
+            print("-" * 40)
+            step6_start = time.time()
+
+            print(f"🔍 Creating scope from asset scope: '{self.asset_scope}'")
+            scope_name = self._create_node_scope()
+
             step6_time = time.time() - step6_start
-            print(f"✅ Node layout completed in {step6_time:.2f}s")
+            print(f"✅ Node scope created in {step6_time:.2f}s")
+            print(f"🏷️ Scope name: '{scope_name}'")
 
             # Step 7: Setup light rig pipeline
             print(f"\n💡 STEP 7: Setup Light Rig Pipeline")
@@ -406,75 +406,56 @@ class LopsAssetBuilderWorkflow:
             return False
 
     def _extract_material_names(self, asset_paths):
-        """Extract material names from asset file paths."""
-        print(f"         🎨 Starting material extraction from {len(asset_paths)} assets...")
-        material_names = []
+        """
+        Extract material names from geometry files by examining shop_materialpath
+        and material:binding primitive attributes.
 
-        try:
-            for i, asset_path in enumerate(asset_paths):
-                print(f"         📁 Processing asset {i+1}/{len(asset_paths)}: {os.path.basename(asset_path)}")
+        Args:
+            asset_paths (list): List of asset file paths to examine
 
-                if not os.path.exists(asset_path):
-                    print(f"         ⚠️ Asset file does not exist: {asset_path}")
-                    continue
+        Returns:
+            list: Sorted list of unique material names (basenames only)
+        """
+        material_names = set()
 
-                # Try to read the geometry file and extract material information
-                try:
-                    print(f"         🔍 Loading geometry to extract materials...")
-                    # Create a temporary SOP network to load the geometry
-                    temp_geo = hou.node("/obj").createNode("geo", "temp_material_extract")
-                    file_node = temp_geo.createNode("file")
-                    file_node.parm("file").set(asset_path)
+        for asset_path in asset_paths:
+            asset_path = asset_path.strip()
+            if not asset_path:
+                continue
 
-                    # Get the geometry
-                    geo = file_node.geometry()
+            try:
+                # Load geometry in memory
+                geo = hou.Geometry()
+                geo.loadFromFile(asset_path)
 
-                    if geo:
-                        print(f"         ✅ Geometry loaded - {geo.intrinsicValue('primitivecount')} primitives")
+                # Check for shop_materialpath primitive attribute
+                shop_attrib = geo.findPrimAttrib("shop_materialpath")
+                if shop_attrib:
+                    for prim in geo.prims():
+                        material_path = prim.stringAttribValue(shop_attrib)
+                        if material_path:
+                            # Extract basename from material path
+                            material_name = slugify(os.path.basename(material_path))
+                            if material_name:
+                                material_names.add(material_name)
 
-                        # Look for material attributes
-                        material_attrib = geo.findPrimAttrib("name")
-                        if not material_attrib:
-                            material_attrib = geo.findPrimAttrib("material")
+                # Check for material:binding primitive attribute
+                binding_attrib = geo.findPrimAttrib("material:binding")
+                if binding_attrib:
+                    for prim in geo.prims():
+                        material_path = prim.stringAttribValue(binding_attrib)
+                        if material_path:
+                            # Extract basename from material path
+                            material_name = os.path.basename(material_path)
+                            if material_name:
+                                material_names.add(material_name)
 
-                        if material_attrib:
-                            print(f"         🎯 Found material attribute: {material_attrib.name()}")
-                            # Get unique material names
-                            for prim in geo.prims():
-                                material_name = slugify(prim.attribValue(material_attrib))
-                                if material_name and material_name not in material_names:
-                                    # Clean up the material name
-                                    clean_name = os.path.basename(material_name)
-                                    if clean_name and clean_name not in material_names:
-                                        material_names.append(clean_name)
-                                        print(f"         ➕ Added material: {clean_name}")
-                        else:
-                            print(f"         ⚠️ No material attributes found in geometry")
-                    else:
-                        print(f"         ❌ Failed to load geometry from file")
+            except Exception as e:
+                # Skip unreadable files silently as per requirements
+                continue
+            print(f"Material names for {asset_path} are: {material_names}")
 
-                    # Clean up temporary node
-                    temp_geo.destroy()
-                    print(f"         🧹 Cleaned up temporary geometry node")
-
-                except Exception as e:
-                    print(f"         ❌ Material extraction failed for {asset_path}: {str(e)}")
-                    self._log_message(f"Could not extract materials from {asset_path}: {str(e)}", hou.severityType.Warning)
-                    continue
-
-        except Exception as e:
-            print(f"         💥 Critical error in material extraction: {str(e)}")
-            self._log_message(f"Error extracting material names: {str(e)}", hou.severityType.Warning)
-
-        # If no materials found, create a default one based on the group name
-        if not material_names and asset_paths:
-            group_name = os.path.basename(asset_paths[0]).split('.')[0]
-            default_material = f"material_{_sanitize(group_name)}"
-            material_names.append(default_material)
-            print(f"         🔧 No materials found - created default: {default_material}")
-
-        print(f"         ✅ Material extraction complete - found {len(material_names)} materials")
-        return material_names
+        return sorted(list(material_names))
 
     def _create_component_builder_for_group(self, asset_data):
         """Create a component builder for a single asset group."""
@@ -577,18 +558,8 @@ class LopsAssetBuilderWorkflow:
                 else:
                     print(f"      ⚠️ Texture folder does not exist: {texture_folder}")
 
-            # Create convex hull
-            print(f"      🔺 Creating convex hull...")
-            convex_start = time.time()
-            # Get the SOP context from the LOPS componentgeometry node (like backup file)
-            parent_sop = hou.node(parent.path() + "/sopnet/geo")
-            if parent_sop:
-                self._create_convex(parent_sop)
-                convex_time = time.time() - convex_start
-                print(f"      ✅ Convex hull created in {convex_time:.2f}s")
-            else:
-                convex_time = time.time() - convex_start
-                print(f"      ⚠️ Could not find SOP context for convex hull creation")
+            # Note: Convex hull creation moved to _prepare_imported_asset to avoid duplication
+            print(f"      ℹ️ Convex hull will be created during asset preparation phase")
 
             print(f"      🎉 Component builder completed successfully!")
             return out_node
@@ -670,7 +641,8 @@ class LopsAssetBuilderWorkflow:
         try:
             # Set the parent node where the nodes are going to be created
             parent_sop = hou.node(parent.path() + "/sopnet/geo")
-            # Get the output nodes - default, proxy and sim
+            
+            # Get the output nodes - default, proxy and sim (these already exist in componentgeometry)
             default_output = hou.node(f"{parent_sop.path()}/default")
             proxy_output = hou.node(f"{parent_sop.path()}/proxy")
             sim_output = hou.node(f"{parent_sop.path()}/simproxy")
@@ -748,6 +720,71 @@ class LopsAssetBuilderWorkflow:
             remove_points.setInput(0, attrib_delete)
             transform_node.setInput(0, remove_points)
             default_output.setInput(0, transform_node)
+
+            # Prepare Proxy Setup
+            poly_reduce = parent_sop.createNode("polyreduce::2.0", "reduce_to_5")
+            attrib_colour = parent_sop.createNode("attribwrangle", "set_color")
+            color_node = parent_sop.createNode("color", "unique_color")
+            attrib_promote = parent_sop.createNode("attribpromote", "promote_Cd")
+            attrib_delete_name = parent_sop.createNode("attribdelete", f"delete_asset_name")
+            name_node = parent_sop.createNode("name", "name")
+            # Set parms for proxy setup
+            poly_reduce.parm("percentage").set(5)
+
+            # Custom attribute node using the ParmTemplateGroup() for the attrib_color
+            attrib_colour.parm("class").set(1)
+
+            ptg = attrib_colour.parmTemplateGroup()
+
+            new_string = hou.StringParmTemplate(
+                name="asset_name",
+                label="Asset name",
+                num_components= 1,
+            )
+
+            ptg.insertAfter("class", new_string)
+
+            attrib_colour.setParmTemplateGroup(ptg)
+
+            # Need to grab the rootprim from the component output and paste relative reference
+            relative_path = attrib_colour.relativePathTo(out_node)
+            expression_parm = f'`chs("{relative_path}/rootprim")`'
+            attrib_colour.setParms({
+                "asset_name": expression_parm,
+                "snippet": 's@asset_name = chs("asset_name");',
+            })
+
+            color_node.setParms({
+                "class": 1,
+                "colortype": 4,
+                "rampattribute": "asset_name",
+            })
+
+            attrib_promote.setParms({
+                "inname": "Cd",
+                "inclass": 1,
+                "outclass": 0
+            })
+            attrib_delete_name.parm("primdel").set("asset_name")
+
+            name_node.parm("name1").set(expression_parm)
+            # Connect proxy nodes
+            poly_reduce.setInput(0, transform_node)
+            attrib_colour.setInput(0, poly_reduce)
+            color_node.setInput(0, attrib_colour)
+            attrib_promote.setInput(0, color_node)
+            attrib_delete_name.setInput(0, attrib_promote)
+            proxy_output.setInput(0, attrib_delete_name)
+
+            # Prepare the sim Setup
+            python_sop = self._create_convex(parent_sop)
+            # Connect sim nodes
+            python_sop.setInput(0, transform_node)
+            name_node.setInput(0, python_sop)
+            sim_output.setInput(0, name_node)
+
+            # Layout nodes
+            parent_sop.layoutChildren()
 
             return switch_node, transform_node
 
@@ -859,7 +896,6 @@ class LopsAssetBuilderWorkflow:
             if material_handler.folder_with_textures(folder_textures):
                 # Get the texture detail
                 texture_list = material_handler.get_texture_details(folder_textures)
-                print(texture_list)
                 if texture_list and isinstance(texture_list, dict):
                     # Common data
                     common_data = {
@@ -869,8 +905,6 @@ class LopsAssetBuilderWorkflow:
                     }
                     for material_name in texture_list:
                         # Skip materials not in expected_names list
-                        print(material_name)
-                        print(expected_names)
                         if material_name not in expected_names:
                             continue
 
@@ -917,6 +951,12 @@ class LopsAssetBuilderWorkflow:
     def _find_prims_by_attribute(self, stage: Usd.Stage, prim_type: Type[Usd.Typed]):
         """Find primitives by attribute type using backup file approach."""
         prims_name = set()
+        
+        # Handle case where stage is None (timing issue during workflow)
+        if stage is None:
+            print("⚠️ Warning: Stage is None in _find_prims_by_attribute, returning empty list")
+            return []
+        
         for prim in stage.Traverse():
             if prim.IsA(prim_type) and "render" in str(prim.GetPath()):
                 prims_name.add(prim.GetName())
@@ -1043,23 +1083,43 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
             self._log_message(f"Error initializing stage context: {str(e)}", hou.severityType.Error)
 
     def _create_node_scope(self):
-        """Create node scope for the workflow."""
+        """
+        Create node scope wrapper using the asset scope name from the UI.
+        Returns the scope name for use in other methods.
+        """
         try:
-            scope_name = _sanitize(self.asset_scope)
-            self._log_message(f"Created node scope: {scope_name}")
+            # Select the merge node if it exists
+            if self.merge_node:
+                self.merge_node.setSelected(True, clear_all_selected=True)
+
+            # Use the asset scope name from the UI (no popup needed)
+            scope_name = self.asset_scope or "ASSET"
+
+            # Insert a Scope prim (not Xform)
+            node_scope = self.stage_context.createNode("scope", f"{scope_name}_scope")
+            node_scope.parm("primpath").set(f"/{scope_name}")
+            node_scope.setInput(0, self.merge_node)          # merge → scope
+            node_scope.setGenericFlag(hou.nodeFlag.Display, True)
+            node_scope.setSelected(True, clear_all_selected=True)
+
             return scope_name
+
         except Exception as e:
-            self._log_message(f"Error creating node scope: {str(e)}", hou.severityType.Warning)
-            return "default_scope"
+            self._log_message(f"Error creating node scope: {str(e)}", hou.severityType.Error)
+            return "ASSET"  # Return default name on error
 
     def _setup_light_rig_pipeline(self, scope_name):
-        """Setup light rig pipeline for the workflow."""
-        try:
-            # Use the light rig pipeline setup
-            setup_light_rig_pipeline(scope_name)
-            self._log_message("Setup light rig pipeline")
-        except Exception as e:
-            self._log_message(f"Error setting up light rig pipeline: {str(e)}", hou.severityType.Warning)
+        """
+        Setup optional light rig pipeline with user prompt.
+        Creates light rig, camera, and Karma render setup if user chooses to.
+        Uses the external lops_light_rig_pipeline script.
+        """
+        # Call the external script function
+        setup_light_rig_pipeline(
+            stage_context=self.stage_context,
+            scope_name=scope_name,
+            auto_prompt=True
+        )
 
     def _show_final_summary(self):
         """Show final summary of the workflow."""

@@ -156,7 +156,7 @@ class GroupWidget(QtW.QWidget):
 
         self.paths_widget = QtW.QWidget()
         self.paths_layout = QtW.QVBoxLayout(self.paths_widget)
-        self.paths_layout.setContentsMargins(5, 5, 5, 5)
+        self.paths_layout.setContentsMargins(10, 5, 10, 5)
         self.paths_layout.setSpacing(PATH_LAYOUT_SPACING)
 
         # Add stretch at the end to push all path rows to the top
