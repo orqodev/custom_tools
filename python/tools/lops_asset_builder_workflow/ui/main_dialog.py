@@ -18,6 +18,7 @@ try:
     from ..utils.file_operations import FileDialogHelper
     from ..utils.validation import ValidationUtils, UIValidator
     from .components import GroupWidget, ValidationSummaryWidget, HoudiniOutputCapture
+    from .validation_dialog import ValidationErrorDialog
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from config.constants import (
@@ -29,6 +30,7 @@ except ImportError:
     from utils.file_operations import FileDialogHelper
     from utils.validation import ValidationUtils, UIValidator
     from .components import GroupWidget, ValidationSummaryWidget, HoudiniOutputCapture
+    from .validation_dialog import ValidationErrorDialog
 
 
 class AssetGroupsDialog(QtW.QDialog):
@@ -94,16 +96,16 @@ class AssetGroupsDialog(QtW.QDialog):
         scope_layout.addWidget(self.asset_scope_edit)
         main_layout.addLayout(scope_layout)
 
-        # Validation summary widget
-        self.validation_widget = ValidationSummaryWidget()
-        main_layout.addWidget(self.validation_widget)
+        # Validation summary widget - REMOVED: Validations now only appear in popup dialogs
+        # self.validation_widget = ValidationSummaryWidget()
+        # main_layout.addWidget(self.validation_widget)
 
         # Groups section
-        groups_label = QtW.QLabel("Asset Groups:")
-        font = groups_label.font()
+        self.groups_label = QtW.QLabel("Asset Groups:")
+        font = self.groups_label.font()
         font.setBold(True)
-        groups_label.setFont(font)
-        main_layout.addWidget(groups_label)
+        self.groups_label.setFont(font)
+        main_layout.addWidget(self.groups_label)
 
         # Scrollable area for groups
         self.scroll_area = QtW.QScrollArea()
@@ -126,13 +128,13 @@ class AssetGroupsDialog(QtW.QDialog):
         # Template buttons
         template_layout = QtW.QHBoxLayout()
 
-        save_template_btn = QtW.QPushButton("Save Template")
-        save_template_btn.clicked.connect(self.save_template)
-        template_layout.addWidget(save_template_btn)
+        self.save_template_btn = QtW.QPushButton("Save Template")
+        self.save_template_btn.clicked.connect(self.save_template)
+        template_layout.addWidget(self.save_template_btn)
 
-        load_template_btn = QtW.QPushButton("Load Template")
-        load_template_btn.clicked.connect(self.load_template)
-        template_layout.addWidget(load_template_btn)
+        self.load_template_btn = QtW.QPushButton("Load Template")
+        self.load_template_btn.clicked.connect(self.load_template)
+        template_layout.addWidget(self.load_template_btn)
 
         template_layout.addStretch()
         main_layout.addLayout(template_layout)
@@ -245,7 +247,10 @@ class AssetGroupsDialog(QtW.QDialog):
 
     def _on_processing_finished(self):
         """Handle processing finished signal."""
-        pass  # Additional processing finish logic can be added here
+        # Restore template buttons and groups label visibility after processing completes
+        self._safe_ui_operation(lambda: self.groups_label.setVisible(True))
+        self._safe_ui_operation(lambda: self.save_template_btn.setVisible(True))
+        self._safe_ui_operation(lambda: self.load_template_btn.setVisible(True))
 
     def _on_group_processed(self, group_index: int, group_name: str):
         """Handle group processed signal."""
@@ -346,46 +351,59 @@ class AssetGroupsDialog(QtW.QDialog):
         is_valid, errors = UIValidator.validate_dialog_input(asset_scope, groups_data)
         is_ready, readiness_errors = UIValidator.validate_processing_readiness(self.workflow_data)
 
-        # Update validation summary
-        validation_summary = ValidationUtils.get_validation_summary(self.workflow_data)
-        self.validation_widget.update_summary(validation_summary)
+        # Update validation summary - REMOVED: Validations now only appear in popup dialogs
+        # validation_summary = ValidationUtils.get_validation_summary(self.workflow_data)
+        # self.validation_widget.update_summary(validation_summary)
 
-        # Update button state
+        # Update button state - always enable button so users can click to see validation errors
         self.ready_for_processing = is_valid and is_ready
-        self.ok_btn.setEnabled(self.ready_for_processing)
+        self.ok_btn.setEnabled(True)  # Always enabled so users can click to see validation dialogs
 
-        # Update button text based on state
-        if self.ready_for_processing:
-            self.ok_btn.setText("Start Workflow")
-        elif is_valid:
-            self.ok_btn.setText("Fix Issues to Continue")
-        else:
-            self.ok_btn.setText("Fix Validation Errors")
+        # Update button text - always show "Start Workflow" as requested
+        self.ok_btn.setText("Start Workflow")
 
     def accept(self):
-        """Handle dialog acceptance."""
-        if not self.ready_for_processing:
-            QtW.QMessageBox.warning(
-                self,
-                "Validation Error",
-                "Please fix all validation errors before starting the workflow."
-            )
-            return
+        """Handle dialog acceptance - runs validation each time Start Workflow is clicked."""
+        # Always run fresh validation when Start Workflow button is clicked
+        # Update workflow data with current form state
+        asset_scope = self.asset_scope_edit.text().strip()
+        groups_data = []
 
-        # Collect final data
-        self.result_data = []
         for group_widget in self.group_widgets:
             group_data = group_widget.get_group_data()
             if group_data:
-                self.result_data.append(group_data)
+                groups_data.append(group_data)
 
-        if not self.result_data:
+        # Update workflow data
+        self.workflow_data.asset_scope = asset_scope
+        self.workflow_data.groups = []
+        for group_data in groups_data:
+            try:
+                from ..models.data_model import AssetGroup
+            except ImportError:
+                from models.data_model import AssetGroup
+            asset_group = AssetGroup.from_dict(group_data)
+            self.workflow_data.add_group(asset_group)
+
+        # Run comprehensive validation and show detailed errors if any exist
+        validation_summary = ValidationUtils.get_validation_summary(self.workflow_data)
+        has_errors = ValidationErrorDialog.show_validation_summary(self, validation_summary)
+        
+        if has_errors:
+            # Validation errors were shown in popup - don't proceed with workflow
+            return
+
+        # Additional check for empty data
+        if not groups_data:
             QtW.QMessageBox.warning(
                 self,
                 "No Data",
                 "No valid groups found. Please add at least one group with valid asset paths."
             )
             return
+
+        # Collect final data for workflow processing
+        self.result_data = groups_data
 
         # Save window geometry
         self._save_window_geometry()
@@ -394,23 +412,64 @@ class AssetGroupsDialog(QtW.QDialog):
         super(AssetGroupsDialog, self).accept()
 
     def reject(self):
-        """Handle dialog rejection."""
-        if self.processing_state.is_processing:
-            reply = QtW.QMessageBox.question(
-                self,
-                "Cancel Processing",
-                "Processing is in progress. Are you sure you want to cancel?",
-                QtW.QMessageBox.Yes | QtW.QMessageBox.No,
-                QtW.QMessageBox.No
-            )
+        """Handle dialog rejection with improved Qt object handling."""
+        try:
+            # Check if dialog is still valid before proceeding
+            if not self._is_dialog_valid():
+                print("[Dialog Closed] Cannot reject - dialog objects deleted")
+                return
+            
+            # Handle processing state safely
+            is_processing = False
+            try:
+                is_processing = self.processing_state.is_processing
+            except (AttributeError, RuntimeError):
+                # If processing_state is invalid, assume not processing
+                is_processing = False
+            
+            if is_processing:
+                # Use a simpler approach to avoid modal dialog hanging issues
+                try:
+                    reply = QtW.QMessageBox.question(
+                        self,
+                        "Cancel Processing",
+                        "Processing is in progress. Are you sure you want to cancel?",
+                        QtW.QMessageBox.Yes | QtW.QMessageBox.No,
+                        QtW.QMessageBox.No
+                    )
 
-            if reply == QtW.QMessageBox.Yes:
-                self.processing_state.reset()
-                self._save_window_geometry()
+                    if reply == QtW.QMessageBox.Yes:
+                        # Reset processing state safely
+                        try:
+                            self.processing_state.reset()
+                        except (AttributeError, RuntimeError):
+                            pass  # Ignore if processing_state is invalid
+                        
+                        # Save geometry safely
+                        self._safe_ui_operation(lambda: self._save_window_geometry())
+                        
+                        # Close dialog
+                        super(AssetGroupsDialog, self).reject()
+                except Exception as e:
+                    print(f"[Dialog Error] Error in cancel confirmation: {str(e)}")
+                    # Force close if confirmation dialog fails
+                    super(AssetGroupsDialog, self).reject()
+            else:
+                # Not processing, safe to close immediately
+                self._safe_ui_operation(lambda: self._save_window_geometry())
                 super(AssetGroupsDialog, self).reject()
-        else:
-            self._save_window_geometry()
-            super(AssetGroupsDialog, self).reject()
+                
+        except Exception as e:
+            print(f"[Dialog Error] Error in reject method: {str(e)}")
+            # Force close as last resort
+            try:
+                super(AssetGroupsDialog, self).reject()
+            except Exception:
+                # If even super().reject() fails, try to close the dialog
+                try:
+                    self.close()
+                except Exception:
+                    pass  # Give up gracefully
 
     def close_dialog(self):
         """Close the dialog after successful processing."""
@@ -515,19 +574,33 @@ class AssetGroupsDialog(QtW.QDialog):
             # Update validation
             self.update_ok_button()
 
-            # Show success message
-            if updated_groups != workflow_data.groups:
-                QtW.QMessageBox.information(
-                    self,
-                    "Template Loaded with Changes",
-                    f"Template loaded successfully from:\n{file_path}\n\n"
-                    f"Some missing files were resolved or skipped during loading."
-                )
+            # Check for validation errors after template loading and show detailed popup
+            validation_summary = ValidationUtils.get_validation_summary(self.workflow_data)
+            has_errors = ValidationErrorDialog.show_validation_summary(self, validation_summary)
+
+            # Show success message only if no validation errors were shown
+            if not has_errors:
+                if updated_groups != workflow_data.groups:
+                    QtW.QMessageBox.information(
+                        self,
+                        "Template Loaded with Changes",
+                        f"Template loaded successfully from:\n{file_path}\n\n"
+                        f"Some missing files were resolved or skipped during loading."
+                    )
+                else:
+                    QtW.QMessageBox.information(
+                        self,
+                        "Template Loaded",
+                        SUCCESS_MESSAGES["template_loaded"].format(path=file_path)
+                    )
             else:
+                # Show a brief success message even with validation errors
+                template_status = "with changes" if updated_groups != workflow_data.groups else "successfully"
                 QtW.QMessageBox.information(
                     self,
                     "Template Loaded",
-                    SUCCESS_MESSAGES["template_loaded"].format(path=file_path)
+                    f"Template loaded {template_status} from:\n{file_path}\n\n"
+                    f"Please resolve the validation errors shown above before proceeding."
                 )
 
         except Exception as e:
@@ -551,7 +624,10 @@ class AssetGroupsDialog(QtW.QDialog):
             self._safe_ui_operation(lambda: self.asset_scope_edit.setEnabled(False))
             self._safe_ui_operation(lambda: self.scroll_area.setVisible(False))
             self._safe_ui_operation(lambda: self.add_group_btn.setVisible(False))
-            self._safe_ui_operation(lambda: self.validation_widget.setVisible(False))
+            # self._safe_ui_operation(lambda: self.validation_widget.setVisible(False))  # REMOVED: validation widget no longer exists
+            self._safe_ui_operation(lambda: self.groups_label.setVisible(False))
+            self._safe_ui_operation(lambda: self.save_template_btn.setVisible(False))
+            self._safe_ui_operation(lambda: self.load_template_btn.setVisible(False))
             self._safe_ui_operation(lambda: self.instructions.setText("Building assets for your project..."))
 
             # Show progress elements - with Qt object validity checks
