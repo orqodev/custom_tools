@@ -1,6 +1,8 @@
-# LOPS Asset Builder Workflow
+# LOPS Asset Builder Workflow - Refactored Modular Version
 
 A step-by-step UI workflow for multiple LOPS asset importing that combines the functionality of `lops_asset_builder_v2` with the interactive workflow pattern from `batch_import_workflow`.
+
+**This tool has been refactored into a modular structure for better maintainability, extensibility, and code organization.**
 
 ## Features
 
@@ -10,33 +12,103 @@ A step-by-step UI workflow for multiple LOPS asset importing that combines the f
 - **Automatic Network Layout**: Basic automatic layout of nodes
 - **Final Merge Node**: All asset groups are connected to a final merge node for easy management
 - **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Modular Architecture**: Refactored into a clean, maintainable modular structure
+
+## Modular Structure
+
+The tool has been refactored into the following modular structure:
+
+```
+lops_asset_builder_workflow/
+├── __init__.py                     # Package initialization
+├── lops_asset_builder_workflow.py  # Main entry point (backward compatibility)
+├── main.py                         # Core workflow logic and entry points
+├── README.md                       # This documentation file
+├── models/
+│   ├── __init__.py
+│   ├── data_model.py              # Data structures and models
+│   └── settings_model.py          # Configuration management
+├── ui/
+│   ├── __init__.py
+│   ├── main_dialog.py             # Primary interface dialogs
+│   ├── settings_dialog.py         # Configuration UI (placeholder)
+│   └── components.py              # Reusable UI components
+├── utils/
+│   ├── __init__.py
+│   ├── file_operations.py         # File handling utilities
+│   └── validation.py              # Input validation functions
+└── config/
+    ├── __init__.py
+    └── constants.py               # Configuration constants
+```
+
+### Architecture Benefits
+
+- **Maintainability**: Clear separation of concerns makes the code easier to maintain
+- **Extensibility**: New features can be added without affecting existing functionality
+- **Testability**: Individual components can be tested independently
+- **Reusability**: UI components and utilities can be reused across the application
+- **Backward Compatibility**: Existing shelf tools and scripts continue to work unchanged
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (Backward Compatible)
 
 ```python
+# Original approach - still works
 from tools.lops_asset_builder_workflow import create_lops_asset_builder_workflow
 
 # Run the workflow
-stage_context = create_lops_asset_builder_workflow()
+success = create_lops_asset_builder_workflow()
 ```
 
-### Advanced Usage
+### Shelf Tool Usage (Backward Compatible)
 
 ```python
-from tools.lops_asset_builder_workflow import LopsAssetBuilderWorkflow
+# For shelf tools - original entry point
+from tools.lops_asset_builder_workflow import run
+run()
+```
+
+### New Modular Usage (Recommended)
+
+```python
+# New modular approach - recommended for new code
+from tools.lops_asset_builder_workflow.main import LopsAssetBuilderWorkflow
 
 # Create workflow instance
 workflow = LopsAssetBuilderWorkflow()
 
 # Run the workflow
-stage_context = workflow.create_workflow()
+success = workflow.create_workflow()
 
 # Access workflow data
-print(f"Created {len(workflow.asset_groups)} asset groups")
-for group in workflow.asset_groups:
-    print(f"Group: {group['name']} with {len(group['asset_paths'])} assets")
+if success and workflow.ui_result:
+    print(f"Created {len(workflow.ui_result)} asset groups")
+    for group in workflow.ui_result:
+        print(f"Group: {group['group_name']} with {len(group['asset_paths'])} assets")
+```
+
+### Advanced Modular Usage
+
+```python
+# Import specific components for advanced usage
+from tools.lops_asset_builder_workflow.main import LopsAssetBuilderWorkflow
+from tools.lops_asset_builder_workflow.models.data_model import WorkflowData
+from tools.lops_asset_builder_workflow.ui.main_dialog import AssetGroupsDialog
+
+# Create and configure workflow
+workflow = LopsAssetBuilderWorkflow()
+
+# Access individual components
+dialog = AssetGroupsDialog()
+if dialog.exec_() == dialog.Accepted:
+    workflow_data = dialog.get_workflow_data()
+    result_data = dialog.get_result_data()
+
+    # Process the data as needed
+    print(f"Asset scope: {workflow_data.asset_scope}")
+    print(f"Number of groups: {len(result_data)}")
 ```
 
 ## Workflow Steps
