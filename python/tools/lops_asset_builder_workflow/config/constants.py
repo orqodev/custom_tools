@@ -5,6 +5,7 @@ DEFAULT_DIALOG_WIDTH = 600
 DEFAULT_DIALOG_HEIGHT = 400
 PROCESSING_DIALOG_HEIGHT = 650
 MAX_SCROLL_AREA_HEIGHT = 1000
+GROUP_WIDGET_HEIGHT = 400  # Double height to measure what 2 GroupWidgets are
 
 # File Extensions
 GEOMETRY_FILE_EXTENSIONS = "Geometry Files (*.bgeo *.bgeo.sc *.abc *.obj *.fbx);;All Files (*)"

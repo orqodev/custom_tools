@@ -10,7 +10,8 @@ try:
     from ..config.constants import (
         WIDGET_MARGINS, WIDGET_SPACING, PATH_LAYOUT_SPACING,
         MINIMUM_PATH_EDIT_WIDTH, BROWSE_BUTTON_WIDTH, DELETE_BUTTON_WIDTH,
-        DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT
+        DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT,
+        GROUP_WIDGET_HEIGHT
     )
     from ..utils.file_operations import FileDialogHelper
     from ..models.data_model import AssetGroup, AssetPath
@@ -19,7 +20,8 @@ except ImportError:
     from config.constants import (
         WIDGET_MARGINS, WIDGET_SPACING, PATH_LAYOUT_SPACING,
         MINIMUM_PATH_EDIT_WIDTH, BROWSE_BUTTON_WIDTH, DELETE_BUTTON_WIDTH,
-        DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT
+        DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT,
+        GROUP_WIDGET_HEIGHT
     )
     from utils.file_operations import FileDialogHelper
     from models.data_model import AssetGroup, AssetPath
@@ -131,6 +133,9 @@ class GroupWidget(QtW.QWidget):
     def setup_ui(self):
         """Set up the UI components."""
         layout = QtW.QVBoxLayout(self)
+        
+        # Set double height for GroupWidget to measure what 2 GroupWidgets are
+        self.setMinimumHeight(GROUP_WIDGET_HEIGHT)
 
         # Group frame
         group_frame = QtW.QGroupBox("Assets Group")

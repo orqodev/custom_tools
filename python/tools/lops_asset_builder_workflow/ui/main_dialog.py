@@ -78,13 +78,6 @@ class AssetGroupsDialog(QtW.QDialog):
         # Main layout
         main_layout = QtW.QVBoxLayout(self)
 
-        # Instructions
-        self.instructions = QtW.QLabel(
-            "Configure asset groups for your LOPS workflow. Each group will be processed "
-            "as a separate component with its own materials and parameters."
-        )
-        self.instructions.setWordWrap(True)
-        main_layout.addWidget(self.instructions)
 
         # Asset scope
         scope_layout = QtW.QHBoxLayout()
@@ -733,6 +726,80 @@ class AssetGroupsDialog(QtW.QDialog):
         """Handle window close event."""
         self._save_window_geometry()
         super(AssetGroupsDialog, self).closeEvent(event)
+
+
+class InstructionsDialog(QtW.QDialog):
+    """Dialog to show tool usage instructions."""
+    
+    def __init__(self, parent=None):
+        super(InstructionsDialog, self).__init__(parent)
+        self.setWindowTitle("LOPS Asset Builder - Instructions")
+        self.setMinimumSize(600, 500)
+        self.setup_ui()
+    
+    def setup_ui(self):
+        """Set up the instructions dialog UI."""
+        layout = QtW.QVBoxLayout(self)
+        
+        # Title
+        title = QtW.QLabel("LOPS Asset Builder Workflow - Instructions")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
+        layout.addWidget(title)
+        
+        # Instructions text
+        instructions_text = QtW.QTextEdit()
+        instructions_text.setReadOnly(True)
+        instructions_text.setHtml("""
+        <h3>How to Use the LOPS Asset Builder Tool</h3>
+        
+        <h4>1. Asset Scope</h4>
+        <p>Enter the asset scope name that will be used for your LOPS workflow. This typically represents the main asset or scene you're working with.</p>
+        
+        <h4>2. Asset Groups</h4>
+        <p>Create one or more asset groups. Each group represents a collection of geometry files that will be processed together:</p>
+        <ul>
+            <li><b>Group Name:</b> Enter a descriptive name for the group (e.g., "buildings", "vegetation", "props")</li>
+            <li><b>Asset Paths:</b> Add geometry files (.bgeo, .abc, .obj, .fbx) using the "Add Files..." button or by typing paths manually</li>
+            <li><b>Materials Folder:</b> Select the folder containing materials for this group</li>
+        </ul>
+        
+        <h4>3. Managing Groups</h4>
+        <ul>
+            <li>Click <b>"Add Group"</b> to create additional asset groups</li>
+            <li>Click <b>"Remove Group"</b> to delete a group you no longer need</li>
+            <li>Use the <b>"Add Files..."</b> button to bulk-import multiple geometry files</li>
+        </ul>
+        
+        <h4>4. Templates</h4>
+        <ul>
+            <li><b>Save Template:</b> Save your current configuration for reuse</li>
+            <li><b>Load Template:</b> Load a previously saved configuration</li>
+        </ul>
+        
+        <h4>5. Processing</h4>
+        <p>Once you've configured your asset groups:</p>
+        <ul>
+            <li>Click <b>"Start Workflow"</b> to begin processing</li>
+            <li>Monitor progress in the workflow logs</li>
+            <li>Each group will be processed as a separate component with its own materials and parameters</li>
+        </ul>
+        
+        <h4>Tips</h4>
+        <ul>
+            <li>Organize similar assets into the same group for better workflow efficiency</li>
+            <li>Ensure all geometry files are accessible and materials folders contain the required files</li>
+            <li>Save templates for commonly used configurations to speed up future workflows</li>
+        </ul>
+        """)
+        layout.addWidget(instructions_text)
+        
+        # Close button
+        button_layout = QtW.QHBoxLayout()
+        button_layout.addStretch()
+        close_btn = QtW.QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        button_layout.addWidget(close_btn)
+        layout.addLayout(button_layout)
 
 
 class SettingsDialog(QtW.QDialog):
