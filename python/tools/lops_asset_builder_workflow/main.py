@@ -339,6 +339,52 @@ class LopsAssetBuilderWorkflow:
             print("-" * 40)
             step4_start = time.time()
 
+            # Create xform nodes after each component output for positioning control
+            print(f"🔧 Creating xform nodes after component outputs...")
+            xform_nodes = []
+            lops_context = hou.node("/stage")
+            
+            for i, output_node in enumerate(component_outputs):
+                if output_node and i < len(self.ui_result):
+                    group_name = self.ui_result[i].get('group_name', f'Group_{i+1}')
+                    xform_name = _sanitize(f"{group_name}_TRANSFORM")
+                    
+                    # Create xform node after component output
+                    xform_node = lops_context.createNode("xform", xform_name)
+                    xform_node.setInput(0, output_node)
+                    xform_nodes.append(xform_node)
+                    
+                    print(f"   ✅ Created xform: {xform_node.path()} for group: {group_name}")
+                    
+                    # Link xform node to the existing transform parameters on the component geometry
+                    comp_geo_node = None
+                    # Find the component geometry node for this group
+                    for node in lops_context.children():
+                        if node.type().name() == "componentgeometry" and _sanitize(group_name) in node.name():
+                            comp_geo_node = node
+                            break
+                    
+                    if comp_geo_node:
+                        # Link xform parameters to component geometry parameters
+                        node_name = _sanitize(group_name)
+                        transform_mappings = [
+                            ("t", f"{node_name}_translate"),
+                            ("r", f"{node_name}_rotate"), 
+                            ("s", f"{node_name}_scale")
+                        ]
+                        
+                        for xform_base, parent_param in transform_mappings:
+                            xform_components = ["x", "y", "z"]
+                            for j, component in enumerate(xform_components):
+                                xform_param = f"{xform_base}{component}"
+                                parent_param_name = f"{parent_param}{component}"
+                                relative_path = xform_node.relativePathTo(comp_geo_node)
+                                xform_node.parm(xform_param).setExpression(f'ch("{relative_path}/{parent_param_name}")')
+                        
+                        print(f"   🔗 Linked xform parameters to: {comp_geo_node.path()}")
+                else:
+                    xform_nodes.append(None)
+
             if len(component_outputs) > 1:
                 print(f"🔍 Multiple components ({len(component_outputs)}) - creating merge node...")
                 self._log_message("Creating final merge node...")
@@ -347,21 +393,22 @@ class LopsAssetBuilderWorkflow:
                 if self.merge_node:
                     print(f"✅ Merge node created: {self.merge_node.path()}")
 
-                    # Connect all component outputs to the merge node
-                    print(f"🔌 Connecting {len(component_outputs)} components to merge node...")
-                    for i, output_node in enumerate(component_outputs):
-                        if output_node:
-                            print(f"   Connecting input {i}: {output_node.path()}")
-                            self.merge_node.setInput(i, output_node)
+                    # Connect xform nodes (not component outputs) to the merge node
+                    print(f"🔌 Connecting {len(xform_nodes)} xform nodes to merge node...")
+                    for i, xform_node in enumerate(xform_nodes):
+                        if xform_node:
+                            print(f"   Connecting input {i}: {xform_node.path()}")
+                            self.merge_node.setInput(i, xform_node)
                         else:
-                            print(f"   ⚠️ Skipping null output at index {i}")
+                            print(f"   ⚠️ Skipping null xform at index {i}")
                     print(f"✅ All connections completed")
                 else:
                     print(f"❌ Failed to create merge node")
 
             elif len(component_outputs) == 1:
-                self.merge_node = component_outputs[0]
-                print(f"📍 Single component - using as final output: {self.merge_node.path()}")
+                # Use the xform node as final output instead of component output
+                self.merge_node = xform_nodes[0] if xform_nodes and xform_nodes[0] else component_outputs[0]
+                print(f"📍 Single component - using xform as final output: {self.merge_node.path()}")
             else:
                 print(f"❌ No component outputs available for merge")
 
@@ -563,14 +610,14 @@ class LopsAssetBuilderWorkflow:
             )
             asset_time = time.time() - asset_start
 
-            if not switch_node or not transform_node:
+            if not switch_node:
                 print(f"      ❌ Failed to prepare assets")
                 self._log_message(f"Failed to prepare assets for group: {group_name}", hou.severityType.Error)
                 return None
 
             print(f"      ✅ Assets prepared in {asset_time:.2f}s")
             print(f"         Switch: {switch_node.path() if switch_node else 'None'}")
-            print(f"         Transform: {transform_node.path() if transform_node else 'None'}")
+            print(f"         Transform: Moved to LOPS level (after component output)")
 
             # Create group parameters
             print(f"      ⚙️ Creating group parameters...")
@@ -741,9 +788,6 @@ class LopsAssetBuilderWorkflow:
             attrib_delete = parent_sop.createNode("attribdelete", "keep_P_N_UV_NAME")
             remove_points = parent_sop.createNode("add", f"remove_points")
 
-            # Create transform node for external control (after remove_points)
-            transform_node = parent_sop.createNode("xform", _sanitize(f"transform_{node_name}"))
-
             match_size.setParms({
                 "justify_x": 2,
                 "justify_y": 1,
@@ -764,13 +808,12 @@ class LopsAssetBuilderWorkflow:
 
             remove_points.parm("remove").set(True)
 
-            # Connect main nodes - transform node now comes after remove_points
+            # Connect main nodes - removed transform node from inside component geometry
             match_size.setInput(0, switch_node)
             attrib_wrangler.setInput(0, match_size)
             attrib_delete.setInput(0, attrib_wrangler)
             remove_points.setInput(0, attrib_delete)
-            transform_node.setInput(0, remove_points)
-            default_output.setInput(0, transform_node)
+            default_output.setInput(0, remove_points)
 
             # Prepare Proxy Setup
             poly_reduce = parent_sop.createNode("polyreduce::2.0", "reduce_to_5")
@@ -819,8 +862,8 @@ class LopsAssetBuilderWorkflow:
             attrib_delete_name.parm("primdel").set("asset_name")
 
             name_node.parm("name1").set(expression_parm)
-            # Connect proxy nodes
-            poly_reduce.setInput(0, transform_node)
+            # Connect proxy nodes - connect directly to remove_points since transform is moved to LOPS level
+            poly_reduce.setInput(0, remove_points)
             attrib_colour.setInput(0, poly_reduce)
             color_node.setInput(0, attrib_colour)
             attrib_promote.setInput(0, color_node)
@@ -829,15 +872,15 @@ class LopsAssetBuilderWorkflow:
 
             # Prepare the sim Setup
             python_sop = self._create_convex(parent_sop)
-            # Connect sim nodes
-            python_sop.setInput(0, transform_node)
+            # Connect sim nodes - connect directly to remove_points since transform is moved to LOPS level
+            python_sop.setInput(0, remove_points)
             name_node.setInput(0, python_sop)
             sim_output.setInput(0, name_node)
 
             # Layout nodes
             parent_sop.layoutChildren()
 
-            return switch_node, transform_node
+            return switch_node, None  # transform_node removed - now handled at LOPS level
 
         except Exception as e:
             self._log_message(f"Error preparing imported asset: {str(e)}", hou.severityType.Error)
