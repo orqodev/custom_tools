@@ -6,6 +6,19 @@ import os
 from typing import List, Optional
 from PySide2 import QtCore, QtGui, QtWidgets as QtW
 
+# Import qt_material for proper Material Design support
+try:
+    from qt_material import QtStyleTools
+    QT_STYLE_TOOLS_AVAILABLE = True
+except ImportError:
+    # Create a dummy QtStyleTools class if qt_material is not available
+    class QtStyleTools:
+        def set_extra(self, extra):
+            pass
+        def apply_stylesheet(self, parent, theme, invert_secondary=False, extra={}, callable_=None):
+            pass
+    QT_STYLE_TOOLS_AVAILABLE = False
+
 # Handle both relative and absolute imports for flexibility
 try:
     # Try relative imports first (when imported as part of package)
@@ -19,6 +32,7 @@ try:
     from ..utils.validation import ValidationUtils, UIValidator
     from .components import GroupWidget, ValidationSummaryWidget, HoudiniOutputCapture
     from .validation_dialog import ValidationErrorDialog
+    from .houdini_theme import HoudiniTheme
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from config.constants import (
@@ -31,9 +45,10 @@ except ImportError:
     from utils.validation import ValidationUtils, UIValidator
     from .components import GroupWidget, ValidationSummaryWidget, HoudiniOutputCapture
     from .validation_dialog import ValidationErrorDialog
+    from houdini_theme import HoudiniTheme
 
 
-class AssetGroupsDialog(QtW.QDialog):
+class AssetGroupsDialog(QtW.QDialog, QtStyleTools):
     """Main dialog for configuring asset groups and managing the workflow."""
 
     # Define custom signals for better communication
@@ -44,6 +59,24 @@ class AssetGroupsDialog(QtW.QDialog):
 
     def __init__(self, parent=None):
         super(AssetGroupsDialog, self).__init__(parent)
+        
+        # Initialize Material Design extra parameters
+        if QT_STYLE_TOOLS_AVAILABLE:
+            self.material_extra = {
+                # Status colors matching our theme
+                'danger': '#ff4444',      # Error red
+                'warning': '#ff8800',     # Warning orange  
+                'success': '#4CAF50',     # Success green
+                # Typography
+                'font_family': 'Roboto, Arial, sans-serif',
+                'font_size': '12',
+                'line_height': '20',
+                # Material Design density scale
+                'density_scale': '0',     # Standard density
+                # Button shape
+                'button_shape': 'default',
+            }
+            self.set_extra(self.material_extra)
 
         # Initialize managers
         self.settings_manager = SettingsManager()
@@ -74,6 +107,9 @@ class AssetGroupsDialog(QtW.QDialog):
         """Set up the user interface."""
         self.setWindowTitle("LOPS Asset Builder - Asset Groups")
         self.setMinimumSize(DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT)
+        
+        # Apply Houdini theme to dialog
+        HoudiniTheme.apply_theme_to_widget(self, "dialog")
 
         # Main layout
         main_layout = QtW.QVBoxLayout(self)
@@ -81,11 +117,12 @@ class AssetGroupsDialog(QtW.QDialog):
 
         # Asset scope
         scope_layout = QtW.QHBoxLayout()
-        scope_layout.addWidget(QtW.QLabel("Asset Scope:"))
+        scope_layout.addWidget(HoudiniTheme.create_themed_label("Asset Scope:"))
         self.asset_scope_edit = QtW.QLineEdit()
         self.asset_scope_edit.setText(DEFAULT_ASSET_SCOPE)
         self.asset_scope_edit.setPlaceholderText("Enter asset scope name...")
         self.asset_scope_edit.textChanged.connect(self.update_ok_button)
+        HoudiniTheme.apply_theme_to_widget(self.asset_scope_edit, "input")
         scope_layout.addWidget(self.asset_scope_edit)
         main_layout.addLayout(scope_layout)
 
@@ -94,10 +131,7 @@ class AssetGroupsDialog(QtW.QDialog):
         # main_layout.addWidget(self.validation_widget)
 
         # Groups section
-        self.groups_label = QtW.QLabel("Asset Groups:")
-        font = self.groups_label.font()
-        font.setBold(True)
-        self.groups_label.setFont(font)
+        self.groups_label = HoudiniTheme.create_themed_label("Asset Groups:", "subheader")
         main_layout.addWidget(self.groups_label)
 
         # Scrollable area for groups
@@ -114,25 +148,25 @@ class AssetGroupsDialog(QtW.QDialog):
         main_layout.addWidget(self.scroll_area)
 
         # Add Group button
-        self.add_group_btn = QtW.QPushButton("Add Group")
+        self.add_group_btn = HoudiniTheme.create_themed_button("Add Group", "primary")
         self.add_group_btn.clicked.connect(self.add_group_widget)
         main_layout.addWidget(self.add_group_btn)
 
         # Template buttons
         template_layout = QtW.QHBoxLayout()
 
-        self.save_template_btn = QtW.QPushButton("Save Template")
+        self.save_template_btn = HoudiniTheme.create_themed_button("Save Template", "secondary")
         self.save_template_btn.clicked.connect(self.save_template)
         template_layout.addWidget(self.save_template_btn)
 
-        self.load_template_btn = QtW.QPushButton("Load Template")
+        self.load_template_btn = HoudiniTheme.create_themed_button("Load Template", "secondary")
         self.load_template_btn.clicked.connect(self.load_template)
         template_layout.addWidget(self.load_template_btn)
 
         template_layout.addStretch()
         
         # Instructions button positioned in top right
-        self.instructions_btn = QtW.QPushButton("Instructions")
+        self.instructions_btn = HoudiniTheme.create_themed_button("Instructions", "secondary")
         self.instructions_btn.clicked.connect(self.show_instructions)
         template_layout.addWidget(self.instructions_btn)
         
@@ -146,8 +180,7 @@ class AssetGroupsDialog(QtW.QDialog):
         progress_layout.setContentsMargins(5, 10, 5, 10)
 
         # Progress title
-        self.progress_title = QtW.QLabel("Asset Builder Workflow")
-        self.progress_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2e7d32; margin: 0px;")
+        self.progress_title = HoudiniTheme.create_themed_label("Asset Builder Workflow", "header")
         progress_layout.addWidget(self.progress_title)
 
         # Progress bar
@@ -156,36 +189,30 @@ class AssetGroupsDialog(QtW.QDialog):
         self.progress_bar.setMaximum(100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
-        self.progress_bar.setStyleSheet("QProgressBar { height: 14px; margin: 0px; }")
+        HoudiniTheme.apply_theme_to_widget(self.progress_bar, "progress")
+        # Apply additional progress bar styling using theme constants
+        self.progress_bar.setStyleSheet(self.progress_bar.styleSheet() + f" QProgressBar {{ height: {HoudiniTheme.LAYOUT['progress_bar_height_small']}; margin: {HoudiniTheme.LAYOUT['margin_zero']}; }}")
         progress_layout.addWidget(self.progress_bar)
 
         # Current group label
-        self.current_group_label = QtW.QLabel("Initializing workflow...")
-        self.current_group_label.setStyleSheet("font-size: 14px; margin: 0px;")
+        self.current_group_label = HoudiniTheme.create_themed_label("Initializing workflow...", "subheader")
         progress_layout.addWidget(self.current_group_label)
 
         # Add a separator line before logs
         separator = QtW.QFrame()
         separator.setFrameShape(QtW.QFrame.HLine)
         separator.setFrameShadow(QtW.QFrame.Sunken)
-        separator.setStyleSheet("color: #cccccc; margin: 0px; max-height: 1px;")
+        separator.setStyleSheet(HoudiniTheme.get_separator_style(dark=True))
         progress_layout.addWidget(separator)
 
         # Log display area
-        log_label = QtW.QLabel("Workflow Logs")
-        log_label.setStyleSheet("font-size: 14px; font-weight: bold; margin: 0px;")
+        log_label = HoudiniTheme.create_themed_label("Workflow Logs", "subheader")
         progress_layout.addWidget(log_label)
 
         self.log_display = QtW.QTextEdit()
         self.log_display.setReadOnly(True)
         self.log_display.setFont(QtGui.QFont("Consolas", 9))
-        self.log_display.setStyleSheet("""
-            QTextEdit {
-                background-color: #2b2b2b;
-                color: #ffffff;
-                border: 1px solid #555555;
-            }
-        """)
+        HoudiniTheme.apply_theme_to_widget(self.log_display, "log")
         self.log_display.setMinimumHeight(400)
         self.log_display.setMaximumHeight(600)
         self.log_display.setPlaceholderText("Processing logs will appear here...")
@@ -195,18 +222,24 @@ class AssetGroupsDialog(QtW.QDialog):
 
         # Dialog buttons
         button_layout = QtW.QHBoxLayout()
+        
+        # Add stretch to push buttons to the right (like CSS float: right)
+        button_layout.addStretch()
 
-        self.ok_btn = QtW.QPushButton("Start Workflow")
+        self.ok_btn = HoudiniTheme.create_themed_button("Start Workflow", "primary")
         self.ok_btn.setEnabled(False)
+        self.ok_btn.setFixedWidth(120)  # Reduced width for compact button
         self.ok_btn.clicked.connect(self.accept)
         button_layout.addWidget(self.ok_btn)
 
-        self.cancel_btn = QtW.QPushButton("Cancel")
+        self.cancel_btn = HoudiniTheme.create_themed_button("Cancel", "secondary")
+        self.cancel_btn.setFixedWidth(80)  # Reduced width for compact button
         self.cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(self.cancel_btn)
 
-        self.close_btn = QtW.QPushButton("Close")
+        self.close_btn = HoudiniTheme.create_themed_button("Close", "primary")
         self.close_btn.setVisible(False)
+        self.close_btn.setFixedWidth(80)  # Reduced width for compact button
         self.close_btn.clicked.connect(self.close_dialog)
         button_layout.addWidget(self.close_btn)
 
@@ -579,33 +612,20 @@ class AssetGroupsDialog(QtW.QDialog):
             # Update validation
             self.update_ok_button()
 
-            # Check for validation errors after template loading and show detailed popup
-            validation_summary = ValidationUtils.get_validation_summary(self.workflow_data)
-            has_errors = ValidationErrorDialog.show_validation_summary(self, validation_summary)
-
-            # Show success message only if no validation errors were shown
-            if not has_errors:
-                if updated_groups != workflow_data.groups:
-                    QtW.QMessageBox.information(
-                        self,
-                        "Template Loaded with Changes",
-                        f"Template loaded successfully from:\n{file_path}\n\n"
-                        f"Some missing files were resolved or skipped during loading."
-                    )
-                else:
-                    QtW.QMessageBox.information(
-                        self,
-                        "Template Loaded",
-                        SUCCESS_MESSAGES["template_loaded"].format(path=file_path)
-                    )
+            # Show success message - no validation popup for template loading
+            # Validation will be handled when user clicks "Start Workflow"
+            if updated_groups != workflow_data.groups:
+                QtW.QMessageBox.information(
+                    self,
+                    "Template Loaded with Changes",
+                    f"Template loaded successfully from:\n{file_path}\n\n"
+                    f"Some missing files were resolved or skipped during loading."
+                )
             else:
-                # Show a brief success message even with validation errors
-                template_status = "with changes" if updated_groups != workflow_data.groups else "successfully"
                 QtW.QMessageBox.information(
                     self,
                     "Template Loaded",
-                    f"Template loaded {template_status} from:\n{file_path}\n\n"
-                    f"Please resolve the validation errors shown above before proceeding."
+                    SUCCESS_MESSAGES["template_loaded"].format(path=file_path)
                 )
 
         except Exception as e:
@@ -752,11 +772,13 @@ class InstructionsDialog(QtW.QDialog):
     
     def setup_ui(self):
         """Set up the instructions dialog UI."""
+        # Apply Houdini theme to dialog
+        HoudiniTheme.apply_theme_to_widget(self, "dialog")
+        
         layout = QtW.QVBoxLayout(self)
         
         # Title
-        title = QtW.QLabel("LOPS Asset Builder Workflow - Instructions")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
+        title = HoudiniTheme.create_themed_label("LOPS Asset Builder Workflow - Instructions", "header")
         layout.addWidget(title)
         
         # Instructions text
@@ -810,6 +832,12 @@ class InstructionsDialog(QtW.QDialog):
         button_layout = QtW.QHBoxLayout()
         button_layout.addStretch()
         close_btn = QtW.QPushButton("Close")
+        try:
+            from ..config.constants import MATERIAL_BUTTON_STYLE
+            close_btn.setStyleSheet(MATERIAL_BUTTON_STYLE)
+        except ImportError:
+            from config.constants import MATERIAL_BUTTON_STYLE
+            close_btn.setStyleSheet(MATERIAL_BUTTON_STYLE)
         close_btn.clicked.connect(self.accept)
         button_layout.addWidget(close_btn)
         layout.addLayout(button_layout)
@@ -828,6 +856,9 @@ class SettingsDialog(QtW.QDialog):
         """Set up the user interface."""
         self.setWindowTitle("LOPS Asset Builder - Settings")
         self.setMinimumSize(400, 300)
+        
+        # Apply Houdini theme to dialog
+        HoudiniTheme.apply_theme_to_widget(self, "dialog")
 
         layout = QtW.QVBoxLayout(self)
 
@@ -850,6 +881,12 @@ class SettingsDialog(QtW.QDialog):
 
         # Clear recent button
         clear_recent_btn = QtW.QPushButton("Clear Recent Templates")
+        try:
+            from ..config.constants import SECONDARY_BUTTON_STYLE
+            clear_recent_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        except ImportError:
+            from config.constants import SECONDARY_BUTTON_STYLE
+            clear_recent_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
         clear_recent_btn.clicked.connect(self.clear_recent_templates)
         layout.addWidget(clear_recent_btn)
 
@@ -857,10 +894,22 @@ class SettingsDialog(QtW.QDialog):
         button_layout = QtW.QHBoxLayout()
 
         ok_btn = QtW.QPushButton("OK")
+        try:
+            from ..config.constants import MATERIAL_BUTTON_STYLE
+            ok_btn.setStyleSheet(MATERIAL_BUTTON_STYLE)
+        except ImportError:
+            from config.constants import MATERIAL_BUTTON_STYLE
+            ok_btn.setStyleSheet(MATERIAL_BUTTON_STYLE)
         ok_btn.clicked.connect(self.accept)
         button_layout.addWidget(ok_btn)
 
         cancel_btn = QtW.QPushButton("Cancel")
+        try:
+            from ..config.constants import SECONDARY_BUTTON_STYLE
+            cancel_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        except ImportError:
+            from config.constants import SECONDARY_BUTTON_STYLE
+            cancel_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
 

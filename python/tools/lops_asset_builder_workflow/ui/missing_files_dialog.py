@@ -9,10 +9,12 @@ try:
     # Try relative imports first (when imported as part of package)
     from ..utils.file_operations import FileDialogHelper
     from ..models.data_model import AssetGroup, AssetPath
+    from .houdini_theme import HoudiniTheme
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from tools.lops_asset_builder_workflow.utils.file_operations import FileDialogHelper
     from tools.lops_asset_builder_workflow.models.data_model import AssetGroup, AssetPath
+    from houdini_theme import HoudiniTheme
 
 
 class MissingFileItem(QtW.QWidget):
@@ -37,7 +39,7 @@ class MissingFileItem(QtW.QWidget):
         
         # Group name label
         group_label = QtW.QLabel(f"[{self.group_name}]")
-        group_label.setStyleSheet("font-weight: bold; color: #2c3e50;")
+        group_label.setStyleSheet(HoudiniTheme.get_status_style("secondary"))
         group_label.setMinimumWidth(100)
         layout.addWidget(group_label)
         
@@ -48,34 +50,66 @@ class MissingFileItem(QtW.QWidget):
             file_dir = "..." + file_dir[-47:]
         
         self.path_label = QtW.QLabel(f"{file_dir}/{file_name}")
-        self.path_label.setStyleSheet("color: #7f8c8d;")
+        self.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['text_secondary']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
         self.path_label.setWordWrap(True)
         layout.addWidget(self.path_label, 1)
         
         # Status label
         self.status_label = QtW.QLabel("Missing")
-        self.status_label.setStyleSheet("color: #e74c3c; font-weight: bold;")
+        self.status_label.setStyleSheet(HoudiniTheme.get_status_style("error"))
         self.status_label.setMinimumWidth(80)
         layout.addWidget(self.status_label)
         
         # Browse button
         self.browse_btn = QtW.QPushButton("Browse...")
         self.browse_btn.setMaximumWidth(80)
+        HoudiniTheme.apply_theme_to_widget(self.browse_btn, "primary_button")
         self.browse_btn.clicked.connect(self.browse_for_file)
         layout.addWidget(self.browse_btn)
         
         # Skip button
         self.skip_btn = QtW.QPushButton("Skip")
         self.skip_btn.setMaximumWidth(60)
+        HoudiniTheme.apply_theme_to_widget(self.skip_btn, "secondary_button")
         self.skip_btn.clicked.connect(self.skip_file)
         layout.addWidget(self.skip_btn)
     
     def browse_for_file(self):
         """Open file dialog to browse for the missing file."""
+        # Try to find a better default directory by looking at the parent dialog's context
+        default_dir = None
+        
+        # First, try the directory of the original path if it exists
+        original_dir = os.path.dirname(self.original_path)
+        if original_dir and os.path.exists(original_dir):
+            default_dir = original_dir
+        else:
+            # Try to find a common base path from other resolved files
+            parent_dialog = self.parent()
+            if hasattr(parent_dialog, 'file_resolutions') and parent_dialog.file_resolutions:
+                # Get directories from resolved files
+                resolved_dirs = [os.path.dirname(path) for path in parent_dialog.file_resolutions.values()]
+                if resolved_dirs:
+                    # Use the most common directory or the first one
+                    from collections import Counter
+                    most_common_dir = Counter(resolved_dirs).most_common(1)[0][0]
+                    if os.path.exists(most_common_dir):
+                        default_dir = most_common_dir
+            
+            # If still no good directory, try parent directories of the original path
+            if not default_dir:
+                current_dir = original_dir
+                while current_dir and current_dir != os.path.dirname(current_dir):
+                    parent_dir = os.path.dirname(current_dir)
+                    if os.path.exists(parent_dir):
+                        default_dir = parent_dir
+                        break
+                    current_dir = parent_dir
+        
         file_path = FileDialogHelper.get_geometry_file(
             parent=self,
             title=f"Locate missing file: {os.path.basename(self.original_path)}",
-            default_dir=os.path.dirname(self.original_path) if os.path.dirname(self.original_path) else None
+            default_dir=default_dir
         )
         
         if file_path:
@@ -84,9 +118,9 @@ class MissingFileItem(QtW.QWidget):
             
             # Update UI
             self.path_label.setText(f"→ {file_path}")
-            self.path_label.setStyleSheet("color: #27ae60;")
+            self.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['success']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
             self.status_label.setText("Resolved")
-            self.status_label.setStyleSheet("color: #27ae60; font-weight: bold;")
+            self.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
             self.browse_btn.setText("Change...")
             
             # Emit signal
@@ -98,9 +132,9 @@ class MissingFileItem(QtW.QWidget):
         self.resolved_path = None
         
         # Update UI
-        self.path_label.setStyleSheet("color: #95a5a6; text-decoration: line-through;")
+        self.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['text_muted']}; text-decoration: line-through;")
         self.status_label.setText("Skipped")
-        self.status_label.setStyleSheet("color: #95a5a6; font-weight: bold;")
+        self.status_label.setStyleSheet(HoudiniTheme.get_status_style("muted"))
         self.browse_btn.setEnabled(False)
         self.skip_btn.setText("Undo")
         self.skip_btn.clicked.disconnect()
@@ -114,9 +148,9 @@ class MissingFileItem(QtW.QWidget):
         self.is_skipped = False
         
         # Reset UI
-        self.path_label.setStyleSheet("color: #7f8c8d;")
+        self.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['text_secondary']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
         self.status_label.setText("Missing")
-        self.status_label.setStyleSheet("color: #e74c3c; font-weight: bold;")
+        self.status_label.setStyleSheet(HoudiniTheme.get_status_style("error"))
         self.browse_btn.setEnabled(True)
         self.skip_btn.setText("Skip")
         self.skip_btn.clicked.disconnect()
@@ -146,25 +180,23 @@ class MissingFilesDialog(QtW.QDialog):
         self.setMinimumSize(800, 500)
         self.resize(900, 600)
         
+        # Apply Houdini theme to dialog
+        HoudiniTheme.apply_theme_to_widget(self, "dialog")
+        
         layout = QtW.QVBoxLayout(self)
         
         # Header
-        header_label = QtW.QLabel("Missing Files Found in Template")
-        header_font = header_label.font()
-        header_font.setPointSize(14)
-        header_font.setBold(True)
-        header_label.setFont(header_font)
-        header_label.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
+        header_label = HoudiniTheme.create_themed_label("Missing Files Found in Template", "header")
         layout.addWidget(header_label)
         
         # Description
         total_missing = sum(len(files) for files in self.missing_files.values())
-        description = QtW.QLabel(
+        description = HoudiniTheme.create_themed_label(
             f"The template contains {total_missing} missing files. "
             f"You can browse to locate the files in their new locations, or skip files you no longer need."
         )
         description.setWordWrap(True)
-        description.setStyleSheet("color: #34495e; margin-bottom: 15px;")
+        description.setStyleSheet(f"color: {HoudiniTheme.COLORS['text']}; margin-bottom: 15px;")
         layout.addWidget(description)
         
         # Scrollable area for missing files
@@ -182,11 +214,11 @@ class MissingFilesDialog(QtW.QDialog):
         # Bulk actions
         bulk_layout = QtW.QHBoxLayout()
         
-        self.browse_all_btn = QtW.QPushButton("Browse for All Files...")
+        self.browse_all_btn = HoudiniTheme.create_themed_button("Browse for All Files...", "primary")
         self.browse_all_btn.clicked.connect(self.browse_for_all_files)
         bulk_layout.addWidget(self.browse_all_btn)
         
-        self.skip_all_btn = QtW.QPushButton("Skip All Missing Files")
+        self.skip_all_btn = HoudiniTheme.create_themed_button("Skip All Missing Files", "secondary")
         self.skip_all_btn.clicked.connect(self.skip_all_files)
         bulk_layout.addWidget(self.skip_all_btn)
         
@@ -194,18 +226,17 @@ class MissingFilesDialog(QtW.QDialog):
         layout.addLayout(bulk_layout)
         
         # Status
-        self.status_label = QtW.QLabel()
-        self.status_label.setStyleSheet("color: #7f8c8d; font-style: italic;")
+        self.status_label = HoudiniTheme.create_themed_label("", "info")
         layout.addWidget(self.status_label)
         
         # Dialog buttons
         button_layout = QtW.QHBoxLayout()
         
-        self.continue_btn = QtW.QPushButton("Continue with Changes")
+        self.continue_btn = HoudiniTheme.create_themed_button("Continue with Changes", "primary")
         self.continue_btn.clicked.connect(self.accept)
         button_layout.addWidget(self.continue_btn)
         
-        self.cancel_btn = QtW.QPushButton("Cancel Template Loading")
+        self.cancel_btn = HoudiniTheme.create_themed_button("Cancel Template Loading", "secondary")
         self.cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(self.cancel_btn)
         
@@ -222,7 +253,7 @@ class MissingFilesDialog(QtW.QDialog):
                 separator = QtW.QFrame()
                 separator.setFrameShape(QtW.QFrame.HLine)
                 separator.setFrameShadow(QtW.QFrame.Sunken)
-                separator.setStyleSheet("color: #bdc3c7;")
+                separator.setStyleSheet(HoudiniTheme.get_separator_style())
                 self.files_layout.addWidget(separator)
             
             for file_path in file_paths:
@@ -250,35 +281,74 @@ class MissingFilesDialog(QtW.QDialog):
     
     def browse_for_all_files(self):
         """Browse for a directory containing all missing files."""
+        # Find a good starting directory based on context
+        start_dir = ""
+        
+        # First, try to use directories from already resolved files
+        if self.file_resolutions:
+            resolved_dirs = [os.path.dirname(path) for path in self.file_resolutions.values()]
+            if resolved_dirs:
+                from collections import Counter
+                most_common_dir = Counter(resolved_dirs).most_common(1)[0][0]
+                if os.path.exists(most_common_dir):
+                    start_dir = most_common_dir
+        
+        # If no resolved files, try to find common base paths from original missing files
+        if not start_dir:
+            all_missing_paths = []
+            for file_paths in self.missing_files.values():
+                all_missing_paths.extend(file_paths)
+            
+            if all_missing_paths:
+                # Try parent directories of missing files
+                for missing_path in all_missing_paths:
+                    current_dir = os.path.dirname(missing_path)
+                    while current_dir and current_dir != os.path.dirname(current_dir):
+                        if os.path.exists(current_dir):
+                            start_dir = current_dir
+                            break
+                        current_dir = os.path.dirname(current_dir)
+                    if start_dir:
+                        break
+        
         directory = QtW.QFileDialog.getExistingDirectory(
             self,
             "Select Directory Containing Missing Files",
-            "",
+            start_dir,
             QtW.QFileDialog.ShowDirsOnly
         )
         
         if directory:
-            # Try to find files with matching names in the selected directory
+            # Try to find files with matching names in the selected directory and subdirectories
             resolved_count = 0
             
             for group_name, file_paths in self.missing_files.items():
                 for file_path in file_paths:
                     if file_path not in self.file_resolutions and file_path not in self.skipped_files:
                         filename = os.path.basename(file_path)
-                        potential_path = os.path.join(directory, filename)
+                        potential_paths = self._find_file_in_directory(directory, filename)
                         
-                        if os.path.exists(potential_path):
+                        if potential_paths:
+                            # Use the first match found
+                            potential_path = potential_paths[0]
+                            
                             # Find the corresponding file item and update it
                             for i in range(self.files_layout.count()):
                                 widget = self.files_layout.itemAt(i).widget()
                                 if isinstance(widget, MissingFileItem) and widget.original_path == file_path:
-                                    widget.browse_for_file.__func__(widget)  # Simulate browse
+                                    # Update the widget directly instead of calling browse_for_file
                                     widget.resolved_path = potential_path
+                                    widget.is_skipped = False
+                                    
+                                    # Update UI
                                     widget.path_label.setText(f"→ {potential_path}")
-                                    widget.path_label.setStyleSheet("color: #27ae60;")
+                                    widget.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['success']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
                                     widget.status_label.setText("Resolved")
-                                    widget.status_label.setStyleSheet("color: #27ae60; font-weight: bold;")
+                                    widget.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
                                     widget.browse_btn.setText("Change...")
+                                    
+                                    # Emit signal to notify parent
+                                    widget.file_resolved.emit(widget.original_path, potential_path)
                                     
                                     self.file_resolutions[file_path] = potential_path
                                     resolved_count += 1
@@ -288,16 +358,45 @@ class MissingFilesDialog(QtW.QDialog):
                 QtW.QMessageBox.information(
                     self,
                     "Files Found",
-                    f"Found and resolved {resolved_count} missing files in the selected directory."
+                    f"Found and resolved {resolved_count} missing files in the selected directory and its subdirectories."
                 )
             else:
                 QtW.QMessageBox.information(
                     self,
                     "No Files Found",
-                    "No missing files were found in the selected directory."
+                    "No missing files were found in the selected directory or its subdirectories."
                 )
             
             self.update_status()
+    
+    def _find_file_in_directory(self, directory: str, filename: str) -> List[str]:
+        """Find all instances of a file in a directory and its subdirectories.
+        
+        Args:
+            directory: Directory to search in
+            filename: Filename to search for
+            
+        Returns:
+            List of full paths to matching files
+        """
+        matches = []
+        
+        # Get the base name and extension
+        base_name, ext = os.path.splitext(filename)
+        
+        # Walk through directory and subdirectories
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                file_base, file_ext = os.path.splitext(file)
+                
+                # Check for exact filename match
+                if file == filename:
+                    matches.append(os.path.join(root, file))
+                # Check for same base name with different extension (common for geometry files)
+                elif file_base == base_name and file_ext.lower() in ['.usd', '.usda', '.usdc', '.obj', '.fbx', '.abc', '.ply']:
+                    matches.append(os.path.join(root, file))
+        
+        return matches
     
     def skip_all_files(self):
         """Skip all missing files."""
@@ -339,7 +438,7 @@ class MissingFilesDialog(QtW.QDialog):
                 status_text = f"✓ All {resolved_count} files resolved"
             else:
                 status_text = f"✓ All {skipped_count} files skipped"
-            self.status_label.setStyleSheet("color: #27ae60; font-weight: bold;")
+            self.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
         else:
             status_text = f"{remaining_count} files still need attention"
             if resolved_count > 0:
@@ -348,7 +447,7 @@ class MissingFilesDialog(QtW.QDialog):
                 status_text += f", {skipped_count} skipped" if resolved_count > 0 else f" ({skipped_count} skipped"
             if resolved_count > 0 or skipped_count > 0:
                 status_text += ")"
-            self.status_label.setStyleSheet("color: #e67e22; font-weight: bold;")
+            self.status_label.setStyleSheet(HoudiniTheme.get_status_style("warning"))
         
         self.status_label.setText(status_text)
     

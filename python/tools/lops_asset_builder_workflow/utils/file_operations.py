@@ -11,64 +11,106 @@ class FileDialogHelper:
     
     @staticmethod
     def get_geometry_files(parent: Optional[QtW.QWidget] = None, 
-                          title: str = "Select Geometry Files") -> List[str]:
+                          title: str = "Select Geometry Files",
+                          default_dir: Optional[str] = None) -> List[str]:
         """Open file dialog to select multiple geometry files.
         
         Args:
             parent: Parent widget for the dialog.
             title: Dialog title.
+            default_dir: Default directory to start browsing from.
             
         Returns:
             List of selected file paths.
         """
         from ..config.constants import GEOMETRY_FILE_EXTENSIONS
         
+        # Use default directory if provided, otherwise use empty string
+        start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
+        
         file_paths, _ = QtW.QFileDialog.getOpenFileNames(
             parent,
             title,
-            "",
+            start_dir,
             GEOMETRY_FILE_EXTENSIONS
         )
         return file_paths or []
     
     @staticmethod
     def get_single_geometry_file(parent: Optional[QtW.QWidget] = None,
-                                title: str = "Select Geometry File") -> Optional[str]:
+                                title: str = "Select Geometry File",
+                                default_dir: Optional[str] = None) -> Optional[str]:
         """Open file dialog to select a single geometry file.
         
         Args:
             parent: Parent widget for the dialog.
             title: Dialog title.
+            default_dir: Default directory to start browsing from.
             
         Returns:
             Selected file path or None if cancelled.
         """
         from ..config.constants import GEOMETRY_FILE_EXTENSIONS
         
+        # Use default directory if provided, otherwise use empty string
+        start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
+        
         file_path, _ = QtW.QFileDialog.getOpenFileName(
             parent,
             title,
-            "",
+            start_dir,
+            GEOMETRY_FILE_EXTENSIONS
+        )
+        return file_path if file_path else None
+    
+    @staticmethod
+    def get_geometry_file(parent: Optional[QtW.QWidget] = None,
+                         title: str = "Select Geometry File",
+                         default_dir: Optional[str] = None) -> Optional[str]:
+        """Open file dialog to select a single geometry file with default directory support.
+        
+        Args:
+            parent: Parent widget for the dialog.
+            title: Dialog title.
+            default_dir: Default directory to start browsing from.
+            
+        Returns:
+            Selected file path or None if cancelled.
+        """
+        from ..config.constants import GEOMETRY_FILE_EXTENSIONS
+        
+        # Use default directory if provided, otherwise use empty string
+        start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
+        
+        file_path, _ = QtW.QFileDialog.getOpenFileName(
+            parent,
+            title,
+            start_dir,
             GEOMETRY_FILE_EXTENSIONS
         )
         return file_path if file_path else None
     
     @staticmethod
     def get_folder(parent: Optional[QtW.QWidget] = None,
-                   title: str = "Select Folder") -> Optional[str]:
+                   title: str = "Select Folder",
+                   default_dir: Optional[str] = None) -> Optional[str]:
         """Open folder dialog to select a directory.
         
         Args:
             parent: Parent widget for the dialog.
             title: Dialog title.
+            default_dir: Default directory to start browsing from.
             
         Returns:
             Selected folder path or None if cancelled.
         """
+        # Use default directory if provided, otherwise use empty string
+        start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
+        
         folder_path = QtW.QFileDialog.getExistingDirectory(
             parent,
             title,
-            ""
+            start_dir
         )
         return folder_path if folder_path else None
     

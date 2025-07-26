@@ -13,6 +13,19 @@ import io
 import json
 from contextlib import redirect_stdout, redirect_stderr
 
+# Import qt_material after PySide2 for Material UI theming
+try:
+    # Add qt-material to path if not already available
+    qt_material_path = os.path.join(os.path.dirname(__file__), '../../../../qt-material')
+    if os.path.exists(qt_material_path) and qt_material_path not in sys.path:
+        sys.path.insert(0, qt_material_path)
+    
+    from qt_material import apply_stylesheet
+    QT_MATERIAL_AVAILABLE = True
+except ImportError:
+    QT_MATERIAL_AVAILABLE = False
+    print("Warning: qt_material not available - using default theme")
+
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
 from tools.lops_light_rig_pipeline import setup_light_rig_pipeline
@@ -129,6 +142,44 @@ class LopsAssetBuilderWorkflow:
             app = QtW.QApplication.instance()
             if app is None:
                 app = QtW.QApplication([])
+                
+                # Set application attributes for proper Material Design rendering
+                try:
+                    if hasattr(QtCore.Qt, 'AA_ShareOpenGLContexts'):
+                        app.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+                    app.setQuitOnLastWindowClosed(False)
+                except Exception as e:
+                    self._log_message(f"Warning: Could not set application attributes: {str(e)}", hou.severityType.Warning)
+
+            # Apply Material UI dark theme if available
+            if QT_MATERIAL_AVAILABLE:
+                try:
+                    # Define extra parameters for proper Material Design styling
+                    material_extra = {
+                        # Status colors matching our HoudiniTheme
+                        'danger': '#ff4444',      # Error red
+                        'warning': '#ff8800',     # Warning orange  
+                        'success': '#4CAF50',     # Success green
+                        # Typography
+                        'font_family': 'Roboto, Arial, sans-serif',
+                        'font_size': '12',
+                        'line_height': '20',
+                        # Material Design density scale
+                        'density_scale': '0',     # Standard density
+                        # Button shape
+                        'button_shape': 'default',
+                    }
+                    
+                    # Apply stylesheet with proper parameters
+                    apply_stylesheet(
+                        app, 
+                        theme='dark_cyan.xml',
+                        invert_secondary=False,  # dark_cyan is already a dark theme
+                        extra=material_extra
+                    )
+                    self._log_message("Applied Material UI dark_cyan theme with proper parameters")
+                except Exception as e:
+                    self._log_message(f"Failed to apply Material UI theme: {str(e)}", hou.severityType.Warning)
 
             # Import AssetGroupsDialog after QApplication is initialized to avoid Qt initialization issues
             try:

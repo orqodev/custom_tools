@@ -3,6 +3,14 @@
 from typing import List
 from PySide2 import QtCore, QtGui, QtWidgets as QtW
 
+# Handle both relative and absolute imports for flexibility
+try:
+    # Try relative imports first (when imported as part of package)
+    from .houdini_theme import HoudiniTheme
+except ImportError:
+    # Fall back to absolute imports (when run directly)
+    from houdini_theme import HoudiniTheme
+
 
 class ValidationErrorDialog(QtW.QDialog):
     """Dialog for displaying detailed validation errors."""
@@ -26,8 +34,20 @@ class ValidationErrorDialog(QtW.QDialog):
     def setup_ui(self):
         """Set up the user interface."""
         self.setWindowTitle("Validation Errors")
-        self.setMinimumSize(500, 400)
-        self.resize(600, 500)
+        
+        # Set width to match parent dialog if available, otherwise use default
+        parent_width = 600  # Default width
+        if self.parent():
+            try:
+                parent_width = self.parent().width()
+            except:
+                parent_width = 600
+        
+        self.setMinimumSize(parent_width, 400)
+        self.resize(parent_width, 500)
+        
+        # Apply Houdini theme to dialog
+        HoudiniTheme.apply_theme_to_widget(self, "dialog")
 
         # Main layout
         main_layout = QtW.QVBoxLayout(self)
@@ -42,42 +62,33 @@ class ValidationErrorDialog(QtW.QDialog):
         title_layout.addWidget(icon_label)
 
         # Title text
-        self.title_label = QtW.QLabel("Validation Errors Found")
-        self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #d32f2f;")
+        self.title_label = HoudiniTheme.create_themed_label("Validation Errors Found", "header")
         title_layout.addWidget(self.title_label)
         title_layout.addStretch()
 
         main_layout.addLayout(title_layout)
 
         # Description
-        self.description_label = QtW.QLabel(
+        self.description_label = HoudiniTheme.create_themed_label(
             "The following validation errors must be resolved before proceeding:"
         )
         self.description_label.setWordWrap(True)
-        self.description_label.setStyleSheet("margin: 10px 0px; color: #666666;")
+        self.description_label.setStyleSheet(f"margin: {HoudiniTheme.LAYOUT['margin_label']};")
         main_layout.addWidget(self.description_label)
 
         # Error list
         self.error_list = QtW.QTextEdit()
         self.error_list.setReadOnly(True)
-        self.error_list.setFont(QtGui.QFont("Consolas", 10))
-        self.error_list.setStyleSheet("""
-            QTextEdit {
-                background-color: #fafafa;
-                border: 1px solid #e0e0e0;
-                border-radius: 4px;
-                padding: 10px;
-                color: #333333;
-            }
-        """)
+        # Font styling now handled by theme system for consistency
+        HoudiniTheme.apply_theme_to_widget(self.error_list, "validation_error")
         main_layout.addWidget(self.error_list)
 
         # Buttons
         button_layout = QtW.QHBoxLayout()
         button_layout.addStretch()
 
-        self.ok_button = QtW.QPushButton("OK")
-        self.ok_button.setMinimumWidth(80)
+        self.ok_button = HoudiniTheme.create_themed_button("OK", "primary")
+        self.ok_button.setMinimumWidth(50)  # Reduced from 80 to make button smaller
         self.ok_button.clicked.connect(self.accept)
         self.ok_button.setDefault(True)
         button_layout.addWidget(self.ok_button)
