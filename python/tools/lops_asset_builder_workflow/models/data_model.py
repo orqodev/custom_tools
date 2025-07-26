@@ -47,7 +47,7 @@ class AssetGroup:
         
         # Ensure asset_paths are AssetPath objects
         if self.asset_paths and not isinstance(self.asset_paths[0], AssetPath):
-            self.asset_paths = [AssetPath(path) if isinstance(path, str) else AssetPath(str(path)) 
+            self.asset_paths = [AssetPath(path) if isinstance(path, str) else AssetPath(path.path if hasattr(path, 'path') else str(path)) 
                               for path in self.asset_paths]
         
         # Set base_path from first asset if not provided

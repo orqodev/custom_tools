@@ -11,20 +11,28 @@ try:
         WIDGET_MARGINS, WIDGET_SPACING, PATH_LAYOUT_SPACING,
         MINIMUM_PATH_EDIT_WIDTH, BROWSE_BUTTON_WIDTH, DELETE_BUTTON_WIDTH,
         DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT,
-        GROUP_WIDGET_HEIGHT
+        GROUP_WIDGET_HEIGHT, INPUT_FIELD_STYLE, PRIMARY_BUTTON_STYLE, 
+        SECONDARY_BUTTON_STYLE, PROGRESS_BAR_STYLE, LOG_DISPLAY_STYLE,
+        STATUS_LABEL_STYLES, MATERIAL_FULL_CSS, MATERIAL_BUTTON_STYLE,
+        MATERIAL_INPUT_STYLE, MATERIAL_DIALOG_STYLE
     )
     from ..utils.file_operations import FileDialogHelper
     from ..models.data_model import AssetGroup, AssetPath
+    from .houdini_theme import HoudiniTheme
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from config.constants import (
         WIDGET_MARGINS, WIDGET_SPACING, PATH_LAYOUT_SPACING,
         MINIMUM_PATH_EDIT_WIDTH, BROWSE_BUTTON_WIDTH, DELETE_BUTTON_WIDTH,
         DELETE_BUTTON_STYLE, DEFAULT_PLACEHOLDER_TEXT, MAX_SCROLL_AREA_HEIGHT,
-        GROUP_WIDGET_HEIGHT
+        GROUP_WIDGET_HEIGHT, INPUT_FIELD_STYLE, PRIMARY_BUTTON_STYLE, 
+        SECONDARY_BUTTON_STYLE, PROGRESS_BAR_STYLE, LOG_DISPLAY_STYLE,
+        STATUS_LABEL_STYLES, MATERIAL_FULL_CSS, MATERIAL_BUTTON_STYLE,
+        MATERIAL_INPUT_STYLE, MATERIAL_DIALOG_STYLE
     )
     from utils.file_operations import FileDialogHelper
     from models.data_model import AssetGroup, AssetPath
+    from houdini_theme import HoudiniTheme
 
 
 class PathRow(QtW.QWidget):
@@ -49,6 +57,9 @@ class PathRow(QtW.QWidget):
         self.path_edit.setPlaceholderText(DEFAULT_PLACEHOLDER_TEXT["file_path"])
         self.path_edit.setText("")  # Ensure empty by default
         self.path_edit.setMinimumWidth(MINIMUM_PATH_EDIT_WIDTH)
+        
+        # Apply Houdini theme styling
+        HoudiniTheme.apply_theme_to_widget(self.path_edit, "input")
 
         # Set font size for better readability
         font = self.path_edit.font()
@@ -65,6 +76,7 @@ class PathRow(QtW.QWidget):
         self.browse_btn = QtW.QPushButton("Browse...")
         self.browse_btn.setMinimumWidth(BROWSE_BUTTON_WIDTH[0])
         self.browse_btn.setMaximumWidth(BROWSE_BUTTON_WIDTH[1])
+        HoudiniTheme.apply_theme_to_widget(self.browse_btn, "primary_button")
         self.browse_btn.clicked.connect(self.browse_file)
 
         # Delete button
@@ -82,9 +94,42 @@ class PathRow(QtW.QWidget):
 
     def browse_file(self):
         """Open file browser to select a geometry file."""
+        # Try to find a good default directory based on existing paths
+        default_dir = None
+        
+        # First, check if current path has a valid directory
+        current_path = self.get_path()
+        if current_path:
+            current_dir = os.path.dirname(current_path)
+            if os.path.exists(current_dir):
+                default_dir = current_dir
+        
+        # If no good current directory, look for other valid paths in the parent group
+        if not default_dir:
+            parent_widget = self.parent()
+            while parent_widget and not hasattr(parent_widget, 'path_rows'):
+                parent_widget = parent_widget.parent()
+            
+            if parent_widget and hasattr(parent_widget, 'path_rows'):
+                # Find directories from other valid paths in the same group
+                valid_dirs = []
+                for path_row in parent_widget.path_rows:
+                    if path_row != self:  # Don't use our own path
+                        other_path = path_row.get_path()
+                        if other_path and os.path.exists(other_path):
+                            valid_dirs.append(os.path.dirname(other_path))
+                
+                if valid_dirs:
+                    # Use the most common directory or the first one
+                    from collections import Counter
+                    most_common_dir = Counter(valid_dirs).most_common(1)[0][0]
+                    if os.path.exists(most_common_dir):
+                        default_dir = most_common_dir
+        
         file_path = FileDialogHelper.get_single_geometry_file(
             parent=self,
-            title="Select Geometry File"
+            title="Select Geometry File",
+            default_dir=default_dir
         )
 
         if file_path:
@@ -146,6 +191,7 @@ class GroupWidget(QtW.QWidget):
         name_layout.addWidget(QtW.QLabel("Group Name:"))
         self.name_edit = QtW.QLineEdit()
         self.name_edit.setPlaceholderText(DEFAULT_PLACEHOLDER_TEXT["group_name"])
+        self.name_edit.setStyleSheet(INPUT_FIELD_STYLE)  # Apply white text styling
         self.name_edit.textChanged.connect(self._on_group_changed)
         name_layout.addWidget(self.name_edit)
         group_layout.addLayout(name_layout)
@@ -164,6 +210,15 @@ class GroupWidget(QtW.QWidget):
         self.paths_layout.setContentsMargins(10, 5, 10, 5)
         self.paths_layout.setSpacing(PATH_LAYOUT_SPACING)
 
+        # Add dark grey background to indicate where paths will be added
+        self.paths_widget.setStyleSheet(f"""
+            QWidget {{
+                background-color: {HoudiniTheme.COLORS["hover"]};
+                border: 1px solid {HoudiniTheme.COLORS["border"]};
+                border-radius: {HoudiniTheme.LAYOUT["border_radius"]}px;
+            }}
+        """)
+
         # Add stretch at the end to push all path rows to the top
         self.paths_layout.addStretch(1)
 
@@ -171,15 +226,20 @@ class GroupWidget(QtW.QWidget):
         group_layout.addWidget(scroll_area)
 
         # Add Files button for bulk import
+        add_files_layout = QtW.QHBoxLayout()
+        add_files_layout.addStretch()  # Push button to the right
         add_files_btn = QtW.QPushButton("Add Files...")
+        add_files_btn.setFixedWidth(180)  # Reduced width for compact button
         add_files_btn.clicked.connect(self.add_files_bulk)
-        group_layout.addWidget(add_files_btn)
+        add_files_layout.addWidget(add_files_btn)
+        group_layout.addLayout(add_files_layout)
 
         # Materials folder section
         materials_layout = QtW.QHBoxLayout()
         materials_layout.addWidget(QtW.QLabel("Materials folder path:"))
         self.materials_folder_edit = QtW.QLineEdit()
         self.materials_folder_edit.setPlaceholderText(DEFAULT_PLACEHOLDER_TEXT["materials_folder"])
+        self.materials_folder_edit.setStyleSheet(INPUT_FIELD_STYLE)  # Apply white text styling
         self.materials_folder_edit.textChanged.connect(self._on_group_changed)
         materials_layout.addWidget(self.materials_folder_edit)
 
@@ -190,9 +250,13 @@ class GroupWidget(QtW.QWidget):
         group_layout.addLayout(materials_layout)
 
         # Remove group button
+        remove_group_layout = QtW.QHBoxLayout()
+        remove_group_layout.addStretch()  # Push button to the right
         remove_btn = QtW.QPushButton("Remove Group")
+        remove_btn.setFixedWidth(180)  # Reduced width for compact button
         remove_btn.clicked.connect(self.remove_group)
-        group_layout.addWidget(remove_btn)
+        remove_group_layout.addWidget(remove_btn)
+        group_layout.addLayout(remove_group_layout)
 
         layout.addWidget(group_frame)
 
@@ -216,9 +280,33 @@ class GroupWidget(QtW.QWidget):
 
     def add_files_bulk(self):
         """Open file dialog to select multiple geometry files and create path rows for each."""
+        # Find a good default directory based on existing paths
+        default_dir = None
+        
+        # Look for valid paths in current group
+        valid_dirs = []
+        for path_row in self.path_rows:
+            path = path_row.get_path()
+            if path and os.path.exists(path):
+                valid_dirs.append(os.path.dirname(path))
+        
+        if valid_dirs:
+            # Use the most common directory
+            from collections import Counter
+            most_common_dir = Counter(valid_dirs).most_common(1)[0][0]
+            if os.path.exists(most_common_dir):
+                default_dir = most_common_dir
+        
+        # If no valid paths in group, try materials folder
+        if not default_dir:
+            materials_folder = self.materials_folder_edit.text().strip()
+            if materials_folder and os.path.exists(materials_folder):
+                default_dir = materials_folder
+        
         file_paths = FileDialogHelper.get_geometry_files(
             parent=self,
-            title="Select Geometry Files"
+            title="Select Geometry Files",
+            default_dir=default_dir
         )
 
         if file_paths:
@@ -255,9 +343,53 @@ class GroupWidget(QtW.QWidget):
 
     def browse_materials_folder(self):
         """Open folder browser for materials folder."""
+        # Find a good default directory based on existing paths
+        default_dir = None
+        
+        # First, try current materials folder if it exists
+        current_materials = self.materials_folder_edit.text().strip()
+        if current_materials and os.path.exists(current_materials):
+            default_dir = current_materials
+        else:
+            # Look for valid asset paths in current group
+            valid_dirs = []
+            for path_row in self.path_rows:
+                path = path_row.get_path()
+                if path and os.path.exists(path):
+                    # Use parent directory of asset files as potential materials location
+                    asset_dir = os.path.dirname(path)
+                    valid_dirs.append(asset_dir)
+                    # Also check for common materials folder names in the same directory
+                    potential_materials_dirs = [
+                        os.path.join(asset_dir, 'materials'),
+                        os.path.join(asset_dir, 'textures'),
+                        os.path.join(asset_dir, 'mat'),
+                        os.path.join(os.path.dirname(asset_dir), 'materials'),
+                        os.path.join(os.path.dirname(asset_dir), 'textures')
+                    ]
+                    for mat_dir in potential_materials_dirs:
+                        if os.path.exists(mat_dir):
+                            valid_dirs.append(mat_dir)
+            
+            if valid_dirs:
+                # Use the most common directory or prioritize materials/textures folders
+                from collections import Counter
+                dir_counts = Counter(valid_dirs)
+                # Prioritize directories with materials/textures in the name
+                for dir_path, count in dir_counts.most_common():
+                    if any(keyword in os.path.basename(dir_path).lower() 
+                           for keyword in ['materials', 'textures', 'mat']):
+                        default_dir = dir_path
+                        break
+                
+                # If no materials-specific directory found, use most common
+                if not default_dir:
+                    default_dir = dir_counts.most_common(1)[0][0]
+        
         folder_path = FileDialogHelper.get_folder(
             parent=self,
-            title="Select Materials Folder"
+            title="Select Materials Folder",
+            default_dir=default_dir
         )
 
         if folder_path:
@@ -307,9 +439,17 @@ class GroupWidget(QtW.QWidget):
             paths = group_data['asset_paths']
             if isinstance(paths, list):
                 for path in paths:
-                    if isinstance(path, str) and path.strip():
+                    # Handle both string paths and AssetPath objects
+                    if hasattr(path, 'path'):  # AssetPath object
+                        path_str = path.path
+                    elif isinstance(path, str):  # String path
+                        path_str = path
+                    else:
+                        path_str = str(path)  # Fallback for other types
+                    
+                    if path_str and path_str.strip():
                         path_row = self.add_path_row()
-                        path_row.set_path(str(path))
+                        path_row.set_path(path_str.strip())
 
     def get_asset_group(self) -> Optional[AssetGroup]:
         """Get the group data as an AssetGroup object."""
@@ -396,15 +536,15 @@ class ProgressWidget(QtW.QWidget):
         label_font.setPointSize(12)
         label_font.setBold(True)
         self.current_group_label.setFont(label_font)
-        self.current_group_label.setStyleSheet("""
-            QLabel {
-                color: #2c3e50;
-                background-color: #ecf0f1;
-                border: 1px solid #bdc3c7;
+        self.current_group_label.setStyleSheet(f"""
+            QLabel {{
+                color: {HoudiniTheme.COLORS["text"]};
+                background-color: {HoudiniTheme.COLORS["background"]};
+                border: 1px solid {HoudiniTheme.COLORS["border"]};
                 border-radius: 5px;
-                padding: 10px;
-                margin: 5px 0px;
-            }
+                padding: {HoudiniTheme.LAYOUT["padding_log"]};
+                margin: {HoudiniTheme.LAYOUT["margin_subheader"]};
+            }}
         """)
         layout.addWidget(self.current_group_label)
 
@@ -413,35 +553,19 @@ class ProgressWidget(QtW.QWidget):
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setMinimumHeight(30)
 
-        # Apply modern styling to progress bar
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: 2px solid #bdc3c7;
-                border-radius: 8px;
-                text-align: center;
-                font-weight: bold;
-                font-size: 11px;
-                background-color: #ecf0f1;
-                color: #2c3e50;
-            }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #3498db, stop:0.5 #2980b9, stop:1 #3498db);
-                border-radius: 6px;
-                margin: 1px;
-            }
-        """)
+        # Apply black background theme to progress bar
+        self.progress_bar.setStyleSheet(PROGRESS_BAR_STYLE)
         layout.addWidget(self.progress_bar)
 
-        # Log display section with better styling
+        # Log display section with black background theme
         log_label = QtW.QLabel("Processing Log:")
-        log_label.setStyleSheet("""
-            QLabel {
+        log_label.setStyleSheet(f"""
+            QLabel {{
                 font-weight: bold;
-                color: #34495e;
-                margin-top: 10px;
-                margin-bottom: 5px;
-            }
+                color: {HoudiniTheme.COLORS["text"]};
+                margin-top: {HoudiniTheme.LAYOUT["margin_medium"]};
+                margin-bottom: {HoudiniTheme.LAYOUT["margin_small"]};
+            }}
         """)
         layout.addWidget(log_label)
 
@@ -449,18 +573,8 @@ class ProgressWidget(QtW.QWidget):
         self.log_display.setReadOnly(True)
         self.log_display.setMaximumHeight(300)  # Reduced height for better proportions
 
-        # Style the log display
-        self.log_display.setStyleSheet("""
-            QTextEdit {
-                border: 1px solid #bdc3c7;
-                border-radius: 5px;
-                background-color: #2c3e50;
-                color: #ecf0f1;
-                font-family: 'Consolas', 'Monaco', monospace;
-                font-size: 10px;
-                padding: 8px;
-            }
-        """)
+        # Apply black background theme to log display
+        self.log_display.setStyleSheet(LOG_DISPLAY_STYLE)
         layout.addWidget(self.log_display)
 
     def set_progress(self, current: int, total: int, group_name: str = ""):
@@ -589,13 +703,13 @@ class ValidationSummaryWidget(QtW.QWidget):
         # Update summary label
         if is_valid and is_ready:
             self.summary_label.setText("✓ Ready for Processing")
-            self.summary_label.setStyleSheet("color: green; font-weight: bold;")
+            self.summary_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
         elif is_valid:
             self.summary_label.setText("⚠ Valid but Not Ready")
-            self.summary_label.setStyleSheet("color: orange; font-weight: bold;")
+            self.summary_label.setStyleSheet(HoudiniTheme.get_status_style("warning"))
         else:
             self.summary_label.setText("❌ Validation Errors")
-            self.summary_label.setStyleSheet("color: red; font-weight: bold;")
+            self.summary_label.setStyleSheet(HoudiniTheme.get_status_style("error"))
 
         # Update details
         details = []
