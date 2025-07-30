@@ -107,12 +107,86 @@ class FileDialogHelper:
         # Use default directory if provided, otherwise use empty string
         start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
         
-        folder_path = QtW.QFileDialog.getExistingDirectory(
-            parent,
-            title,
-            start_dir
-        )
-        return folder_path if folder_path else None
+        # Create a custom file dialog to set specific dimensions
+        dialog = QtW.QFileDialog(parent, title, start_dir)
+        dialog.setFileMode(QtW.QFileDialog.Directory)
+        dialog.setOption(QtW.QFileDialog.ShowDirsOnly, True)
+        
+        # Set dialog size to match main dialog dimensions (600x400)
+        try:
+            # Try to import constants for dialog dimensions
+            try:
+                from ..config.constants import DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT
+            except ImportError:
+                from config.constants import DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT
+            
+            dialog.resize(DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT)
+        except ImportError:
+            # Fallback to hardcoded values if constants not available
+            dialog.resize(600, 400)
+        
+        if dialog.exec_() == QtW.QDialog.Accepted:
+            selected_dirs = dialog.selectedFiles()
+            return selected_dirs[0] if selected_dirs else None
+        
+        return None
+    
+    @staticmethod
+    def get_multiple_folders(parent: Optional[QtW.QWidget] = None,
+                            title: str = "Select Folders",
+                            default_dir: Optional[str] = None) -> List[str]:
+        """Open folder dialog to select multiple directories.
+        
+        Args:
+            parent: Parent widget for the dialog.
+            title: Dialog title.
+            default_dir: Default directory to start browsing from.
+            
+        Returns:
+            List of selected folder paths or empty list if cancelled.
+        """
+        # Use default directory if provided, otherwise use empty string
+        start_dir = default_dir if default_dir and os.path.exists(default_dir) else ""
+        
+        # Create a custom file dialog to set specific dimensions and enable multi-selection
+        dialog = QtW.QFileDialog(parent, title, start_dir)
+        dialog.setFileMode(QtW.QFileDialog.Directory)
+        dialog.setOption(QtW.QFileDialog.ShowDirsOnly, True)
+        dialog.setOption(QtW.QFileDialog.DontUseNativeDialog, True)  # Required for multi-selection
+        
+        # Enable multi-selection by finding the list view inside the dialog
+        try:
+            # Find the list view widget inside the dialog
+            list_view = dialog.findChild(QtW.QListView, "listView")
+            if list_view:
+                list_view.setSelectionMode(QtW.QAbstractItemView.ExtendedSelection)
+            
+            # Also try to find tree view (some systems use tree view for directories)
+            tree_view = dialog.findChild(QtW.QTreeView)
+            if tree_view:
+                tree_view.setSelectionMode(QtW.QAbstractItemView.ExtendedSelection)
+        except Exception as e:
+            # If we can't set multi-selection, continue with single selection
+            print(f"Warning: Could not enable multi-selection: {e}")
+        
+        # Set dialog size to match main dialog dimensions (600x400)
+        try:
+            # Try to import constants for dialog dimensions
+            try:
+                from ..config.constants import DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT
+            except ImportError:
+                from config.constants import DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT
+            
+            dialog.resize(DEFAULT_DIALOG_WIDTH, DEFAULT_DIALOG_HEIGHT)
+        except ImportError:
+            # Fallback to hardcoded values if constants not available
+            dialog.resize(600, 400)
+        
+        if dialog.exec_() == QtW.QDialog.Accepted:
+            selected_dirs = dialog.selectedFiles()
+            return selected_dirs if selected_dirs else []
+        
+        return []
     
     @staticmethod
     def get_json_file_for_saving(parent: Optional[QtW.QWidget] = None,

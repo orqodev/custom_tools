@@ -60,7 +60,7 @@ class AssetGroupsDialog(QtW.QDialog, QtStyleTools):
     def __init__(self, parent=None):
         super(AssetGroupsDialog, self).__init__(parent)
         
-        # Initialize Material Design extra parameters
+        # Initialize Material Design extra parameters and apply theme to dialog only
         if QT_STYLE_TOOLS_AVAILABLE:
             self.material_extra = {
                 # Status colors matching our theme
@@ -77,6 +77,17 @@ class AssetGroupsDialog(QtW.QDialog, QtStyleTools):
                 'button_shape': 'default',
             }
             self.set_extra(self.material_extra)
+            
+            # Apply Material Design theme only to this dialog widget, not globally
+            try:
+                self.apply_stylesheet(
+                    self,  # Apply to this dialog widget only, not the entire application
+                    theme='dark_cyan.xml',
+                    invert_secondary=False,  # dark_cyan is already a dark theme
+                    extra=self.material_extra
+                )
+            except Exception as e:
+                print(f"Warning: Failed to apply Material UI theme to dialog: {str(e)}")
 
         # Initialize managers
         self.settings_manager = SettingsManager()

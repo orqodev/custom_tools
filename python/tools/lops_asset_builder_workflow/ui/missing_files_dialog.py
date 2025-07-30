@@ -75,7 +75,7 @@ class MissingFileItem(QtW.QWidget):
         layout.addWidget(self.skip_btn)
     
     def browse_for_file(self):
-        """Open file dialog to browse for the missing file."""
+        """Open file or folder dialog to browse for the missing file/folder."""
         # Try to find a better default directory by looking at the parent dialog's context
         default_dir = None
         
@@ -106,25 +106,49 @@ class MissingFileItem(QtW.QWidget):
                         break
                     current_dir = parent_dir
         
-        file_path = FileDialogHelper.get_geometry_file(
-            parent=self,
-            title=f"Locate missing file: {os.path.basename(self.original_path)}",
-            default_dir=default_dir
+        # Determine if this is a texture/material folder or a regular file
+        # Check if the path looks like a folder (common folder names for textures/materials)
+        path_basename = os.path.basename(self.original_path).lower()
+        is_texture_folder = (
+            # Common texture/material folder names
+            any(keyword in path_basename for keyword in ['texture', 'material', 'mat', 'tex', 'maps']) or
+            # Check if the original path doesn't have a file extension (likely a folder)
+            not os.path.splitext(self.original_path)[1] or
+            # Check if parent dialog context suggests this is a texture folder
+            (hasattr(self.parent(), 'missing_files') and 
+             any('texture' in group_name.lower() or 'material' in group_name.lower() 
+                 for group_name, files in self.parent().missing_files.items() 
+                 if self.original_path in files))
         )
         
-        if file_path:
-            self.resolved_path = file_path
+        if is_texture_folder:
+            # Use folder dialog for texture/material folders
+            selected_path = FileDialogHelper.get_folder(
+                parent=self,
+                title=f"Select texture/material folder: {os.path.basename(self.original_path)}",
+                default_dir=default_dir
+            )
+        else:
+            # Use file dialog for regular asset files
+            selected_path = FileDialogHelper.get_geometry_file(
+                parent=self,
+                title=f"Locate missing file: {os.path.basename(self.original_path)}",
+                default_dir=default_dir
+            )
+        
+        if selected_path:
+            self.resolved_path = selected_path
             self.is_skipped = False
             
             # Update UI
-            self.path_label.setText(f"→ {file_path}")
+            self.path_label.setText(f"→ {selected_path}")
             self.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['success']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
             self.status_label.setText("Resolved")
             self.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
             self.browse_btn.setText("Change...")
             
             # Emit signal
-            self.file_resolved.emit(self.original_path, file_path)
+            self.file_resolved.emit(self.original_path, selected_path)
     
     def skip_file(self):
         """Skip this missing file."""
@@ -322,37 +346,45 @@ class MissingFilesDialog(QtW.QDialog):
             # Try to find files with matching names in the selected directory and subdirectories
             resolved_count = 0
             
+            # First pass: Find all potential file matches
+            file_matches = {}
             for group_name, file_paths in self.missing_files.items():
                 for file_path in file_paths:
                     if file_path not in self.file_resolutions and file_path not in self.skipped_files:
-                        filename = os.path.basename(file_path)
-                        potential_paths = self._find_file_in_directory(directory, filename)
+                        if file_path not in file_matches:  # Only search once per unique path
+                            filename = os.path.basename(file_path)
+                            potential_paths = self._find_file_in_directory(directory, filename)
+                            if potential_paths:
+                                file_matches[file_path] = potential_paths[0]  # Use the first match found
+            
+            # Second pass: Update ALL widgets that reference the resolved paths
+            for file_path, resolved_path in file_matches.items():
+                # Store the resolution
+                self.file_resolutions[file_path] = resolved_path
+                
+                # Find ALL widgets with this file path and update them
+                widgets_updated = 0
+                for i in range(self.files_layout.count()):
+                    widget = self.files_layout.itemAt(i).widget()
+                    if isinstance(widget, MissingFileItem) and widget.original_path == file_path:
+                        # Update the widget directly instead of calling browse_for_file
+                        widget.resolved_path = resolved_path
+                        widget.is_skipped = False
                         
-                        if potential_paths:
-                            # Use the first match found
-                            potential_path = potential_paths[0]
-                            
-                            # Find the corresponding file item and update it
-                            for i in range(self.files_layout.count()):
-                                widget = self.files_layout.itemAt(i).widget()
-                                if isinstance(widget, MissingFileItem) and widget.original_path == file_path:
-                                    # Update the widget directly instead of calling browse_for_file
-                                    widget.resolved_path = potential_path
-                                    widget.is_skipped = False
-                                    
-                                    # Update UI
-                                    widget.path_label.setText(f"→ {potential_path}")
-                                    widget.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['success']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
-                                    widget.status_label.setText("Resolved")
-                                    widget.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
-                                    widget.browse_btn.setText("Change...")
-                                    
-                                    # Emit signal to notify parent
-                                    widget.file_resolved.emit(widget.original_path, potential_path)
-                                    
-                                    self.file_resolutions[file_path] = potential_path
-                                    resolved_count += 1
-                                    break
+                        # Update UI
+                        widget.path_label.setText(f"→ {resolved_path}")
+                        widget.path_label.setStyleSheet(f"color: {HoudiniTheme.COLORS['success']}; font-size: {HoudiniTheme.FONTS['default_size']}px;")
+                        widget.status_label.setText("Resolved")
+                        widget.status_label.setStyleSheet(HoudiniTheme.get_status_style("success"))
+                        widget.browse_btn.setText("Change...")
+                        
+                        # Emit signal to notify parent
+                        widget.file_resolved.emit(widget.original_path, resolved_path)
+                        
+                        widgets_updated += 1
+                        # Don't break - continue to find ALL widgets with this path
+                
+                resolved_count += widgets_updated
             
             if resolved_count > 0:
                 QtW.QMessageBox.information(
@@ -410,17 +442,22 @@ class MissingFilesDialog(QtW.QDialog):
         
         if reply == QtW.QMessageBox.Yes:
             # Skip all files that aren't already resolved or skipped
+            files_to_skip = set()
             for group_name, file_paths in self.missing_files.items():
                 for file_path in file_paths:
                     if file_path not in self.file_resolutions and file_path not in self.skipped_files:
-                        self.skipped_files.add(file_path)
-                        
-                        # Update the corresponding UI item
-                        for i in range(self.files_layout.count()):
-                            widget = self.files_layout.itemAt(i).widget()
-                            if isinstance(widget, MissingFileItem) and widget.original_path == file_path:
-                                widget.skip_file()
-                                break
+                        files_to_skip.add(file_path)
+            
+            # Update ALL widgets for each file path to skip
+            for file_path in files_to_skip:
+                self.skipped_files.add(file_path)
+                
+                # Find ALL widgets with this file path and update them
+                for i in range(self.files_layout.count()):
+                    widget = self.files_layout.itemAt(i).widget()
+                    if isinstance(widget, MissingFileItem) and widget.original_path == file_path:
+                        widget.skip_file()
+                        # Don't break - continue to find ALL widgets with this path
             
             self.update_status()
     
