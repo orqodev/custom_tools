@@ -225,13 +225,24 @@ class GroupWidget(QtW.QWidget):
         scroll_area.setWidget(self.paths_widget)
         group_layout.addWidget(scroll_area)
 
-        # Add Files button for bulk import
+        # Add Folders and Add Files buttons for bulk import
         add_files_layout = QtW.QHBoxLayout()
-        add_files_layout.addStretch()  # Push button to the right
+        add_files_layout.addStretch()  # Push buttons to the right
+        
+        # Add Folders button (to the left of Add Files)
+        add_folders_btn = QtW.QPushButton("Add Folders...")
+        add_folders_btn.setFixedWidth(180)  # Same width as Add Files button
+        add_folders_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)  # Apply proper button styling
+        add_folders_btn.clicked.connect(self.add_folders_bulk)
+        add_files_layout.addWidget(add_folders_btn)
+        
+        # Add Files button
         add_files_btn = QtW.QPushButton("Add Files...")
         add_files_btn.setFixedWidth(180)  # Reduced width for compact button
+        add_files_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)  # Apply proper button styling
         add_files_btn.clicked.connect(self.add_files_bulk)
         add_files_layout.addWidget(add_files_btn)
+        
         group_layout.addLayout(add_files_layout)
 
         # Materials folder section
@@ -278,6 +289,59 @@ class GroupWidget(QtW.QWidget):
 
         return path_row
 
+    def _get_geometry_files_from_folder(self, folder_path: str) -> List[str]:
+        """Get all valid geometry files from a folder.
+        
+        Args:
+            folder_path: Path to the folder to scan.
+            
+        Returns:
+            List of valid geometry file paths found in the folder.
+        """
+        geometry_files = []
+        
+        try:
+            # Import PathUtils for file validation
+            try:
+                from ..utils.file_operations import PathUtils
+            except ImportError:
+                from utils.file_operations import PathUtils
+            
+            # Iterate through all files in the folder
+            for filename in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, filename)
+                
+                # Only process files (not subdirectories)
+                if os.path.isfile(file_path) and PathUtils.is_valid_geometry_file(file_path):
+                    geometry_files.append(file_path)
+                    
+        except (OSError, IOError) as e:
+            print(f"Error reading folder {folder_path}: {e}")
+            
+        return geometry_files
+
+    def _process_selected_paths(self, selected_paths: List[str]) -> List[str]:
+        """Process selected paths, expanding folders to their geometry files.
+        
+        Args:
+            selected_paths: List of selected file or folder paths.
+            
+        Returns:
+            List of all valid geometry file paths.
+        """
+        all_files = []
+        
+        for path in selected_paths:
+            if os.path.isfile(path):
+                # It's a file, add it directly
+                all_files.append(path)
+            elif os.path.isdir(path):
+                # It's a folder, get all geometry files from it
+                folder_files = self._get_geometry_files_from_folder(path)
+                all_files.extend(folder_files)
+                
+        return all_files
+
     def add_files_bulk(self):
         """Open file dialog to select multiple geometry files and create path rows for each."""
         # Find a good default directory based on existing paths
@@ -303,33 +367,100 @@ class GroupWidget(QtW.QWidget):
             if materials_folder and os.path.exists(materials_folder):
                 default_dir = materials_folder
         
-        file_paths = FileDialogHelper.get_geometry_files(
+        # Direct file selection without popup
+        selected_paths = FileDialogHelper.get_geometry_files(
             parent=self,
             title="Select Geometry Files",
             default_dir=default_dir
         )
 
-        if file_paths:
-            # Check if we have an empty row to reuse
-            empty_row = None
-            for row in self.path_rows:
-                if not row.get_path():
-                    empty_row = row
-                    break
+        if selected_paths:
+            # Process selected paths (files only)
+            all_file_paths = self._process_selected_paths(selected_paths)
+            
+            if all_file_paths:
+                # Check if we have an empty row to reuse
+                empty_row = None
+                for row in self.path_rows:
+                    if not row.get_path():
+                        empty_row = row
+                        break
 
-            # If we have an empty row, use it for the first file
-            if empty_row and file_paths:
-                empty_row.set_path(file_paths[0])
-                remaining_files = file_paths[1:]
-            else:
-                remaining_files = file_paths
+                # If we have an empty row, use it for the first file
+                if empty_row and all_file_paths:
+                    empty_row.set_path(all_file_paths[0])
+                    remaining_files = all_file_paths[1:]
+                else:
+                    remaining_files = all_file_paths
 
-            # Create new rows for remaining files
-            for file_path in remaining_files:
-                path_row = self.add_path_row()
-                path_row.set_path(file_path)
+                # Create new rows for remaining files
+                for file_path in remaining_files:
+                    path_row = self.add_path_row()
+                    path_row.set_path(file_path)
 
-            self._on_group_changed()
+                self._on_group_changed()
+
+    def add_folders_bulk(self):
+        """Open folder dialog to select multiple folders and create path rows for each geometry file found."""
+        # Find a good default directory based on existing paths
+        default_dir = None
+        
+        # Look for valid paths in current group
+        valid_dirs = []
+        for path_row in self.path_rows:
+            path = path_row.get_path()
+            if path and os.path.exists(path):
+                valid_dirs.append(os.path.dirname(path))
+        
+        if valid_dirs:
+            # Use the most common directory
+            from collections import Counter
+            most_common_dir = Counter(valid_dirs).most_common(1)[0][0]
+            if os.path.exists(most_common_dir):
+                default_dir = most_common_dir
+        
+        # If no valid paths in group, try materials folder
+        if not default_dir:
+            materials_folder = self.materials_folder_edit.text().strip()
+            if materials_folder and os.path.exists(materials_folder):
+                default_dir = materials_folder
+        
+        # Multiple folder selection
+        selected_folders = FileDialogHelper.get_multiple_folders(
+            parent=self,
+            title="Select Folders Containing Geometry Files",
+            default_dir=default_dir
+        )
+
+        if selected_folders:
+            # Collect all geometry files from all selected folders
+            all_files = []
+            for folder_path in selected_folders:
+                folder_files = self._get_geometry_files_from_folder(folder_path)
+                all_files.extend(folder_files)
+            
+            if all_files:
+                # Check if we have an empty row to reuse
+                empty_row = None
+                for row in self.path_rows:
+                    if not row.get_path():
+                        empty_row = row
+                        break
+
+                # If we have an empty row, use it for the first file
+                if empty_row and all_files:
+                    empty_row.set_path(all_files[0])
+                    remaining_files = all_files[1:]
+                else:
+                    remaining_files = all_files
+
+                # Create new rows for remaining files
+                for file_path in remaining_files:
+                    path_row = self.add_path_row()
+                    path_row.set_path(file_path)
+
+                self._on_group_changed()
+
 
     def remove_path_row(self, path_row: PathRow):
         """Remove a path row."""

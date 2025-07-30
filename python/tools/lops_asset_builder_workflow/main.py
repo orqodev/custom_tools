@@ -151,35 +151,8 @@ class LopsAssetBuilderWorkflow:
                 except Exception as e:
                     self._log_message(f"Warning: Could not set application attributes: {str(e)}", hou.severityType.Warning)
 
-            # Apply Material UI dark theme if available
-            if QT_MATERIAL_AVAILABLE:
-                try:
-                    # Define extra parameters for proper Material Design styling
-                    material_extra = {
-                        # Status colors matching our HoudiniTheme
-                        'danger': '#ff4444',      # Error red
-                        'warning': '#ff8800',     # Warning orange  
-                        'success': '#4CAF50',     # Success green
-                        # Typography
-                        'font_family': 'Roboto, Arial, sans-serif',
-                        'font_size': '12',
-                        'line_height': '20',
-                        # Material Design density scale
-                        'density_scale': '0',     # Standard density
-                        # Button shape
-                        'button_shape': 'default',
-                    }
-                    
-                    # Apply stylesheet with proper parameters
-                    apply_stylesheet(
-                        app, 
-                        theme='dark_cyan.xml',
-                        invert_secondary=False,  # dark_cyan is already a dark theme
-                        extra=material_extra
-                    )
-                    self._log_message("Applied Material UI dark_cyan theme with proper parameters")
-                except Exception as e:
-                    self._log_message(f"Failed to apply Material UI theme: {str(e)}", hou.severityType.Warning)
+            # Note: Material UI theme will be applied to the dialog widget specifically,
+            # not globally to the entire application to avoid affecting other Houdini tools
 
             # Import AssetGroupsDialog after QApplication is initialized to avoid Qt initialization issues
             try:
@@ -355,33 +328,7 @@ class LopsAssetBuilderWorkflow:
                     xform_nodes.append(xform_node)
                     
                     print(f"   ✅ Created xform: {xform_node.path()} for group: {group_name}")
-                    
-                    # Link xform node to the existing transform parameters on the component geometry
-                    comp_geo_node = None
-                    # Find the component geometry node for this group
-                    for node in lops_context.children():
-                        if node.type().name() == "componentgeometry" and _sanitize(group_name) in node.name():
-                            comp_geo_node = node
-                            break
-                    
-                    if comp_geo_node:
-                        # Link xform parameters to component geometry parameters
-                        node_name = _sanitize(group_name)
-                        transform_mappings = [
-                            ("t", f"{node_name}_translate"),
-                            ("r", f"{node_name}_rotate"), 
-                            ("s", f"{node_name}_scale")
-                        ]
-                        
-                        for xform_base, parent_param in transform_mappings:
-                            xform_components = ["x", "y", "z"]
-                            for j, component in enumerate(xform_components):
-                                xform_param = f"{xform_base}{component}"
-                                parent_param_name = f"{parent_param}{component}"
-                                relative_path = xform_node.relativePathTo(comp_geo_node)
-                                xform_node.parm(xform_param).setExpression(f'ch("{relative_path}/{parent_param_name}")')
-                        
-                        print(f"   🔗 Linked xform parameters to: {comp_geo_node.path()}")
+
                 else:
                     xform_nodes.append(None)
 
@@ -617,7 +564,7 @@ class LopsAssetBuilderWorkflow:
 
             print(f"      ✅ Assets prepared in {asset_time:.2f}s")
             print(f"         Switch: {switch_node.path() if switch_node else 'None'}")
-            print(f"         Transform: Moved to LOPS level (after component output)")
+            print(f"         Transform: {transform_node.path() if transform_node else 'None'} (inside component geometry)")
 
             # Create group parameters
             print(f"      ⚙️ Creating group parameters...")
@@ -625,13 +572,6 @@ class LopsAssetBuilderWorkflow:
             self._create_group_parameters(parent, node_name, asset_paths, switch_node, transform_node)
             param_time = time.time() - param_start
             print(f"      ✅ Parameters created in {param_time:.2f}s")
-
-            # Link group nodes to parameters
-            print(f"      🔗 Linking nodes to parameters...")
-            link_start = time.time()
-            self._link_group_nodes_to_parameters(parent, node_name, switch_node, transform_node)
-            link_time = time.time() - link_start
-            print(f"      ✅ Nodes linked in {link_time:.2f}s")
 
             # Create materials if texture folder is provided
             if texture_folder and os.path.exists(texture_folder):
@@ -788,6 +728,9 @@ class LopsAssetBuilderWorkflow:
             attrib_delete = parent_sop.createNode("attribdelete", "keep_P_N_UV_NAME")
             remove_points = parent_sop.createNode("add", f"remove_points")
 
+            # Create transform node for external control (after remove_points)
+            transform_node = parent_sop.createNode("xform", _sanitize(f"transform_{node_name}"))
+
             match_size.setParms({
                 "justify_x": 2,
                 "justify_y": 1,
@@ -808,12 +751,13 @@ class LopsAssetBuilderWorkflow:
 
             remove_points.parm("remove").set(True)
 
-            # Connect main nodes - removed transform node from inside component geometry
+            # Connect main nodes - transform node now comes after remove_points
             match_size.setInput(0, switch_node)
             attrib_wrangler.setInput(0, match_size)
             attrib_delete.setInput(0, attrib_wrangler)
             remove_points.setInput(0, attrib_delete)
-            default_output.setInput(0, remove_points)
+            transform_node.setInput(0, remove_points)
+            default_output.setInput(0, transform_node)
 
             # Prepare Proxy Setup
             poly_reduce = parent_sop.createNode("polyreduce::2.0", "reduce_to_5")
@@ -862,8 +806,8 @@ class LopsAssetBuilderWorkflow:
             attrib_delete_name.parm("primdel").set("asset_name")
 
             name_node.parm("name1").set(expression_parm)
-            # Connect proxy nodes - connect directly to remove_points since transform is moved to LOPS level
-            poly_reduce.setInput(0, remove_points)
+            # Connect proxy nodes
+            poly_reduce.setInput(0, transform_node)
             attrib_colour.setInput(0, poly_reduce)
             color_node.setInput(0, attrib_colour)
             attrib_promote.setInput(0, color_node)
@@ -872,15 +816,15 @@ class LopsAssetBuilderWorkflow:
 
             # Prepare the sim Setup
             python_sop = self._create_convex(parent_sop)
-            # Connect sim nodes - connect directly to remove_points since transform is moved to LOPS level
-            python_sop.setInput(0, remove_points)
+            # Connect sim nodes
+            python_sop.setInput(0, transform_node)
             name_node.setInput(0, python_sop)
             sim_output.setInput(0, name_node)
 
             # Layout nodes
             parent_sop.layoutChildren()
 
-            return switch_node, None  # transform_node removed - now handled at LOPS level
+            return switch_node, transform_node
 
         except Exception as e:
             self._log_message(f"Error preparing imported asset: {str(e)}", hou.severityType.Error)
