@@ -6,6 +6,7 @@ import subprocess
 import time
 import logging
 import threading
+import platform
 
 
 from PySide2 import QtWidgets, QtGui, QtCore
@@ -479,14 +480,26 @@ class MtlxMaterial:
         self.MAX_WORKERS = os.cpu_count()
         self.WORKER_LIMIT = max(1,int(self.MAX_WORKERS * 0.5))
 
+        # Path for imaketx tool on Linux/Mac
+        # This is an absolute path that can be easily updated in future
+        self.LINUX_IMAKETX_PATH = "/opt/hfs20.5.613/bin/imaketx"
+
     def _setup_imaketx(self):
         ''' Initialize imaketx tool'''
-        imaketx_tool = "/opt/hfs20.5.613/bin/imaketx"
         houdini_folder = hou.text.expandString("$HB")
         if houdini_folder:
-            self.imaketx_path = os.path.join(houdini_folder, imaketx_tool).replace(os.sep,"/")
+            # Detect operating system and set appropriate path
+            if platform.system() == "Windows":
+                # Windows path
+                imaketx_tool = "bin\\imaketx.exe"
+                self.imaketx_path = os.path.join(houdini_folder, imaketx_tool)
+            else:
+                # Linux/Mac path - using the configurable path variable
+                # Since this is an absolute path, we don't need to join it with houdini_folder
+                self.imaketx_path = self.LINUX_IMAKETX_PATH
+
             if not os.path.exists(self.imaketx_path):
-                raise RuntimeError(f"imaketx toolnot found at: {self.imaketx_path}")
+                raise RuntimeError(f"imaketx tool not found at: {self.imaketx_path}")
 
     def _convert_to_tx(self,textures_paths):
         ''' Convert textures to TX using parallel processing with monitoring '''
