@@ -18,7 +18,7 @@ def reload_packages(kwargs):
     hou.ui.reloadPackage(package_path)
 
     # reload the python modules
-    folder_path = hou.text.expandString("$RBW/scripts/python")
+    folder_path = hou.text.expandString("$CUSTOM_TOOLS/scripts/python")
 
     # reload the python modules
     for root, dirs, files in os.walk(folder_path):
@@ -44,7 +44,7 @@ def reload_packages(kwargs):
     
 # reload the shelves
     shelves = hou.shelves.shelves()
-    path_shelves = hou.text.expandString("$RBW/toolbar")
+    path_shelves = hou.text.expandString("$CUSTOM_TOOLS/toolbar")
 
     for root, dir, files in os.walk(path_shelves):
         for file in files:
@@ -63,7 +63,7 @@ def check_path_valid(path):
     import hou
     import os
 
-    ## FIX the path if is using a env variable - $HIP, $HOME, $RBW
+    ## FIX the path if is using a env variable - $HIP, $HOME, $CUSTOM_TOOLS
     path = os.path.dirname(hou.text.expandString(path))
 
     ## Check if the path exists

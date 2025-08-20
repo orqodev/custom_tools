@@ -6,7 +6,7 @@ import voptoolutils
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 import colorsys
 import random
-from typing import List, Type
+from typing import List, Type, Optional
 from pxr import Usd,UsdGeom
 from modules.misc_utils import _sanitize
 
@@ -185,7 +185,7 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
             parm_name = "file"
         elif extension == "abc":
             file_import = parent.createNode("alembic", _sanitize(f"import_{name}"))
-            parm_name = "filename"
+            parm_name = "fileName"
         else:
             return
 
@@ -539,3 +539,108 @@ def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vec
     child_box.setColor(child_colour)
 
     parent_box.fitAroundContents()
+
+def create_tops_component_builder(directory: str, filename: str) -> Optional[hou.Node]:
+    '''
+    Creates a component builder for use in TOP networks without creating lights, rigs, camera, and render nodes.
+
+    Args:
+        directory (str): Directory containing the asset file
+        filename (str): Name of the asset file (including extension)
+
+    Returns:
+        Optional[hou.Node]: The component output node if successful, None otherwise
+
+    Example:
+        # In a Python TOP node:
+import os
+from tools import lops_asset_builder
+
+# Get directory and filename from TOP work item
+directory = work_item.attribValue("directory")
+filename = work_item.attribValue("filename")
+
+# Create the component builder
+output_node = lops_asset_builder.create_tops_component_builder(directory, filename)
+
+        # Set work item to success or failure based on result
+if output_node:
+    work_item.addStatusMessage("Component builder created successfully")
+    work_item.setSuccess(True)
+else:
+    work_item.addStatusMessage("Failed to create component builder")
+    work_item.setFailure(True)
+    '''
+    try:
+        # Construct the full path to the asset
+        selected_directory = os.path.join(directory, filename)
+        selected_directory = hou.text.expandString(selected_directory)
+
+        if not os.path.exists(selected_directory):
+            print(f"Error: File does not exist: {selected_directory}")
+            return None
+
+        # Define context
+        stage_context = hou.node("/stage")
+
+        # Get the path and filename and the folder with the textures
+        path, filename = os.path.split(selected_directory)
+        folder_textures = os.path.join(path, "maps").replace(os.sep, "/")
+
+        # Get asset name and extension
+        asset_name = filename.split(".")[0]
+        asset_extension = filename.split(".")[-1]
+        if filename.endswith("bgeo.sc"):
+            asset_name = filename.split(".")[0]
+            asset_extension = "bgeo.sc"
+
+        # Create nodes for the component builder setup
+        comp_geo = stage_context.createNode("componentgeometry", f"{asset_name}_geo")
+        material_lib = stage_context.createNode("materiallibrary", f"{asset_name}_mtl")
+        comp_material = stage_context.createNode("componentmaterial", f"{asset_name}_assign")
+        comp_out = stage_context.createNode("componentoutput", asset_name)
+
+        comp_geo.parm("geovariantname").set(asset_name)
+        material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
+        comp_material.parm("nummaterials").set(0)
+
+        # Create auto assigment for materials
+        comp_material_edit = comp_material.node("edit")
+        output_node = comp_material_edit.node("output0")
+
+        assign_material = comp_material_edit.createNode("assignmaterial", f"{asset_name}_assign")
+        # SET PARMS
+        assign_material.setParms({
+            "primpattern1": "%type:Mesh",
+            "matspecmethod1": 2,
+            "matspecvexpr1": '"/ASSET/mtl/"+@primname;',
+            "bindpurpose1": "full",
+        })
+
+        # Connect nodes
+        comp_material.setInput(0, comp_geo)
+        comp_material.setInput(1, material_lib)
+        comp_out.setInput(0, comp_material)
+
+        # Connect the input of assign material node to the first subnet indirect input
+        assign_material.setInput(0, comp_material_edit.indirectInputs()[0])
+        output_node.setInput(0, assign_material)
+
+        # Nodes to layout
+        nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
+        stage_context.layoutChildren(nodes_to_layout)
+
+        # Prepare imported geo
+        _prepare_imported_asset(comp_geo, asset_name, asset_extension, path, comp_out)
+
+        # Create the materials using the text_to_mtlx script
+        _create_materials(comp_geo, folder_textures, material_lib)
+
+        # Set Display Flag
+        comp_out.setGenericFlag(hou.nodeFlag.Display, True)
+
+        return comp_out
+
+    except Exception as e:
+        print(f"An error happened in create_tops_component_builder: {str(e)}")
+        return None

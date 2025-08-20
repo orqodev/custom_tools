@@ -325,12 +325,21 @@ else
         align_and_distribute_node = geo_node.createNode('labs::align_and_distribute', 'align_and_distribute')
         align_and_distribute_node.setInput(0, merge_node)
 
-        # Add a null node at the end for cleaner output
-        output_node = geo_node.createNode('null', 'OUT')
-        output_node.setInput(0, align_and_distribute_node)
-        output_node.setDisplayFlag(True)
-        output_node.setRenderFlag(True)
-        output_node.setPosition(merge_node.position() + hou.Vector2(0, -1))
+        # Add OUT_RENDER null node
+        out_render_node = geo_node.createNode('null', 'OUT_RENDER')
+        out_render_node.setInput(0, align_and_distribute_node)
+        out_render_node.setDisplayFlag(True)
+        out_render_node.setRenderFlag(True)
+        out_render_node.setPosition(merge_node.position() + hou.Vector2(0, -1))
+        
+        # Add polyreduce node with percentage parameter set to 10
+        poly_reduce_node = geo_node.createNode('polyreduce::2.0', 'polyreduce_proxy')
+        poly_reduce_node.parm('percentage').set(10)
+        poly_reduce_node.setInput(0, align_and_distribute_node)
+        
+        # Add OUT_PROXY null node
+        out_proxy_node = geo_node.createNode('null', 'OUT_PROXY')
+        out_proxy_node.setInput(0, poly_reduce_node)
 
         # Save analysis results to a JSON file
         hip_dir = hou.text.expandString('$HIP')

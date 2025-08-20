@@ -24,17 +24,8 @@ except ImportError:
                 "progress_bar_height_small": "18px", "min_button_height": "10px", "margin_small": "4px", "margin_medium": "7px"
             }
 
-# Import material theme processor for Material Design CSS generation
-try:
-    from ..ui.material_theme_processor import get_material_css, get_material_styles
-    MATERIAL_CSS_AVAILABLE = True
-except ImportError:
-    try:
-        from ui.material_theme_processor import get_material_css, get_material_styles
-        MATERIAL_CSS_AVAILABLE = True
-    except ImportError:
-        MATERIAL_CSS_AVAILABLE = False
-        print("Warning: Material CSS processor not available - using fallback styles")
+# Material CSS processor removed - using built-in Houdini theming instead
+MATERIAL_CSS_AVAILABLE = False
 
 # UI Constants
 DEFAULT_DIALOG_WIDTH = 600
@@ -208,34 +199,11 @@ STATUS_LABEL_STYLES = {
 HEADER_LABEL_STYLE = f"font-size: {HoudiniTheme.FONTS['header_size']}px; font-weight: bold; color: {THEME_COLORS['accent_primary']}; margin-bottom: {HoudiniTheme.LAYOUT['margin_medium']};"
 SUBHEADER_LABEL_STYLE = f"font-size: {HoudiniTheme.FONTS['large_size']}px; font-weight: bold; color: {THEME_COLORS['text']}; margin: {HoudiniTheme.LAYOUT['margin_subheader']};"
 
-# Material Design CSS Styles
-# These styles use the qt_material template system with our custom theme colors
-if MATERIAL_CSS_AVAILABLE:
-    try:
-        # Generate full Material Design CSS
-        MATERIAL_FULL_CSS = get_material_css()
-        
-        # Get specific material styles for common components
-        _material_styles = get_material_styles()
-        MATERIAL_BUTTON_STYLE = _material_styles.get('primary_button', PRIMARY_BUTTON_STYLE)
-        MATERIAL_INPUT_STYLE = _material_styles.get('input_field', INPUT_FIELD_STYLE)
-        MATERIAL_DIALOG_STYLE = _material_styles.get('dialog', DIALOG_STYLE)
-        
-        print("✓ Material Design CSS styles generated successfully")
-        
-    except Exception as e:
-        print(f"Warning: Failed to generate Material CSS styles: {e}")
-        # Fallback to existing styles
-        MATERIAL_FULL_CSS = ""
-        MATERIAL_BUTTON_STYLE = PRIMARY_BUTTON_STYLE
-        MATERIAL_INPUT_STYLE = INPUT_FIELD_STYLE
-        MATERIAL_DIALOG_STYLE = DIALOG_STYLE
-else:
-    # Fallback when material processor is not available
-    MATERIAL_FULL_CSS = ""
-    MATERIAL_BUTTON_STYLE = PRIMARY_BUTTON_STYLE
-    MATERIAL_INPUT_STYLE = INPUT_FIELD_STYLE
-    MATERIAL_DIALOG_STYLE = DIALOG_STYLE
+# Material Design CSS Styles - Using built-in Houdini theming instead
+MATERIAL_FULL_CSS = ""
+MATERIAL_BUTTON_STYLE = PRIMARY_BUTTON_STYLE
+MATERIAL_INPUT_STYLE = INPUT_FIELD_STYLE
+MATERIAL_DIALOG_STYLE = DIALOG_STYLE
 
 # Layout Constants
 WIDGET_MARGINS = (3, 2, 3, 2)          # Reduced from (5, 3, 5, 3)

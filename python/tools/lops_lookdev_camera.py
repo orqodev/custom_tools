@@ -175,7 +175,7 @@ def _create_parameters(node,asset_name):
         target_string = hou.StringParmTemplate(
             name="target",
             label="Target Prim",
-            default_value=(f"{asset_name}",),
+            default_value=(f"/{asset_name}",),
             num_components=1
         )
 

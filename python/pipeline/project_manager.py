@@ -10,9 +10,9 @@ from pipeline.save_tool import SaveToolWindow
 
 class ProjectManager(QtWidgets.QMainWindow):
     # CLASS CONSTANST
-    CONFIG_DIR = "$RBW/config"
+    CONFIG_DIR = "$CUSTOM_TOOLS/config"
     CONFIG_FILE = "projects_config.json"
-    UI_FILE = "$RBW/ui/project_manager.ui"
+    UI_FILE = "$CUSTOM_TOOLS/ui/project_manager.ui"
     DEFAULT_FOLDERS = [
         "geo",
         "hda",
@@ -41,7 +41,7 @@ class ProjectManager(QtWidgets.QMainWindow):
         self.projects_data = []
         self.sequences_data = []
         self.files_data = []
-        self.json_path = os.path.join(hou.text.expandString(self.CONFIG_DIR), self.CONFIG_FILE)
+        self.json_path = os.path.join(hou.text.expandString(self.CONFIG_DIR), self.CONFIG_FILE).replace(os.sep,"/")
         # LOAD PROJECTS WHEN INITIALIZZING
         self.load_projects()
         self.save_tool_window = None
@@ -187,13 +187,15 @@ class ProjectManager(QtWidgets.QMainWindow):
         '''
         Load projects from the json file and populate the project list
         '''
-
+        print(self.json_path)
         try:
             with open(self.json_path, 'r') as file:
                 self.projects_data = json.load(file)
+
             projects_names = []
             active_project_index = 0
             for index,project in enumerate(self.projects_data):
+                print(project)
                 project_name = list(project.keys())[0]
                 projects_names.append(project_name)
 
@@ -377,6 +379,10 @@ class ProjectManager(QtWidgets.QMainWindow):
 
 
 
+        # Ensure the seq directory exists before creating scene folders
+        seq_dir = os.path.join(project_data["PROJECT_PATH"], "seq")
+        os.makedirs(seq_dir, exist_ok=True)
+        
         scene_path = os.path.join(project_data["PROJECT_PATH"], "seq", scene_name).replace(os.sep, "/")
         if btn_pressed == 1:
             return
