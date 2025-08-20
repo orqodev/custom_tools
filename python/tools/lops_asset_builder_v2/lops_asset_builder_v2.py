@@ -121,8 +121,8 @@ def create_component_builder(selected_directory=None):
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
 
     except Exception as e:
-        hou.ui.displayMessage(f"An error happened in create component builder: {str(e)}",
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: An error happened in create component builder: {str(e)}")
 
 def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
@@ -259,8 +259,8 @@ def _create_group_parameters(parent_node, node_name, asset_paths, switch_node, t
         _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
 
     except Exception as e:
-        hou.ui.displayMessage(f"Error creating group parameters: {str(e)}", 
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: Error creating group parameters: {str(e)}")
 
 
 def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node):
@@ -301,8 +301,8 @@ def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transfo
                     transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
 
     except Exception as e:
-        hou.ui.displayMessage(f"Error linking nodes to parameters: {str(e)}", 
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: Error linking nodes to parameters: {str(e)}")
 
 
 def _prepare_imported_asset(parent, selected_directory, path, out_node, node_name):
@@ -477,8 +477,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
             _create_group_parameters(comp_geo_node, node_name, asset_paths, switch_node, transform_node)
 
     except Exception as e:
-        hou.ui.displayMessage(f"An error happened in prepare imported assets: {str(e)}",
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: An error happened in prepare imported assets: {str(e)}")
 
 def create_camera_lookdev(parent,asset_name):
     '''
@@ -622,9 +622,8 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
         folder_textures_check = os.path.normpath(folder_textures)
         if not os.path.exists(folder_textures_check):
             print(f"Warning: Texture folder does not exist: {folder_textures_check}")
-            # Display message but continue with template materials
-            hou.ui.displayMessage(f"Texture folder not found: {folder_textures}. Creating template materials instead.",
-                                 severity=hou.severityType.Warning)
+            # Print warning but continue with template materials
+            print(f"Warning: Texture folder not found: {folder_textures}. Creating template materials instead.")
             _create_mtlx_templates(parent, material_lib)
             return True
 
@@ -645,8 +644,6 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
             # Check if this folder contains valid textures
             if material_handler.folder_with_textures(current_folder):
                 valid_folders_found = True
-                print(f"Found textures in folder: {current_folder}")
-
                 # Get texture details from this folder
                 folder_texture_list = material_handler.get_texture_details(current_folder)
                 if folder_texture_list and isinstance(folder_texture_list, dict):
@@ -680,15 +677,17 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                 )
                 create_material.create_materialx()
 
-            hou.ui.displayMessage(f"Created {materials_created_length} materials in {material_lib.path()}", 
-                                 severity=hou.severityType.Message)
+            # Use print instead of UI message to allow non-interactive operation
+            print(f"Created {materials_created_length} materials in {material_lib.path()}")
             return True
         else:
             _create_mtlx_templates(parent, material_lib)
-            hou.ui.displayMessage("No valid textures sets found in folder or subfolders", severity=hou.severityType.Message)
+            # Use print instead of UI message to allow non-interactive operation
+            print("No valid textures sets found in folder or subfolders")
             return True
     except Exception as e:
-        hou.ui.displayMessage(f"Error creating materials: {str(e)}", severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error creating materials: {str(e)}")
         return False
 
 def _extract_material_names(asset_paths):

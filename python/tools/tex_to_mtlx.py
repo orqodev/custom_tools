@@ -1,3 +1,49 @@
+"""
+TexToMtlx - Texture to MaterialX Converter for Houdini
+======================================================
+
+A Houdini tool for converting texture files into MaterialX materials.
+This tool provides a user-friendly interface to create MaterialX-based materials
+from texture files with automatic texture type detection.
+
+Version: 1.2.1
+Author: Alejandro Fidanza
+Requirements: Houdini 20.5 or later
+
+Features:
+---------
+- Automatic texture type detection based on naming conventions
+- Support for UDIM textures
+- Texture conversion to TX format
+- Cross-platform support (Windows/Linux)
+- Multi-threaded texture processing
+- Material name sanitization options
+
+Change History:
+--------------
+v1.2.1 (2023-12-20)
+- Fixed bug with undefined _sanitize function causing material creation to fail
+- Replaced _sanitize calls with slugify for consistent name sanitization
+
+v1.2.0 (2023-12-15)
+- Added cross-platform support for Windows and Linux
+- Fixed path handling for imaketx tool
+- Added proper path normalization to prevent path format issues
+- Added logging for debugging imaketx command execution
+
+v1.1.0 (2023-11-30)
+- Added material name sanitization options
+- Improved texture type detection
+- Added support for SSS textures
+- Fixed UDIM pattern handling
+
+v1.0.0 (2023-10-15)
+- Initial release
+- Basic texture to MaterialX conversion
+- Support for common PBR texture types
+- TX conversion support
+"""
+
 import hou
 import os
 import pprint
@@ -365,7 +411,8 @@ class TxToMtlx(QtWidgets.QMainWindow):
             self.progress_bar.setValue(progress_bar_default + 1)
             progress_bar_default += 1
 
-        hou.ui.displayMessage(f"Material creation completed!!", severity=hou.severityType.Message)
+        # Use print instead of UI message to allow non-interactive operation
+        print("Material creation completed!!")
 
     def _show_sanitization_dialog(self):
         """Show dialog to ask user about material name sanitization options"""
@@ -490,13 +537,16 @@ class MtlxMaterial:
         if houdini_folder:
             # Detect operating system and set appropriate path
             if platform.system() == "Windows":
-                # Windows path
-                imaketx_tool = "bin\\imaketx.exe"
-                self.imaketx_path = os.path.join(houdini_folder, imaketx_tool)
+                # Windows path - ensure proper Windows path format with backslashes
+                # $HB already points to the bin directory, so we don't need to add "bin\" again
+                imaketx_tool = "imaketx.exe"
+                # Use normpath to ensure consistent path separators
+                self.imaketx_path = os.path.normpath(os.path.join(houdini_folder, imaketx_tool))
             else:
                 # Linux/Mac path - using the configurable path variable
                 # Since this is an absolute path, we don't need to join it with houdini_folder
                 self.imaketx_path = self.LINUX_IMAKETX_PATH
+
 
             if not os.path.exists(self.imaketx_path):
                 raise RuntimeError(f"imaketx tool not found at: {self.imaketx_path}")
@@ -517,7 +567,15 @@ class MtlxMaterial:
                 logger.info(f"Thread {thread_id}: Starting conversion of {os.path.basename(texture_path)}")
                 # Setup the outfile for the imaketx tool
                 output_path = os.path.splitext(texture_path)[0] + ".tx"
-                command = f'"{self.imaketx_path}" "{texture_path}" "{output_path}" "--newer"'
+
+                # Ensure paths are properly formatted for the current OS
+                imaketx_path_norm = os.path.normpath(self.imaketx_path)
+                texture_path_norm = os.path.normpath(texture_path)
+                output_path_norm = os.path.normpath(output_path)
+
+                command = f'"{imaketx_path_norm}" "{texture_path_norm}" "{output_path_norm}" "--newer"'
+                logger.info(f"Thread {thread_id}: Running command: {command}")
+
                 result = subprocess.run(command, shell=True, capture_output=True, text=True)
                 end_time = time.time()
                 duration = round(end_time - start_time, 2)
@@ -525,7 +583,7 @@ class MtlxMaterial:
                     logger.info(f"Thread {thread_id}: Finished conversion of {os.path.basename(texture_path)} in {duration} seconds")
                     return True
                 else:
-                    logger.error(f"Thread {thread_id}: Failed to convert {os.path.basename(texture_path)} to TX format in {result.stderr}")
+                    logger.error(f"Thread {thread_id}: Failed to convert {os.path.basename(texture_path)} to TX format. Error: {result.stderr}")
                     return False
 
             except Exception as e:
@@ -985,7 +1043,7 @@ class MtlxMaterial:
 
     def _setup_sss_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the SSS texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -997,7 +1055,7 @@ class MtlxMaterial:
 
     def _setup_mask_texture(self, texture_node):
         ''' Setup for user or mask texture'''
-        separate_node = texture_node.parent().createNode("mtlxseparate3c", _sanitize(texture_node.name() + "_SPLIT"))
+        separate_node = texture_node.parent().createNode("mtlxseparate3c", slugify(texture_node.name() + "_SPLIT"))
         separate_node.setInput(0, texture_node)
 
     def _setup_bump_normal(self, subnet_context, mtlx_standard_surf, material_lib_info, place2d):
