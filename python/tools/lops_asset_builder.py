@@ -8,7 +8,6 @@ import colorsys
 import random
 from typing import List, Type, Optional
 from pxr import Usd,UsdGeom
-from modules.misc_utils import _sanitize
 
 
 def create_component_builder(selected_directory=None):
@@ -30,51 +29,7 @@ def create_component_builder(selected_directory=None):
 
             # Get the path and filename and the folder with the textures
             path, filename = os.path.split(selected_directory)
-
-            # Ask user to choose texture folder path instead of hardcoding "maps"
-            default_maps_folder = os.path.join(path, "maps").replace(os.sep, "/")
-
-            # Check if default maps folder exists
-            if os.path.exists(default_maps_folder):
-                # Ask user if they want to use default or choose custom path
-                choice = hou.ui.displayMessage(
-                    f"Found default 'maps' folder at:\n{default_maps_folder}\n\nDo you want to use this folder or choose a different one?",
-                    buttons=("Use Default", "Choose Different", "Cancel"),
-                    severity=hou.severityType.Message,
-                    default_choice=0
-                )
-
-                if choice == 0:  # Use Default
-                    folder_textures = default_maps_folder
-                elif choice == 1:  # Choose Different
-                    custom_folder = hou.ui.selectFile(
-                        title="Select folder containing textures",
-                        file_type=hou.fileType.Directory,
-                        multiple_select=False
-                    )
-                    if custom_folder:
-                        folder_textures = hou.text.expandString(custom_folder)
-                    else:
-                        hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
-                        return
-                else:  # Cancel
-                    return
-            else:
-                # No default maps folder found, ask user to select one
-                hou.ui.displayMessage(
-                    f"No 'maps' folder found at:\n{default_maps_folder}\n\nPlease select the folder containing your textures.",
-                    severity=hou.severityType.Message
-                )
-                custom_folder = hou.ui.selectFile(
-                    title="Select folder containing textures",
-                    file_type=hou.fileType.Directory,
-                    multiple_select=False
-                )
-                if custom_folder:
-                    folder_textures = hou.text.expandString(custom_folder)
-                else:
-                    hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
-                    return
+            folder_textures = os.path.join(path, "maps").replace(os.sep, "/")
 
             # Get asset name and extension
             asset_name = filename.split(".")[0]
@@ -85,10 +40,10 @@ def create_component_builder(selected_directory=None):
 
             # Create nodes for the component builder setup
 
-            comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
-            material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{asset_name}_mtl"))
-            comp_material = stage_context.createNode("componentmaterial", _sanitize(f"{asset_name}_assign"))
-            comp_out = stage_context.createNode("componentoutput", _sanitize(asset_name))
+            comp_geo = stage_context.createNode("componentgeometry", f"{asset_name}_geo")
+            material_lib = stage_context.createNode("materiallibrary", f"{asset_name}_mtl")
+            comp_material = stage_context.createNode("componentmaterial", f"{asset_name}_assign")
+            comp_out = stage_context.createNode("componentoutput", asset_name)
 
             comp_geo.parm("geovariantname").set(asset_name)
             material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
@@ -98,7 +53,7 @@ def create_component_builder(selected_directory=None):
             comp_material_edit = comp_material.node("edit")
             output_node = comp_material_edit.node("output0")
 
-            assign_material = comp_material_edit.createNode("assignmaterial", _sanitize(f"{asset_name}_assign"))
+            assign_material = comp_material_edit.createNode("assignmaterial", f"{asset_name}_assign")
             # SET PARMS
             assign_material.setParms({
                 "primpattern1": "%type:Mesh",
@@ -128,8 +83,6 @@ def create_component_builder(selected_directory=None):
             create_organized_net_note(f"Asset {asset_name.upper()}", nodes_to_layout,hou.Vector2(0, 5))
             # Select the Component Output
             comp_out.setSelected(True, clear_all_selected=True)
-
-
             # Create light rig
             light_rig_nodes_to_layout, merge_node = lops_light_rig.create_three_point_light()
             # Light Rig Nodes to layout
@@ -143,7 +96,6 @@ def create_component_builder(selected_directory=None):
             camera_python_script = create_camera_lookdev(stage_context, asset_name)
             # Connect script
             camera_python_script.setInput(0, camera_render)
-
             # Create Karma nodes
             karma_settings,usdrender_rop = create_karma_nodes(stage_context)
             karma_settings.setInput(0, camera_python_script)
@@ -181,19 +133,19 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
         # Create the file node that imports the asset
         file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
         if extension in file_extension:
-            file_import = parent.createNode("file", _sanitize(f"import_{name}"))
+            file_import = parent.createNode("file", f"import_{name}")
             parm_name = "file"
         elif extension == "abc":
-            file_import = parent.createNode("alembic", _sanitize(f"import_{name}"))
-            parm_name = "fileName"
+            file_import = parent.createNode("alembic", f"import_{name}")
+            parm_name = "filename"
         else:
             return
 
         # Create the main nodes
-        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{name}"))
+        match_size = parent.createNode("matchsize", f"matchsize_{name}")
         attrib_wrangler = parent.createNode("attribwrangle", "convert_mat_to_name")
         attrib_delete = parent.createNode("attribdelete", "keep_P_N_UV_NAME")
-        remove_points = parent.createNode("add", _sanitize(f"remove_points"))
+        remove_points = parent.createNode("add", f"remove_points")
 
         # Set Parms for main nodes
         file_import.parm(parm_name).set(f"{path}/{name}.{extension}")
@@ -206,7 +158,7 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
 
         attrib_wrangler.setParms({
             "class": 1,
-            "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+            "snippet": 'string material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
         })
 
         attrib_delete.setParms({
@@ -230,7 +182,7 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
         attrib_colour = parent.createNode("attribwrangle", "set_color")
         color_node = parent.createNode("color", "unique_color")
         attrib_promote = parent.createNode("attribpromote", "promote_Cd")
-        attrib_delete_name = parent.createNode("attribdelete", _sanitize(f"delete_asset_name"))
+        attrib_delete_name = parent.createNode("attribdelete", f"delete_asset_name")
         name_node = parent.createNode("name", "name")
         # Set parms for proxy setup
         poly_reduce.parm("percentage").set(5)
@@ -408,6 +360,9 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
 def _create_mtlx_templates(parent, material_lib):
     stage = parent.stage()
     prims_name = _find_prims_by_attribute(stage, UsdGeom.Mesh)
+    if not prims_name:
+        # If no prims found, create at least a default material
+        prims_name = ["default"]
     for name in prims_name:
         voptoolutils._setupMtlXBuilderSubnet(
             subnet_node=None,
@@ -435,6 +390,14 @@ def _create_materials(parent, folder_textures,material_lib):
         material_handler = tex_to_mtlx.TxToMtlx()
         stage = parent.stage()
         prims_name = _find_prims_by_attribute(stage, UsdGeom.Mesh)
+
+        # If no prims found, create a default material
+        if not prims_name:
+            _create_mtlx_templates(parent, material_lib)
+            hou.ui.displayMessage("No valid geometry prims found, creating default material",
+                                 severity=hou.severityType.Warning)
+            return True
+
         materials_created_lenght = 0
         if material_handler.folder_with_textures(folder_textures):
             # Get the texture detail
@@ -462,7 +425,7 @@ def _create_materials(parent, folder_textures,material_lib):
                             texture_list=texture_list
                         )
                         create_material.create_materialx()
-                hou.ui.displayMessage(f"Created {materials_created_lenght} materials in {material_lib.path()}", severity=hou.severityType.Message)
+                # hou.ui.displayMessage(f"Created {materials_created_lenght} materials in {material_lib.path()}", severity=hou.severityType.Message)
                 return True
             else:
                 _create_mtlx_templates(parent, material_lib)
@@ -478,9 +441,10 @@ def _create_materials(parent, folder_textures,material_lib):
 
 def _find_prims_by_attribute(stage: Usd.Stage, prim_type: Type[Usd.Typed]) -> List[Usd.Prim]:
     prims_name = set()
-    for prim in stage.Traverse():
-        if prim.IsA(prim_type) and "render" in str(prim.GetPath()):
-            prims_name.add(prim.GetName())
+    if stage is not None:
+        for prim in stage.Traverse():
+            if prim.IsA(prim_type) and "render" in str(prim.GetPath()):
+                prims_name.add(prim.GetName())
     return list(prims_name)
 
 def _random_color():
@@ -498,47 +462,6 @@ def _random_color():
     secondary_colour = hou.Color(sec_red, sec_green, sec_blue)
 
     return (main_colour, secondary_colour)
-
-def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0)):
-    '''
-    Creates a network box and sticky note organized around selected nodes,
-    with position offset to avoid overlapping groups.
-
-    Args:
-        asset_name (str): Label text for the sticky note and network box
-        nodes_to_layout (list): List of nodes to include in the network box
-        offset (float): Horizontal offset applied to this block
-    Returns:
-        None
-    '''
-    parent = nodes_to_layout[0].parent()
-
-    # Colors
-    background_colour = 0.189
-    parent_colour = hou.Color(background_colour, background_colour, background_colour)
-    child_colour, sticky_note_colour = _random_color()
-    text_color = hou.Color(0.8, 0.8, 0.8)
-
-    # Apply horizontal offset to nodes
-    for node in nodes_to_layout:
-        node.setPosition(node.position() + offset_vector)
-
-    # Create network boxes
-    parent_box = parent.createNetworkBox()
-    child_box = parent.createNetworkBox()
-    parent_box.addItem(child_box)
-
-    for node in nodes_to_layout:
-        child_box.addItem(node)
-
-    child_box.fitAroundContents()
-
-    # Network box settings
-    parent_box.setComment(asset_name)
-    parent_box.setColor(parent_colour)
-    child_box.setColor(child_colour)
-
-    parent_box.fitAroundContents()
 
 def create_tops_component_builder(directory: str, filename: str) -> Optional[hou.Node]:
     '''
@@ -644,3 +567,44 @@ else:
     except Exception as e:
         print(f"An error happened in create_tops_component_builder: {str(e)}")
         return None
+
+def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0)):
+    '''
+    Creates a network box and sticky note organized around selected nodes,
+    with position offset to avoid overlapping groups.
+
+    Args:
+        asset_name (str): Label text for the sticky note and network box
+        nodes_to_layout (list): List of nodes to include in the network box
+        offset (float): Horizontal offset applied to this block
+    Returns:
+        None
+    '''
+    parent = nodes_to_layout[0].parent()
+
+    # Colors
+    background_colour = 0.189
+    parent_colour = hou.Color(background_colour, background_colour, background_colour)
+    child_colour, sticky_note_colour = _random_color()
+    text_color = hou.Color(0.8, 0.8, 0.8)
+
+    # Apply horizontal offset to nodes
+    for node in nodes_to_layout:
+        node.setPosition(node.position() + offset_vector)
+
+    # Create network boxes
+    parent_box = parent.createNetworkBox()
+    child_box = parent.createNetworkBox()
+    parent_box.addItem(child_box)
+
+    for node in nodes_to_layout:
+        child_box.addItem(node)
+
+    child_box.fitAroundContents()
+
+    # Network box settings
+    parent_box.setComment(asset_name)
+    parent_box.setColor(parent_colour)
+    child_box.setColor(child_colour)
+
+    parent_box.fitAroundContents()

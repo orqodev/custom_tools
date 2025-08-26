@@ -40,19 +40,9 @@ def create_lookdev_camera(asset_name):
     # Get the target prim
     target_prim = stage.GetPrimAtPath(target_path)
 
-
-    # Validate that the target prim exists and is valid
-    if not target_prim or not target_prim.IsValid():
-        raise hou.NodeError(f"Target prim not found or invalid at path: {target_path}")
-
     # Use the BBoxCache instead; directly using extentsHint is annoying/painful
     bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode.EarliestTime(), ['default', 'render'])
-
-    # Additional validation before computing bounds
-    try:
-        bounds = bbox_cache.ComputeLocalBound(target_prim).GetBox()
-    except Exception as e:
-        raise hou.NodeError(f"Failed to compute bounding box for prim at {target_path}: {str(e)}")
+    bounds = bbox_cache.ComputeLocalBound(target_prim).GetBox()
 
     # Check which camera to use
     camera_to_use = existing_camera_path if use_existing_camera else camera_path
@@ -175,7 +165,7 @@ def _create_parameters(node,asset_name):
         target_string = hou.StringParmTemplate(
             name="target",
             label="Target Prim",
-            default_value=(f"/{asset_name}",),
+            default_value=(f"{asset_name}",),
             num_components=1
         )
 
@@ -267,3 +257,4 @@ def _create_parameters(node,asset_name):
         ptg.append(new_folder)
 
         node.setParmTemplateGroup(ptg)
+

@@ -1,5 +1,5 @@
 import hou
-from modules.misc_utils import _sanitize
+
 def split_geo():
     selected_node = hou.selectedNodes()
     obj = hou.node("obj")
@@ -44,65 +44,24 @@ def split_geo():
         for point in geo_info.points():
             unique_values.add(point.number())
 
-    # Ask user if they want to sanitize attributes
-    sanitize_choice = hou.ui.displayMessage(
-        "Do you want to sanitize string attributes (replace spaces with underscores)?",
-        buttons=("Yes", "No"),
-        severity=hou.severityType.Message,
-        title="Sanitize Attributes"
-    )
-
-    snippet_code = ""
-
-    if sanitize_choice == 0:  # User chose "Yes"
-        # Ask for comma-separated attribute names
-        button_pressed, attributes_input = hou.ui.readInput(
-            "Enter attribute names to sanitize (separated by commas):\nExample: name, material, shop_materialpath",
-            buttons=("OK", "Cancel"),
-            initial_contents="name"
-        )
-
-        if button_pressed == 0 and attributes_input.strip():  # User clicked OK and provided input
-            # Parse comma-separated attributes
-            attributes_list = [attr.strip() for attr in attributes_input.split(',') if attr.strip()]
-
-            # Generate snippet code for each attribute
-            snippet_lines = []
-            for attr in attributes_list:
-                snippet_lines.append(f's@{attr} = replace(s@{attr}, " ", "_");')
-
-            snippet_code = '\n'.join(snippet_lines)
-        else:
-            # Default to name attribute if cancelled or empty
-            snippet_code = 's@name = replace(s@name, " ", "_");'
-    else:
-        # User chose "No" - use a simple pass-through or minimal processing
-        snippet_code = '// No attribute sanitization requested'
-
-    primitive_wrangle = parent_node.createNode('attribwrangle', node_name='convert_prim_attributes')
-    primitive_wrangle.parm('class').set(1)
-    primitive_wrangle.parm('snippet').set(snippet_code)
-    primitive_wrangle.setInput(0, selected_node)
-
     merge_node = parent_node.createNode('merge', node_name='mergeAll')
-    node_to_layout = [selected_node,primitive_wrangle]
+    node_to_layout = [selected_node]
 
     for index, value in enumerate(unique_values):
         blast_node = None
         null_node = None
-        value = _sanitize(value)
         if is_primitives:
-            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"{value}_{index}"))
-            blast_node.parm('group').set(f"@name={_sanitize(value)}")
+            blast_node = parent_node.createNode('blast', node_name=f"{value}_{index}")
+            blast_node.parm('group').set(f"@name={value}")
             blast_node.parm('grouptype').set(4)
-            null_node = parent_node.createNode("null", _sanitize(f"{value}_OUT"))
+            null_node = parent_node.createNode("null", f"{value}_OUT")
         else:
-            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"POINT_{value}"))
+            blast_node = parent_node.createNode('blast', node_name=f"POINT_{value}")
             blast_node.parm('group').set(str(value))
             blast_node.parm('grouptype').set(3)
-            null_node = parent_node.createNode("null", _sanitize(f"POINT_{value}_OUT"))
+            null_node = parent_node.createNode("null", f"POINT_{value}_OUT")
         blast_node.parm('negate').set(True)
-        blast_node.setInput(0, primitive_wrangle)
+        blast_node.setInput(0, selected_node)
         null_node.setInput(0, blast_node)
         merge_node.setInput(index, null_node)
         node_to_layout.extend([blast_node, null_node])

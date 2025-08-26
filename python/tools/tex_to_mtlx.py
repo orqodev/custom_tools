@@ -1,49 +1,3 @@
-"""
-TexToMtlx - Texture to MaterialX Converter for Houdini
-======================================================
-
-A Houdini tool for converting texture files into MaterialX materials.
-This tool provides a user-friendly interface to create MaterialX-based materials
-from texture files with automatic texture type detection.
-
-Version: 1.2.1
-Author: Alejandro Fidanza
-Requirements: Houdini 20.5 or later
-
-Features:
----------
-- Automatic texture type detection based on naming conventions
-- Support for UDIM textures
-- Texture conversion to TX format
-- Cross-platform support (Windows/Linux)
-- Multi-threaded texture processing
-- Material name sanitization options
-
-Change History:
---------------
-v1.2.1 (2023-12-20)
-- Fixed bug with undefined _sanitize function causing material creation to fail
-- Replaced _sanitize calls with slugify for consistent name sanitization
-
-v1.2.0 (2023-12-15)
-- Added cross-platform support for Windows and Linux
-- Fixed path handling for imaketx tool
-- Added proper path normalization to prevent path format issues
-- Added logging for debugging imaketx command execution
-
-v1.1.0 (2023-11-30)
-- Added material name sanitization options
-- Improved texture type detection
-- Added support for SSS textures
-- Fixed UDIM pattern handling
-
-v1.0.0 (2023-10-15)
-- Initial release
-- Basic texture to MaterialX conversion
-- Support for common PBR texture types
-- TX conversion support
-"""
-
 import hou
 import os
 import pprint
@@ -52,13 +6,11 @@ import subprocess
 import time
 import logging
 import threading
-import platform
 
 
 from PySide2 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import slugify
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
@@ -274,25 +226,16 @@ class TxToMtlx(QtWidgets.QMainWindow):
                     )
 
     def get_texture_details(self, path):
-        ''' Get the details for the texture inside a folder'''
+        ''' Get the details for the texture inside a folder and its subfolders'''
 
         try:
             # Validate the path
             texture_list = defaultdict(lambda: defaultdict(list))
             if not os.path.exists(path):
                 raise ValueError(f"Path does not exist: {path}")
-            # Get all the valid texture inside the folder
-            valid_files = []
-            for file in os.listdir(path):
-                file_path = os.path.join(path, file)
-                # Conditions
-                is_file = os.path.isfile(file_path)
-                valid_extension = file.lower().endswith(tuple(self.TEXTURE_EXT))
-                check_underscore = "_" in file
-                if is_file and valid_extension and check_underscore:
-                    valid_files.append(file)
-            # Process files - textures
-            for file in valid_files:
+
+            # Function to process a single file
+            def process_texture_file(file, folder_path):
                 split_text = os.path.splitext(file)[0]
                 split_text = split_text.split("_")
                 material_name = split_text[0]
@@ -306,17 +249,47 @@ class TxToMtlx(QtWidgets.QMainWindow):
                             material_name = '_'.join(split_text[:index])
                             break
                 if not texture_type:
-                    continue
+                    return None
+
                 # Get UDIM and Size
-                material_name = slugify(material_name)
                 udim_match = self.UDIM_PATTERN.search(file)
                 size_match = self.SIZE_PATTERN.search(file)
-                # Update texture list
-                texture_list[material_name][texture_type].append(file)
-                texture_list[material_name]['UDIM'] = bool(udim_match)
-                texture_list[material_name]['FOLDER_PATH'] = path
-                if size_match:
-                    texture_list[material_name]['Size'] = size_match.group(1)
+
+                # Return the processed texture info
+                return {
+                    'material_name': material_name,
+                    'texture_type': texture_type,
+                    'file': file,
+                    'folder_path': folder_path,
+                    'udim': bool(udim_match),
+                    'size': size_match.group(1) if size_match else None
+                }
+
+            # Get all valid textures from the folder and subfolders
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    # Conditions
+                    is_valid_extension = file.lower().endswith(tuple(self.TEXTURE_EXT))
+                    has_underscore = "_" in file
+
+                    if is_valid_extension and has_underscore:
+                        # Process the texture file
+                        texture_info = process_texture_file(file, root)
+
+                        if texture_info:
+                            material_name = texture_info['material_name']
+                            texture_type = texture_info['texture_type']
+
+                            # Update texture list
+                            # Store the full path relative to the root folder
+                            rel_path = os.path.relpath(os.path.join(texture_info['folder_path'], file), path)
+                            texture_list[material_name][texture_type].append(file)
+                            texture_list[material_name]['UDIM'] = texture_info['udim']
+                            texture_list[material_name]['FOLDER_PATH'] = texture_info['folder_path']
+                            # Store the relative path for later use
+                            texture_list[material_name]['REL_PATH'] = os.path.dirname(rel_path) if os.path.dirname(rel_path) else ""
+                            if texture_info['size']:
+                                texture_list[material_name]['Size'] = texture_info['size']
             # Convert defaultdict to regular dictionary
             texture_list = dict(texture_list)
             _new_dict = {}
@@ -336,24 +309,45 @@ class TxToMtlx(QtWidgets.QMainWindow):
     def folder_with_textures(self, folder):
         '''
         Check to see it the folder contains any valid textures
+        Searches recursively through all subfolders
         Args:
-            folder:
+            folder: The root folder to search in
 
         Returns:
-
+            bool: True if valid textures are found, False otherwise
         '''
 
         if not os.path.exists(folder):
             return False
+
+        # Function to check a single file
+        def is_valid_texture(file_path):
+            if not os.path.isfile(file_path):
+                return False
+            file_name = os.path.basename(file_path)
+            if not file_name.lower().endswith(tuple(self.TEXTURE_EXT)):
+                return False
+            if "_" in file_name:
+                return True
+            return False
+
         try:
+            # First check files directly in the folder
             for file in os.listdir(folder):
                 file_path = os.path.join(folder, file)
-                if not os.path.isfile(file_path):
-                    continue
-                if not file.lower().endswith(tuple(self.TEXTURE_EXT)):
-                    continue
-                if "_" in file:
+                if is_valid_texture(file_path):
                     return True
+
+            # Then check subfolders recursively
+            for root, dirs, files in os.walk(folder):
+                if root == folder:
+                    continue  # Skip the root folder as we already checked it
+
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    if is_valid_texture(file_path):
+                        return True
+
         except (OSError, PermissionError) as e:
             hou.ui.displayMessage(
                 f"Error accessing folder {folder}: {str(e)}", severity=hou.severityType.Error
@@ -387,11 +381,6 @@ class TxToMtlx(QtWidgets.QMainWindow):
             hou.ui.displayMessage(f"Please select at least one material.", severity=hou.severityType.Error)
             return
 
-        # Show sanitization dialog
-        sanitize_options = self._show_sanitization_dialog()
-        if sanitize_options is None:  # User cancelled
-            return
-
         self.progress_bar.setMaximum(len(selected_rows))
         progress_bar_default = 0
         # Common data
@@ -399,7 +388,6 @@ class TxToMtlx(QtWidgets.QMainWindow):
             'mtlTX': self.mtlTX,
             'path': self.node_path,
             'node': self.node_lib,
-            'sanitize_options': sanitize_options,
         }
 
         for index in selected_rows:
@@ -411,89 +399,11 @@ class TxToMtlx(QtWidgets.QMainWindow):
             self.progress_bar.setValue(progress_bar_default + 1)
             progress_bar_default += 1
 
-        # Use print instead of UI message to allow non-interactive operation
-        print("Material creation completed!!")
-
-    def _show_sanitization_dialog(self):
-        """Show dialog to ask user about material name sanitization options"""
-
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle("Material Name Sanitization")
-        dialog.setModal(True)
-        dialog.resize(400, 250)
-
-        layout = QtWidgets.QVBoxLayout(dialog)
-
-        # Title label
-        title_label = QtWidgets.QLabel("Material Name Sanitization Options")
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
-        layout.addWidget(title_label)
-
-        # Sanitize checkbox
-        sanitize_checkbox = QtWidgets.QCheckBox("Enable material name sanitization")
-        sanitize_checkbox.setChecked(True)  # Default to enabled
-        layout.addWidget(sanitize_checkbox)
-
-        # Description label
-        desc_label = QtWidgets.QLabel(
-            "Sanitization will:\n"
-            "• Convert to lowercase and normalize unicode\n"
-            "• Remove trailing UDIM patterns (e.g., _1001)\n"
-            "• Replace non-alphanumeric characters with underscores\n"
-            "• Remove specified drop tokens"
-        )
-        desc_label.setStyleSheet("margin: 10px 0px; color: #666;")
-        layout.addWidget(desc_label)
-
-        # Custom drop tokens section
-        tokens_label = QtWidgets.QLabel("Custom drop tokens (comma-separated):")
-        layout.addWidget(tokens_label)
-
-        tokens_input = QtWidgets.QLineEdit()
-        tokens_input.setPlaceholderText("e.g., base,bake,baked,bake1,pbr,custom")
-        tokens_input.setText("base,bake,baked,bake1,pbr")  # Default tokens
-        layout.addWidget(tokens_input)
-
-        # Help label
-        help_label = QtWidgets.QLabel(
-            "Note: These tokens will be removed from material names during sanitization."
-        )
-        help_label.setStyleSheet("font-size: 11px; color: #888; margin-top: 5px;")
-        layout.addWidget(help_label)
-
-        # Buttons
-        button_layout = QtWidgets.QHBoxLayout()
-
-        ok_button = QtWidgets.QPushButton("OK")
-        cancel_button = QtWidgets.QPushButton("Cancel")
-
-        button_layout.addStretch()
-        button_layout.addWidget(ok_button)
-        button_layout.addWidget(cancel_button)
-
-        layout.addLayout(button_layout)
-
-        # Connect buttons
-        ok_button.clicked.connect(dialog.accept)
-        cancel_button.clicked.connect(dialog.reject)
-
-        # Show dialog and get result
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            # Parse custom tokens
-            custom_tokens = set()
-            if tokens_input.text().strip():
-                custom_tokens = {token.strip().lower() for token in tokens_input.text().split(',') if token.strip()}
-
-            return {
-                'enabled': sanitize_checkbox.isChecked(),
-                'drop_tokens': custom_tokens if custom_tokens else None
-            }
-        else:
-            return None  # User cancelled
+        hou.ui.displayMessage(f"Material creation completed!!", severity=hou.severityType.Message)
 
 class MtlxMaterial:
 
-    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None):
+    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list):
         self.material_to_create = mat
         self.mtlTX = mtlTX
         self.node_path = path
@@ -501,7 +411,6 @@ class MtlxMaterial:
         self.texture_list = texture_list
         self.imaketx_path = None
         self.folder_path = folder_path
-        self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
 
         self.init_constants()
         self._setup_imaketx()
@@ -527,29 +436,14 @@ class MtlxMaterial:
         self.MAX_WORKERS = os.cpu_count()
         self.WORKER_LIMIT = max(1,int(self.MAX_WORKERS * 0.5))
 
-        # Path for imaketx tool on Linux/Mac
-        # This is an absolute path that can be easily updated in future
-        self.LINUX_IMAKETX_PATH = "/opt/hfs20.5.613/bin/imaketx"
-
     def _setup_imaketx(self):
         ''' Initialize imaketx tool'''
+        imaketx_tool = "imaketx.exe"
         houdini_folder = hou.text.expandString("$HB")
         if houdini_folder:
-            # Detect operating system and set appropriate path
-            if platform.system() == "Windows":
-                # Windows path - ensure proper Windows path format with backslashes
-                # $HB already points to the bin directory, so we don't need to add "bin\" again
-                imaketx_tool = "imaketx.exe"
-                # Use normpath to ensure consistent path separators
-                self.imaketx_path = os.path.normpath(os.path.join(houdini_folder, imaketx_tool))
-            else:
-                # Linux/Mac path - using the configurable path variable
-                # Since this is an absolute path, we don't need to join it with houdini_folder
-                self.imaketx_path = self.LINUX_IMAKETX_PATH
-
-
+            self.imaketx_path = os.path.join(houdini_folder, imaketx_tool).replace(os.sep,"/")
             if not os.path.exists(self.imaketx_path):
-                raise RuntimeError(f"imaketx tool not found at: {self.imaketx_path}")
+                raise RuntimeError(f"imaketx toolnot found at: {self.imaketx_path}")
 
     def _convert_to_tx(self,textures_paths):
         ''' Convert textures to TX using parallel processing with monitoring '''
@@ -567,15 +461,7 @@ class MtlxMaterial:
                 logger.info(f"Thread {thread_id}: Starting conversion of {os.path.basename(texture_path)}")
                 # Setup the outfile for the imaketx tool
                 output_path = os.path.splitext(texture_path)[0] + ".tx"
-
-                # Ensure paths are properly formatted for the current OS
-                imaketx_path_norm = os.path.normpath(self.imaketx_path)
-                texture_path_norm = os.path.normpath(texture_path)
-                output_path_norm = os.path.normpath(output_path)
-
-                command = f'"{imaketx_path_norm}" "{texture_path_norm}" "{output_path_norm}" "--newer"'
-                logger.info(f"Thread {thread_id}: Running command: {command}")
-
+                command = f'"{self.imaketx_path}" "{texture_path}" "{output_path}" "--newer"'
                 result = subprocess.run(command, shell=True, capture_output=True, text=True)
                 end_time = time.time()
                 duration = round(end_time - start_time, 2)
@@ -583,14 +469,26 @@ class MtlxMaterial:
                     logger.info(f"Thread {thread_id}: Finished conversion of {os.path.basename(texture_path)} in {duration} seconds")
                     return True
                 else:
-                    logger.error(f"Thread {thread_id}: Failed to convert {os.path.basename(texture_path)} to TX format. Error: {result.stderr}")
+                    logger.error(f"Thread {thread_id}: Failed to convert {os.path.basename(texture_path)} to TX format in {result.stderr}")
                     return False
 
             except Exception as e:
                 logger.error(f"Thread {thread_id}: Error converting {os.path.basename(texture_path)}: {str(e)}")
                 return False
 
-        textures_paths = [os.path.join(self.folder_path, tex) for tex in textures_paths]
+        # Handle textures that might be in subfolders
+        processed_paths = []
+        for tex in textures_paths:
+            # Check if this material has a relative path stored
+            rel_path = self.texture_list[self.material_to_create].get('REL_PATH', '')
+            if rel_path:
+                # If the texture is in a subfolder, include that in the path
+                full_path = os.path.join(self.folder_path, rel_path, tex)
+            else:
+                full_path = os.path.join(self.folder_path, tex)
+            processed_paths.append(full_path)
+
+        textures_paths = processed_paths
         total_textures = len(textures_paths)
 
         start_time = time.time()
@@ -674,16 +572,11 @@ class MtlxMaterial:
             subnet_context - subnet MtxMaterial to use as context to create the material and others nodes
         '''
 
-        # Create canonical name using sanitization options
-        if self.sanitize_options['enabled']:
-            # Use slugify with custom drop tokens if provided
-            canonical = slugify(self.material_to_create, self.sanitize_options['drop_tokens'])
-        else:
-            # Use original material name without sanitization
-            canonical = self.material_to_create
-
-        material_name = f"{canonical}_{material_lib_info['Size']}" \
-                        if 'Size' in material_lib_info else canonical
+        # Add size to the name
+        material_name = (self.material_to_create + "_" +
+                         material_lib_info["Size"]
+                         if "Size" in material_lib_info
+                         else self.material_to_create)
 
         # Remove existing material if it exists
         existing_material = self.node_lib.node(material_name)
@@ -801,8 +694,8 @@ class MtlxMaterial:
 
         # Create main nodes
 
-        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify(self.material_to_create + "_mtlxSurface"))
-        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify(self.material_to_create + "_mtlxDisplacement"))
+        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", self.material_to_create + "_mtlxSurface")
+        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", self.material_to_create + "_mtlxDisplacement")
 
         # Create output nodes
 
@@ -824,7 +717,7 @@ class MtlxMaterial:
             node - output connector node
             '''
 
-        node = context.createNode("subnetconnector", slugify(f"{output_type}_output"))
+        node = context.createNode("subnetconnector", f"{output_type}_output")
         node.parm("connectorkind").set("output")
         node.parm("parmname").set(output_type)
         node.parm("parmlabel").set(output_type.capitalize())
@@ -844,11 +737,11 @@ class MtlxMaterial:
 
         if not material_lib_info.get('UDIM', True):
             nodes = {
-                'coord': subnet_context.createNode("mtlxtexcoord", slugify(f"{self.material_to_create}_texcoord")),
-                'scale': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_scale")),
-                'rotate': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_rotation")),
-                'offset': subnet_context.createNode("mtlxconstant", slugify(f"{self.material_to_create}_offset")),
-                'place2d': subnet_context.createNode("mtlxplace2d", slugify(f"{self.material_to_create}_place2d")),
+                'coord': subnet_context.createNode("mtlxtexcoord", f"{self.material_to_create}_texcoord"),
+                'scale': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_scale"),
+                'rotate': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_rotation"),
+                'offset': subnet_context.createNode("mtlxconstant", f"{self.material_to_create}_offset"),
+                'place2d': subnet_context.createNode("mtlxplace2d", f"{self.material_to_create}_place2d"),
             }
 
             nodes['scale'].parm('value').set(1)
@@ -904,7 +797,7 @@ class MtlxMaterial:
         node_type = "mtlximage" if material_lib_info.get("UDIM", False) else "mtlxtiledimage"
 
         # Create the node
-        texture_node = subnet_context.createNode(node_type, slugify(texture_info["name"]))
+        texture_node = subnet_context.createNode(node_type, texture_info["name"])
 
         # Setup base texture_path
         texture_path = self._get_texture_path(texture_info['name'], material_lib_info)
@@ -922,27 +815,46 @@ class MtlxMaterial:
             texture_name - textures name
             material_lib_info - the dictionary with the textures for the material we want to create
         Returns:
-            path - self.folder_path + texture_value
+            path - full path to the texture file
         '''
 
         texture_value = material_lib_info[texture_name][0]
+        folder_path = material_lib_info.get('FOLDER_PATH', self.folder_path)
+        rel_path = material_lib_info.get('REL_PATH', '')
+
+        # Ensure folder_path doesn't end with a slash
+        if folder_path.endswith("/"):
+            folder_path = folder_path[:-1]
+
         if self.mtlTX:
             base_name = texture_value.split(".")[0]
             texture_value = f"{base_name}.tx"
+
         active_project = hou.getenv("PROJECT")
         project_path = hou.getenv("JOB")
         project_base_path = None
+
         if project_path:
             project_base_path = os.path.basename(project_path)
-        if self.folder_path.endswith("/"):
-            self.folder_path = self.folder_path[:-1]
-        if (active_project and project_base_path) and (active_project.lower() == project_base_path.lower() and project_path.lower() in self.folder_path.lower()):
-            new_path = self.folder_path.lower().replace(project_path.lower(),"$JOB")
-            texture_path = f"{new_path}/{texture_value}"
+
+        # Construct the path including any subdirectory
+        if rel_path:
+            # If the texture is in a subfolder, include that in the path
+            file_path = os.path.join(rel_path, texture_value).replace('\\', '/')
         else:
-            texture_path = f"{self.folder_path}/{texture_value}"
+            file_path = texture_value
+
+        # Handle project path substitution
+        if (active_project and project_base_path) and (active_project.lower() == project_base_path.lower() and project_path.lower() in folder_path.lower()):
+            new_path = folder_path.lower().replace(project_path.lower(), "$JOB")
+            texture_path = f"{new_path}/{file_path}"
+        else:
+            texture_path = f"{folder_path}/{file_path}"
+
+        # Handle UDIM textures
         if material_lib_info.get("UDIM", False):
             texture_path = re.sub(r'\d{4}', '<UDIM>', texture_path)
+
         return texture_path
 
     def _configure_texture_node(self, node, texture_type):
@@ -1018,7 +930,7 @@ class MtlxMaterial:
 
     def _setup_color_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup for colour texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_CC"))
+        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_CC")
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -1029,13 +941,13 @@ class MtlxMaterial:
 
     def _setup_roughness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the roughness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
         range_node.setInput(0, texture_node)
         mtlx_standard_surf.setInput(input_index, range_node)
 
     def _setup_glossiness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the glossiness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
         range_node.setInput(0, texture_node)
         range_node.parm("outlow").set(1)
         range_node.parm("outhigh").set(0)
@@ -1043,7 +955,7 @@ class MtlxMaterial:
 
     def _setup_sss_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the SSS texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", texture_node.name() + "_ADJ")
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -1055,7 +967,7 @@ class MtlxMaterial:
 
     def _setup_mask_texture(self, texture_node):
         ''' Setup for user or mask texture'''
-        separate_node = texture_node.parent().createNode("mtlxseparate3c", slugify(texture_node.name() + "_SPLIT"))
+        separate_node = texture_node.parent().createNode("mtlxseparate3c", texture_node.name() + "_SPLIT")
         separate_node.setInput(0, texture_node)
 
     def _setup_bump_normal(self, subnet_context, mtlx_standard_surf, material_lib_info, place2d):

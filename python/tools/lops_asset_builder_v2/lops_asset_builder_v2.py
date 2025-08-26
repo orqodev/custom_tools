@@ -1,3 +1,43 @@
+"""
+LOPS Asset Builder v2
+=====================
+
+A tool for building assets in Houdini's LOPS context with automatic material creation
+and network organization.
+
+Features:
+- Automatic component creation for assets
+- Material discovery and creation
+- Light rig setup
+- Camera and render setup
+- Configurable network organization
+
+Network Organization:
+--------------------
+The tool provides configurable network organization with the following features:
+- Optional network boxes for visual grouping
+- Category-based color coding (Asset, Light, Camera, Material, Render)
+- Configurable positioning with offsets
+- Automatically disabled for TOP functions to prevent issues
+
+To configure network organization:
+```python
+from tools.lops_asset_builder_v2 import lops_asset_builder_v2
+
+# Disable network boxes
+lops_asset_builder_v2.configure_network_organization(create_boxes=False)
+
+# Enable network boxes with category-based colors
+lops_asset_builder_v2.configure_network_organization(create_boxes=True, use_categories=True)
+
+# Use random colors instead of categories
+lops_asset_builder_v2.configure_network_organization(use_categories=False)
+
+# Set a default offset for all nodes
+lops_asset_builder_v2.configure_network_organization(default_offset=hou.Vector2(1, 0))
+```
+"""
+
 import os
 
 import hou
@@ -6,9 +46,16 @@ import voptoolutils
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 import colorsys
 import random
-from typing import List, Type, Optional
+from typing import List, Type, Optional, Dict, Tuple, Any
 from pxr import Usd,UsdGeom
 from modules.misc_utils import _sanitize, slugify
+
+# Global configuration for network organization
+NETWORK_CONFIG = {
+    "create_network_boxes": True,  # Set to False to disable network boxes
+    "use_categories": True,        # Set to False to use random colors instead of category-based colors
+    "default_offset": hou.Vector2(0, 0)
+}
 
 
 def create_component_builder(selected_directory=None):
@@ -879,17 +926,47 @@ def create_tops_component_builder(directory: str, filename: str) -> Optional[hou
         # Create the materials using the text_to_mtlx script with targeted material creation
         _create_materials(comp_geo, folder_textures, material_lib, material_names)
 
-        # Create network box to organize and separate the asset components
-        create_organized_net_note(f"Asset {asset_name.upper()}", nodes_to_layout, hou.Vector2(0, 0))
+        # Network organization is disabled for TOP functions as it can cause issues
+        # Just perform a basic layout of the nodes
+        stage_context.layoutChildren(nodes_to_layout)
 
         # Set Display Flag
         comp_out.setGenericFlag(hou.nodeFlag.Display, True)
+
+        # Set the lopoutput parameter to use @directory\@filename\ format
+        comp_out.parm("lopoutput").set(r'`@directory`/`@filename`/')
 
         return comp_out
 
     except Exception as e:
         print(f"An error happened in create_tops_component_builder: {str(e)}")
         return None
+
+
+def configure_network_organization(create_boxes=None, use_categories=None, default_offset=None):
+    """
+    Configure the network organization settings.
+
+    Args:
+        create_boxes (bool, optional): Whether to create network boxes
+        use_categories (bool, optional): Whether to use category-based colors
+        default_offset (hou.Vector2, optional): Default position offset for nodes
+
+    Returns:
+        dict: The current network configuration
+    """
+    global NETWORK_CONFIG
+
+    if create_boxes is not None:
+        NETWORK_CONFIG["create_network_boxes"] = bool(create_boxes)
+
+    if use_categories is not None:
+        NETWORK_CONFIG["use_categories"] = bool(use_categories)
+
+    if default_offset is not None:
+        NETWORK_CONFIG["default_offset"] = default_offset
+
+    return NETWORK_CONFIG
 
 
 def _get_stage_node_name(filename):
@@ -910,7 +987,7 @@ def _get_stage_node_name(filename):
     except:
         return filename
 
-def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0)):
+def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0), create_network_boxes=True, category=None):
     '''
     Creates a network box and sticky note organized around selected nodes,
     with position offset to avoid overlapping groups.
@@ -918,21 +995,45 @@ def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vec
     Args:
         asset_name (str): Label text for the sticky note and network box
         nodes_to_layout (list): List of nodes to include in the network box
-        offset (float): Horizontal offset applied to this block
+        offset_vector (hou.Vector2): Position offset applied to this block
+        create_network_boxes (bool): Whether to create network boxes (True) or just organize nodes (False)
+        category (str): Optional category for color coding (e.g., "Asset", "Light", "Camera")
     Returns:
-        None
+        tuple: (parent_box, child_box) if create_network_boxes is True, else None
     '''
-    parent = nodes_to_layout[0].parent()
+    if not nodes_to_layout:
+        print(f"Warning: No nodes provided to organize for {asset_name}")
+        return None
 
-    # Colors
-    background_colour = 0.189
-    parent_colour = hou.Color(background_colour, background_colour, background_colour)
-    child_colour, sticky_note_colour = _random_color()
-    text_color = hou.Color(0.8, 0.8, 0.8)
+    parent = nodes_to_layout[0].parent()
 
     # Apply horizontal offset to nodes
     for node in nodes_to_layout:
         node.setPosition(node.position() + offset_vector)
+
+    # If network boxes are disabled, just layout the nodes and return
+    if not create_network_boxes:
+        parent.layoutChildren(items=nodes_to_layout)
+        return None
+
+    # Define category-based colors
+    category_colors = {
+        "Asset": (hou.Color(0.2, 0.4, 0.6), hou.Color(0.3, 0.5, 0.7)),
+        "Light": (hou.Color(0.6, 0.5, 0.2), hou.Color(0.7, 0.6, 0.3)),
+        "Camera": (hou.Color(0.5, 0.2, 0.5), hou.Color(0.6, 0.3, 0.6)),
+        "Material": (hou.Color(0.2, 0.5, 0.3), hou.Color(0.3, 0.6, 0.4)),
+        "Render": (hou.Color(0.6, 0.2, 0.2), hou.Color(0.7, 0.3, 0.3))
+    }
+
+    # Determine colors based on category or generate random ones
+    if category and category in category_colors:
+        parent_colour, child_colour = category_colors[category]
+    else:
+        background_colour = 0.189
+        parent_colour = hou.Color(background_colour, background_colour, background_colour)
+        child_colour, _ = _random_color()
+
+    text_color = hou.Color(0.8, 0.8, 0.8)
 
     # Create network boxes
     parent_box = parent.createNetworkBox()
@@ -950,3 +1051,5 @@ def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vec
     child_box.setColor(child_colour)
 
     parent_box.fitAroundContents()
+
+    return (parent_box, child_box)
