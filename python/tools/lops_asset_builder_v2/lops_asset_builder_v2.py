@@ -346,7 +346,7 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
                 parm_name = "file"
             elif extension == "abc":
                 file_import = parent.createNode("alembic", _sanitize(f"import_{asset_name}"))
-                parm_name = "filename"
+                parm_name = "fileName"
             else:
                 continue
 

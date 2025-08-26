@@ -3,8 +3,8 @@ import json
 import os
 import shutil
 
-from PySide2 import QtCore, QtUiTools, QtWidgets, QtGui
-from PySide2.QtCore import Qt
+from PySide6 import QtCore, QtUiTools, QtWidgets, QtGui
+from PySide6.QtCore import Qt
 from pipeline.save_tool import SaveToolWindow
 
 
@@ -377,6 +377,10 @@ class ProjectManager(QtWidgets.QMainWindow):
 
 
 
+        # Ensure the seq directory exists before creating scene folders
+        seq_dir = os.path.join(project_data["PROJECT_PATH"], "seq")
+        os.makedirs(seq_dir, exist_ok=True)
+        
         scene_path = os.path.join(project_data["PROJECT_PATH"], "seq", scene_name).replace(os.sep, "/")
         if btn_pressed == 1:
             return

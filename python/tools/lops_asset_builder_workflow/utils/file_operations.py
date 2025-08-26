@@ -3,7 +3,7 @@
 import os
 import json
 from typing import List, Optional, Tuple
-from PySide2 import QtWidgets as QtW
+from PySide6 import QtWidgets as QtW
 
 
 class FileDialogHelper:

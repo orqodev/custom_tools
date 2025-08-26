@@ -9,10 +9,10 @@ import sys
 import json
 import hou
 import voptoolutils
-import shiboken2
+import shiboken6
 from typing import List, Type
 from pxr import Usd, UsdGeom
-from PySide2 import QtCore, QtGui, QtWidgets as QtW
+from PySide6 import QtCore, QtGui, QtWidgets as QtW
 from contextlib import redirect_stdout, redirect_stderr
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
@@ -1794,7 +1794,7 @@ def toggle_lops_asset_builder_workflow():
     global _global_workflow_window
 
     # Check if window exists and is valid
-    if _global_workflow_window and shiboken2.isValid(_global_workflow_window):
+    if _global_workflow_window and shiboken6.isValid(_global_workflow_window):
         _global_workflow_window.close()
         _global_workflow_window = None
         return

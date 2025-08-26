@@ -2,7 +2,7 @@
 
 import os
 from typing import List, Dict, Tuple, Optional
-from PySide2 import QtCore, QtGui, QtWidgets as QtW
+from PySide6 import QtCore, QtGui, QtWidgets as QtW
 
 # Handle both relative and absolute imports for flexibility
 try:

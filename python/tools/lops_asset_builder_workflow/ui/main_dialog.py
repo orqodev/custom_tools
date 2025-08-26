@@ -4,20 +4,9 @@ import sys
 import io
 import os
 from typing import List, Optional
-from PySide2 import QtCore, QtGui, QtWidgets as QtW
+from PySide6 import QtCore, QtGui, QtWidgets as QtW
 
-# Import qt_material for proper Material Design support
-try:
-    from qt_material import QtStyleTools
-    QT_STYLE_TOOLS_AVAILABLE = True
-except ImportError:
-    # Create a dummy QtStyleTools class if qt_material is not available
-    class QtStyleTools:
-        def set_extra(self, extra):
-            pass
-        def apply_stylesheet(self, parent, theme, invert_secondary=False, extra={}, callable_=None):
-            pass
-    QT_STYLE_TOOLS_AVAILABLE = False
+# Material Design support removed - using built-in Houdini theming instead
 
 # Handle both relative and absolute imports for flexibility
 try:
@@ -48,7 +37,7 @@ except ImportError:
     from houdini_theme import HoudiniTheme
 
 
-class AssetGroupsDialog(QtW.QDialog, QtStyleTools):
+class AssetGroupsDialog(QtW.QDialog):
     """Main dialog for configuring asset groups and managing the workflow."""
 
     # Define custom signals for better communication
@@ -60,34 +49,7 @@ class AssetGroupsDialog(QtW.QDialog, QtStyleTools):
     def __init__(self, parent=None):
         super(AssetGroupsDialog, self).__init__(parent)
         
-        # Initialize Material Design extra parameters and apply theme to dialog only
-        if QT_STYLE_TOOLS_AVAILABLE:
-            self.material_extra = {
-                # Status colors matching our theme
-                'danger': '#ff4444',      # Error red
-                'warning': '#ff8800',     # Warning orange  
-                'success': '#4CAF50',     # Success green
-                # Typography
-                'font_family': 'Roboto, Arial, sans-serif',
-                'font_size': '12',
-                'line_height': '20',
-                # Material Design density scale
-                'density_scale': '0',     # Standard density
-                # Button shape
-                'button_shape': 'default',
-            }
-            self.set_extra(self.material_extra)
-            
-            # Apply Material Design theme only to this dialog widget, not globally
-            try:
-                self.apply_stylesheet(
-                    self,  # Apply to this dialog widget only, not the entire application
-                    theme='dark_cyan.xml',
-                    invert_secondary=False,  # dark_cyan is already a dark theme
-                    extra=self.material_extra
-                )
-            except Exception as e:
-                print(f"Warning: Failed to apply Material UI theme to dialog: {str(e)}")
+        # Material Design theming removed - using built-in Houdini theming instead
 
         # Initialize managers
         self.settings_manager = SettingsManager()

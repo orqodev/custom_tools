@@ -6,7 +6,7 @@ Houdini styling across the entire application.
 """
 
 from typing import Dict, Any
-from PySide2 import QtWidgets as QtW, QtCore, QtGui
+from PySide6 import QtWidgets as QtW, QtCore, QtGui
 
 
 class HoudiniTheme:

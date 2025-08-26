@@ -3,28 +3,17 @@
 import os
 import hou
 import voptoolutils
-import shiboken2
+import shiboken6
 import time
 from typing import List, Type
 from pxr import Usd, UsdGeom
-from PySide2 import QtCore, QtGui, QtWidgets as QtW
+from PySide6 import QtCore, QtGui, QtWidgets as QtW
 import sys
 import io
 import json
 from contextlib import redirect_stdout, redirect_stderr
 
-# Import qt_material after PySide2 for Material UI theming
-try:
-    # Add qt-material to path if not already available
-    qt_material_path = os.path.join(os.path.dirname(__file__), '../../../../qt-material')
-    if os.path.exists(qt_material_path) and qt_material_path not in sys.path:
-        sys.path.insert(0, qt_material_path)
-    
-    from qt_material import apply_stylesheet
-    QT_MATERIAL_AVAILABLE = True
-except ImportError:
-    QT_MATERIAL_AVAILABLE = False
-    print("Warning: qt_material not available - using default theme")
+# Material UI theming removed - using built-in Houdini theming instead
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 from tools.lops_asset_builder_v2.lops_asset_builder_v2 import create_camera_lookdev, create_karma_nodes
@@ -1213,11 +1202,14 @@ convex_hull_utils.create_convex_hull(geo, points, normalize_parm,flip_normals_pa
         Setup optional light rig pipeline with user prompt.
         Creates light rig, camera, and Karma render setup if user chooses to.
         Uses the external lops_light_rig_pipeline script.
+        
+        Note: Camera targets root path "/" to frame all geometry instead of empty scope.
         """
-        # Call the external script function
+        # Call the external script function with root path for camera targeting
+        # This ensures the camera can frame all geometry instead of targeting an empty scope
         setup_light_rig_pipeline(
             stage_context=self.stage_context,
-            scope_name=scope_name,
+            scope_name="",  # Use root path for camera targeting
             auto_prompt=True
         )
 

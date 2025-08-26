@@ -4,7 +4,7 @@ import platform
 import shutil
 from datetime import datetime
 
-from PySide2 import QtCore, QtGui, QtWidgets, QtUiTools
+from PySide6 import QtCore, QtGui, QtWidgets, QtUiTools
 
 class SceneCacheManagerUI(QtWidgets.QMainWindow):
     # CONST
