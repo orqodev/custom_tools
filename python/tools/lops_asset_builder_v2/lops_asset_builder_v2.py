@@ -1,3 +1,43 @@
+"""
+LOPS Asset Builder v2
+=====================
+
+A tool for building assets in Houdini's LOPS context with automatic material creation
+and network organization.
+
+Features:
+- Automatic component creation for assets
+- Material discovery and creation
+- Light rig setup
+- Camera and render setup
+- Configurable network organization
+
+Network Organization:
+--------------------
+The tool provides configurable network organization with the following features:
+- Optional network boxes for visual grouping
+- Category-based color coding (Asset, Light, Camera, Material, Render)
+- Configurable positioning with offsets
+- Automatically disabled for TOP functions to prevent issues
+
+To configure network organization:
+```python
+from tools.lops_asset_builder_v2 import lops_asset_builder_v2
+
+# Disable network boxes
+lops_asset_builder_v2.configure_network_organization(create_boxes=False)
+
+# Enable network boxes with category-based colors
+lops_asset_builder_v2.configure_network_organization(create_boxes=True, use_categories=True)
+
+# Use random colors instead of categories
+lops_asset_builder_v2.configure_network_organization(use_categories=False)
+
+# Set a default offset for all nodes
+lops_asset_builder_v2.configure_network_organization(default_offset=hou.Vector2(1, 0))
+```
+"""
+
 import os
 
 import hou
@@ -6,9 +46,16 @@ import voptoolutils
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 import colorsys
 import random
-from typing import List, Type
+from typing import List, Type, Optional, Dict, Tuple, Any
 from pxr import Usd,UsdGeom
-from modules.misc_utils import _sanitize
+from modules.misc_utils import _sanitize, slugify
+
+# Global configuration for network organization
+NETWORK_CONFIG = {
+    "create_network_boxes": True,  # Set to False to disable network boxes
+    "use_categories": True,        # Set to False to use random colors instead of category-based colors
+    "default_offset": hou.Vector2(0, 0)
+}
 
 
 def create_component_builder(selected_directory=None):
@@ -80,11 +127,16 @@ def create_component_builder(selected_directory=None):
             nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
             stage_context.layoutChildren(nodes_to_layout)
 
-             # Prepare imported geo
+             # Extract material names from the asset paths
+            asset_paths = selected_directory.split(";")
+            material_names = _extract_material_names(asset_paths)
+            print(f"Found {len(material_names)} materials in assets: {material_names}")
+
+            # Prepare imported geo
             _prepare_imported_asset(comp_geo, selected_directory, path, comp_out, node_name)
 
-            # Create the materials using the text_to_mtlx script
-            _create_materials(comp_geo,folder_textures, material_lib, )
+            # Create the materials using the text_to_mtlx script with targeted material creation
+            _create_materials(comp_geo, folder_textures, material_lib, material_names)
 
             # Sticky note creation
             create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(0, 5))
@@ -116,8 +168,8 @@ def create_component_builder(selected_directory=None):
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
 
     except Exception as e:
-        hou.ui.displayMessage(f"An error happened in create component builder: {str(e)}",
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: An error happened in create component builder: {str(e)}")
 
 def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
@@ -254,8 +306,8 @@ def _create_group_parameters(parent_node, node_name, asset_paths, switch_node, t
         _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
 
     except Exception as e:
-        hou.ui.displayMessage(f"Error creating group parameters: {str(e)}", 
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: Error creating group parameters: {str(e)}")
 
 
 def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node):
@@ -296,8 +348,8 @@ def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transfo
                     transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
 
     except Exception as e:
-        hou.ui.displayMessage(f"Error linking nodes to parameters: {str(e)}", 
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: Error linking nodes to parameters: {str(e)}")
 
 
 def _prepare_imported_asset(parent, selected_directory, path, out_node, node_name):
@@ -472,8 +524,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
             _create_group_parameters(comp_geo_node, node_name, asset_paths, switch_node, transform_node)
 
     except Exception as e:
-        hou.ui.displayMessage(f"An error happened in prepare imported assets: {str(e)}",
-                              severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error: An error happened in prepare imported assets: {str(e)}")
 
 def create_camera_lookdev(parent,asset_name):
     '''
@@ -602,65 +654,148 @@ def _create_mtlx_templates(parent, material_lib):
         )
     material_lib.layoutChildren()
 
-def _create_materials(parent, folder_textures,material_lib):
+def _create_materials(parent, folder_textures, material_lib, expected_names=None):
     ''' Create the material using the tex_to_mtlx script
     Args:
+        parent: Parent node
         folder_textures: the folder where the textures are located
         material_lib: the material library where the materials will be saved
+        expected_names: List of material names to create (from geometry files)
     Return:
-         None
+         True if successful, False otherwise
     '''
     try:
-        if not os.path.exists(folder_textures):
-            hou.ui.displayMessage(f"Folder does not exist {folder_textures}",
-                                  severity=hou.severityType.Error)
-            return False
+        # Normalize path for existence check
+        folder_textures_check = os.path.normpath(folder_textures)
+        if not os.path.exists(folder_textures_check):
+            print(f"Warning: Texture folder does not exist: {folder_textures_check}")
+            # Print warning but continue with template materials
+            print(f"Warning: Texture folder not found: {folder_textures}. Creating template materials instead.")
+            _create_mtlx_templates(parent, material_lib)
+            return True
+
         material_handler = tex_to_mtlx.TxToMtlx()
         stage = parent.stage()
         prims_name = _find_prims_by_attribute(stage, UsdGeom.Mesh)
-        materials_created_lenght = 0
-        if material_handler.folder_with_textures(folder_textures):
-            # Get the texture detail
-            texture_list = material_handler.get_texture_details(folder_textures)
-            if texture_list and isinstance(texture_list, dict):
-                # Common data
-                common_data = {
-                    'mtlTX':False, #If you want to create TX files set to True
-                    'path': material_lib.path(),
-                    'node': material_lib,
-                }
-                for material_name in texture_list:
-                    # Fix to provide the correct path
-                    path = texture_list[material_name]['FOLDER_PATH']
-                    if not path.endswith("/"):
-                        texture_list[material_name]['FOLDER_PATH'] = path + "/"
-                    if material_name not in prims_name:
-                        continue
-                    else:
-                        materials_created_lenght += 1
-                        create_material = tex_to_mtlx.MtlxMaterial(
-                            material_name,
-                            **common_data,
-                            folder_path = path,
-                            texture_list=texture_list
-                        )
-                        create_material.create_materialx()
-                hou.ui.displayMessage(f"Created {materials_created_lenght} materials in {material_lib.path()}", severity=hou.severityType.Message)
-                return True
-            else:
-                _create_mtlx_templates(parent, material_lib)
-                hou.ui.displayMessage("No valid textures sets found..",severity=hou.severityType.Message)
-                return True
+        materials_created_length = 0
+
+        # Combined texture list from all subfolders
+        combined_texture_list = {}
+        valid_folders_found = False
+
+        # Recursively search for textures in the folder and all subfolders
+        for root, dirs, files in os.walk(folder_textures_check):
+            # Convert Windows path to Houdini-friendly format
+            current_folder = root.replace(os.sep, "/")
+
+            # Check if this folder contains valid textures
+            if material_handler.folder_with_textures(current_folder):
+                valid_folders_found = True
+                # Get texture details from this folder
+                folder_texture_list = material_handler.get_texture_details(current_folder)
+                if folder_texture_list and isinstance(folder_texture_list, dict):
+                    # Merge with combined list
+                    combined_texture_list.update(folder_texture_list)
+
+        if valid_folders_found and combined_texture_list:
+            # Common data
+            common_data = {
+                'mtlTX': False, # If you want to create TX files set to True
+                'path': material_lib.path(),
+                'node': material_lib,
+            }
+
+            for material_name in combined_texture_list:
+                # Skip materials not in expected_names list if provided
+                if expected_names and material_name not in expected_names:
+                    continue
+
+                # Fix to provide the correct path
+                path = combined_texture_list[material_name]['FOLDER_PATH']
+                if not path.endswith("/"):
+                    combined_texture_list[material_name]['FOLDER_PATH'] = path + "/"
+
+                materials_created_length += 1
+                create_material = tex_to_mtlx.MtlxMaterial(
+                    material_name,
+                    **common_data,
+                    folder_path=path,
+                    texture_list=combined_texture_list
+                )
+                create_material.create_materialx()
+
+            # Use print instead of UI message to allow non-interactive operation
+            print(f"Created {materials_created_length} materials in {material_lib.path()}")
+            return True
         else:
             _create_mtlx_templates(parent, material_lib)
-            hou.ui.displayMessage("No valid textures sets found in folder",severity=hou.severityType.Message)
+            # Use print instead of UI message to allow non-interactive operation
+            print("No valid textures sets found in folder or subfolders")
             return True
     except Exception as e:
-        hou.ui.displayMessage(f"Error creating materials: {str(e)}",severity=hou.severityType.Error)
+        # Use print instead of UI message to allow non-interactive operation
+        print(f"Error creating materials: {str(e)}")
         return False
+
+def _extract_material_names(asset_paths):
+    """
+    Extract material names from geometry files by examining shop_materialpath
+    and material:binding primitive attributes.
+
+    Args:
+        asset_paths (list): List of asset file paths to examine
+
+    Returns:
+        list: Sorted list of unique material names (basenames only)
+    """
+    material_names = set()
+
+    for asset_path in asset_paths:
+        asset_path = asset_path.strip()
+        if not asset_path:
+            continue
+
+        try:
+            # Load geometry in memory
+            geo = hou.Geometry()
+            geo.loadFromFile(asset_path)
+
+            # Check for shop_materialpath primitive attribute
+            shop_attrib = geo.findPrimAttrib("shop_materialpath")
+            if shop_attrib:
+                for prim in geo.prims():
+                    material_path = prim.stringAttribValue(shop_attrib)
+                    if material_path:
+                        # Extract basename from material path
+                        material_name = slugify(os.path.basename(material_path))
+                        if material_name:
+                            material_names.add(material_name)
+
+            # Check for material:binding primitive attribute
+            binding_attrib = geo.findPrimAttrib("material:binding")
+            if binding_attrib:
+                for prim in geo.prims():
+                    material_path = prim.stringAttribValue(binding_attrib)
+                    if material_path:
+                        # Extract basename from material path
+                        material_name = os.path.basename(material_path)
+                        if material_name:
+                            material_names.add(material_name)
+
+        except Exception as e:
+            # Skip unreadable files silently
+            continue
+
+    return sorted(list(material_names))
 
 def _find_prims_by_attribute(stage: Usd.Stage, prim_type: Type[Usd.Typed]) -> List[Usd.Prim]:
     prims_name = set()
+
+    # Handle case where stage is None (timing issue during workflow)
+    if stage is None:
+        print("⚠️ Warning: Stage is None in _find_prims_by_attribute, returning empty list")
+        return []
+
     for prim in stage.Traverse():
         if prim.IsA(prim_type) and "render" in str(prim.GetPath()):
             prims_name.add(prim.GetName())
@@ -682,6 +817,157 @@ def _random_color():
 
     return (main_colour, secondary_colour)
 
+def create_tops_component_builder(directory: str, filename: str) -> Optional[hou.Node]:
+    '''
+    Creates a component builder for use in TOP networks without creating lights, rigs, camera, and render nodes.
+    Enhanced with material discovery and targeted material creation.
+
+    Args:
+        directory (str): Directory containing the asset file
+        filename (str): Name of the asset file (including extension)
+
+    Returns:
+        Optional[hou.Node]: The component output node if successful, None otherwise
+
+    Example:
+        # In a Python TOP node:
+        import os
+        from tools.lops_asset_builder_v2 import lops_asset_builder_v2
+
+        # Get directory and filename from TOP work item
+        directory = work_item.attribValue("directory")
+        filename = work_item.attribValue("filename")
+
+        # Create the component builder
+        output_node = lops_asset_builder_v2.create_tops_component_builder(directory, filename)
+
+        # Set work item to success or failure based on result
+        if output_node:
+            work_item.addStatusMessage("Component builder created successfully")
+            work_item.setSuccess(True)
+        else:
+            work_item.addStatusMessage("Failed to create component builder")
+            work_item.setFailure(True)
+    '''
+    try:
+        # Construct the full path to the asset
+        selected_directory = os.path.join(directory, filename)
+        selected_directory = hou.text.expandString(selected_directory)
+
+        if not os.path.exists(selected_directory):
+            print(f"Error: File does not exist: {selected_directory}")
+            return None
+
+        # Define context
+        stage_context = hou.node("/stage")
+
+        # Get the path and filename and the folder with the textures
+        path, filename = os.path.split(selected_directory)
+        # Get maps folder path - keep original format for Houdini but use normalized path for existence check
+        folder_textures = os.path.join(path, "maps").replace(os.sep, "/")
+        folder_textures_check = os.path.normpath(os.path.join(path, "maps"))
+
+        # Check if maps folder exists
+        if not os.path.exists(folder_textures_check):
+            print(f"Maps folder does not exist: {folder_textures_check}")
+            # Continue execution - _create_materials will handle missing folder and create template materials
+
+        # Get asset name and extension
+        asset_name = filename.split(".")[0]
+        asset_extension = filename.split(".")[-1]
+        if filename.endswith("bgeo.sc"):
+            asset_name = filename.split(".")[0]
+            asset_extension = "bgeo.sc"
+
+        # Extract material names from the asset
+        asset_paths = [selected_directory]
+        material_names = _extract_material_names(asset_paths)
+        print(f"Found {len(material_names)} materials in {selected_directory}: {material_names}")
+
+        # Create nodes for the component builder setup
+        comp_geo = stage_context.createNode("componentgeometry", f"{asset_name}_geo")
+        material_lib = stage_context.createNode("materiallibrary", f"{asset_name}_mtl")
+        comp_material = stage_context.createNode("componentmaterial", f"{asset_name}_assign")
+        comp_out = stage_context.createNode("componentoutput", asset_name)
+
+        comp_geo.parm("geovariantname").set(asset_name)
+        material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
+        comp_material.parm("nummaterials").set(0)
+
+        # Create auto assigment for materials
+        comp_material_edit = comp_material.node("edit")
+        output_node = comp_material_edit.node("output0")
+
+        assign_material = comp_material_edit.createNode("assignmaterial", f"{asset_name}_assign")
+        # SET PARMS
+        assign_material.setParms({
+            "primpattern1": "%type:Mesh",
+            "matspecmethod1": 2,
+            "matspecvexpr1": '"/ASSET/mtl/"+@primname;',
+            "bindpurpose1": "full",
+        })
+
+        # Connect nodes
+        comp_material.setInput(0, comp_geo)
+        comp_material.setInput(1, material_lib)
+        comp_out.setInput(0, comp_material)
+
+        # Connect the input of assign material node to the first subnet indirect input
+        assign_material.setInput(0, comp_material_edit.indirectInputs()[0])
+        output_node.setInput(0, assign_material)
+
+        # Nodes to layout
+        nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
+        stage_context.layoutChildren(nodes_to_layout)
+
+        # Prepare imported geo
+        _prepare_imported_asset(comp_geo, selected_directory, path, comp_out, asset_name)
+
+        # Create the materials using the text_to_mtlx script with targeted material creation
+        _create_materials(comp_geo, folder_textures, material_lib, material_names)
+
+        # Network organization is disabled for TOP functions as it can cause issues
+        # Just perform a basic layout of the nodes
+        stage_context.layoutChildren(nodes_to_layout)
+
+        # Set Display Flag
+        comp_out.setGenericFlag(hou.nodeFlag.Display, True)
+
+        # Set the lopoutput parameter to use @directory\@filename\ format
+        comp_out.parm("lopoutput").set(r'`@directory`/`@filename`/')
+
+        return comp_out
+
+    except Exception as e:
+        print(f"An error happened in create_tops_component_builder: {str(e)}")
+        return None
+
+
+def configure_network_organization(create_boxes=None, use_categories=None, default_offset=None):
+    """
+    Configure the network organization settings.
+
+    Args:
+        create_boxes (bool, optional): Whether to create network boxes
+        use_categories (bool, optional): Whether to use category-based colors
+        default_offset (hou.Vector2, optional): Default position offset for nodes
+
+    Returns:
+        dict: The current network configuration
+    """
+    global NETWORK_CONFIG
+
+    if create_boxes is not None:
+        NETWORK_CONFIG["create_network_boxes"] = bool(create_boxes)
+
+    if use_categories is not None:
+        NETWORK_CONFIG["use_categories"] = bool(use_categories)
+
+    if default_offset is not None:
+        NETWORK_CONFIG["default_offset"] = default_offset
+
+    return NETWORK_CONFIG
+
 
 def _get_stage_node_name(filename):
     """Ask user for the Stage node name."""
@@ -701,7 +987,7 @@ def _get_stage_node_name(filename):
     except:
         return filename
 
-def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0)):
+def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0), create_network_boxes=True, category=None):
     '''
     Creates a network box and sticky note organized around selected nodes,
     with position offset to avoid overlapping groups.
@@ -709,21 +995,45 @@ def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vec
     Args:
         asset_name (str): Label text for the sticky note and network box
         nodes_to_layout (list): List of nodes to include in the network box
-        offset (float): Horizontal offset applied to this block
+        offset_vector (hou.Vector2): Position offset applied to this block
+        create_network_boxes (bool): Whether to create network boxes (True) or just organize nodes (False)
+        category (str): Optional category for color coding (e.g., "Asset", "Light", "Camera")
     Returns:
-        None
+        tuple: (parent_box, child_box) if create_network_boxes is True, else None
     '''
-    parent = nodes_to_layout[0].parent()
+    if not nodes_to_layout:
+        print(f"Warning: No nodes provided to organize for {asset_name}")
+        return None
 
-    # Colors
-    background_colour = 0.189
-    parent_colour = hou.Color(background_colour, background_colour, background_colour)
-    child_colour, sticky_note_colour = _random_color()
-    text_color = hou.Color(0.8, 0.8, 0.8)
+    parent = nodes_to_layout[0].parent()
 
     # Apply horizontal offset to nodes
     for node in nodes_to_layout:
         node.setPosition(node.position() + offset_vector)
+
+    # If network boxes are disabled, just layout the nodes and return
+    if not create_network_boxes:
+        parent.layoutChildren(items=nodes_to_layout)
+        return None
+
+    # Define category-based colors
+    category_colors = {
+        "Asset": (hou.Color(0.2, 0.4, 0.6), hou.Color(0.3, 0.5, 0.7)),
+        "Light": (hou.Color(0.6, 0.5, 0.2), hou.Color(0.7, 0.6, 0.3)),
+        "Camera": (hou.Color(0.5, 0.2, 0.5), hou.Color(0.6, 0.3, 0.6)),
+        "Material": (hou.Color(0.2, 0.5, 0.3), hou.Color(0.3, 0.6, 0.4)),
+        "Render": (hou.Color(0.6, 0.2, 0.2), hou.Color(0.7, 0.3, 0.3))
+    }
+
+    # Determine colors based on category or generate random ones
+    if category and category in category_colors:
+        parent_colour, child_colour = category_colors[category]
+    else:
+        background_colour = 0.189
+        parent_colour = hou.Color(background_colour, background_colour, background_colour)
+        child_colour, _ = _random_color()
+
+    text_color = hou.Color(0.8, 0.8, 0.8)
 
     # Create network boxes
     parent_box = parent.createNetworkBox()
@@ -741,3 +1051,5 @@ def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vec
     child_box.setColor(child_colour)
 
     parent_box.fitAroundContents()
+
+    return (parent_box, child_box)
