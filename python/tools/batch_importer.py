@@ -170,8 +170,8 @@ def batch_importer():
         merge_node.setRenderFlag(True)
 
         # Add labs::align_and_distribute node after merge
-        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute', 'align_and_distribute')
-        align_and_distribute_node.parm('sort_by').set(1)
+        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute::2.0', 'align_and_distribute')
+        align_and_distribute_node.parm('sortby').set(1)
         align_and_distribute_node.setInput(0, merge_node)
 
         # Add OUT_RENDER null node

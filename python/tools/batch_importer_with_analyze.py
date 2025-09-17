@@ -322,7 +322,7 @@ else
         merge_node.setRenderFlag(True)
 
         # Add labs::align_and_distribute node after merge
-        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute', 'align_and_distribute')
+        align_and_distribute_node = geo_node.createNode('labs::align_and_distribute::2.0', 'align_and_distribute')
         align_and_distribute_node.setInput(0, merge_node)
 
         # Add OUT_RENDER null node
