@@ -72,7 +72,7 @@ class MergeHipDialog(QtWidgets.QDialog):
                                         severity=hou.severityType.Warning)
                 return
 
-            pattern = (self.pattern_edit.text().strip() or "*")
+            pattern = self.pattern_edit.text()
             overwrite = self.overwrite_chk.isChecked()
 
             # Honor user preference, default is checked to avoid Houdini modals.

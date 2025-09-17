@@ -974,15 +974,25 @@ class FilePathsManagerUI(QtWidgets.QMainWindow):
         return prefix
 
     def _browse_for_directory(self, line_edit):
-        '''Open a directory browser and set the selected path to the line edit'''
-        directory = hou.ui.selectFile(
-            title="Select Target Directory",
-            file_type=hou.fileType.Directory,
-            chooser_mode=hou.fileChooserMode.Read
-        )
+        """Open a directory browser and set the selected path to the line edit (Qt dialog, proper z-order)."""
+        self.raise_()
+        self.activateWindow()
 
-        if directory:
-            line_edit.setText(directory)
+        dlg = QtWidgets.QFileDialog(self, "Select Target Directory")
+        dlg.setFileMode(QtWidgets.QFileDialog.Directory)
+        dlg.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+        dlg.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+
+        start_dir = line_edit.text().strip() or hou.expandString("$HIP")
+        if os.path.isdir(hou.text.expandString(start_dir)):
+            dlg.setDirectory(hou.text.expandString(start_dir))
+
+        if dlg.exec() == QtWidgets.QDialog.Accepted:
+            selection = dlg.selectedFiles()
+            if selection:
+                line_edit.setText(selection[0])
+
 
     def _update_batch_preview(self, source_path, target_path, preview_text, use_selected_only=False, selected_node_paths=None):
         '''Update the preview of batch path changes'''
