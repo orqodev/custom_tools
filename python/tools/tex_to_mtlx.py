@@ -51,7 +51,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.TEXTURE_EXT = ['.jpeg', '.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff', '.exr', '.targa']
         self.TEXTURE_TYPE = [
             "diffuse", "diff", "albedo", "alb", "base", "col", "color", "basecolor",
-            "metalness", "metal", "mlt", "met","metalic",
+            "metalness", "metal", "mlt", "met","metallic",
             "specular", "specularity", "spec", "spc",
             "roughness", "rough", "rgh",
             "transmission", "transparency", "trans",
@@ -480,13 +480,17 @@ class MtlxMaterial:
         self.WORKER_LIMIT = max(1,int(self.MAX_WORKERS * 0.5))
 
     def _setup_imaketx(self):
-        ''' Initialize imaketx tool'''
-        imaketx_tool = "/opt/hfs20.5.613/bin/imaketx"
-        houdini_folder = hou.text.expandString("$HB")
-        if houdini_folder:
-            self.imaketx_path = os.path.join(houdini_folder, imaketx_tool).replace(os.sep,"/")
-            if not os.path.exists(self.imaketx_path):
-                raise RuntimeError(f"imaketx toolnot found at: {self.imaketx_path}")
+        """Initialize imaketx tool"""
+        # Expand $HB (Houdini bin folder for the running version)
+        houdini_bin = hou.text.expandString("$HB")
+        if not houdini_bin or not os.path.isdir(houdini_bin):
+            raise RuntimeError("Could not resolve $HB (Houdini bin folder).")
+
+        # Construct imaketx path relative to this Houdini version
+        self.imaketx_path = os.path.join(houdini_bin, "imaketx").replace(os.sep, "/")
+
+        if not os.path.exists(self.imaketx_path):
+            raise RuntimeError(f"imaketx tool not found at: {self.imaketx_path}")
 
     def _convert_to_tx(self,textures_paths):
         ''' Convert textures to TX using parallel processing with monitoring '''
