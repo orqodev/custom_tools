@@ -11,7 +11,7 @@ import threading
 from PySide6 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import slugify,_sanitize
+from modules.misc_utils import slugify
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
@@ -739,6 +739,9 @@ class MtlxMaterial:
 
         # Create output nodes
 
+
+
+
         surface_out = self._create_output_nodes(subnet_context, "surface")
         displacement_out = self._create_output_nodes(subnet_context, "displacement")
 
@@ -951,7 +954,7 @@ class MtlxMaterial:
 
     def _setup_color_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup for colour texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_CC"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_CC"))
         range_node.setInput(0, texture_node)
         range_node.parm("signature").set("color3")
         mtlx_standard_surf.setInput(input_index, range_node)
@@ -962,13 +965,13 @@ class MtlxMaterial:
 
     def _setup_roughness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the roughness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         mtlx_standard_surf.setInput(input_index, range_node)
 
     def _setup_glossiness_texture(self, texture_node, mtlx_standard_surf, input_index):
         '''Setup the glossiness texture with a range node'''
-        range_node = texture_node.parent().createNode("mtlxrange", _sanitize(texture_node.name() + "_ADJ"))
+        range_node = texture_node.parent().createNode("mtlxrange", slugify(texture_node.name() + "_ADJ"))
         range_node.setInput(0, texture_node)
         range_node.parm("outlow").set(1)
         range_node.parm("outhigh").set(0)
