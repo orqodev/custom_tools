@@ -4,16 +4,33 @@ Centralized configuration for texture processing and MaterialX creation
 """
 import re
 
+# Text to display in the help menu
 
+TEXT_TO_DISPLAY =  """
+                        Instructions\n\n\nSupports textures with  and without UDIMs.
+                        \nMATERIAL_TEXTURE_UDIM or MATERIAL_TEXTURE 
+                        \nFor Example: tires_Alb_997.tif or tires_Alb_tif
+                        \nNaming Convention for the textures:
+                        \nColor: diffuse, diff, albedo, alb, base, col, color, basecolor,
+                        \nMetal: diffuse, metalness, metal, mlt, met,
+                        \nSpecular: specular, specularity, spec, spc,
+                        \nRoughness: roughness, rough, rgh,
+                        \nTransmission: transmission, transparency, trans,
+                        \nSSS: transluncecy, sss,
+                        \nEmission: emission, emissive, emit, emm,
+                        \nOpacity: opacity, opac, alpha,
+                        \nAmbient: ambient_occlusion, ao, occlusion, cavity,
+                        \nBump: bump, bmp,
+                        \nHeight: Displacement,displace, disp, dsp, heightmap, height,
+                        \nExtra: user, mask,
+                        \nNormal: normal, nor, nrm, nrml, norm,
+                        """
 
 # Supported texture file extensions
 TEXTURE_EXT = {
     ".jpg", ".jpeg", ".png", ".tga", ".bmp", ".tiff", ".tif", 
     ".exr", ".hdr", ".hdri", ".dpx", ".pic", ".rat", ".tx"
 }
-
-SKIP_KEYS = {'UDIM', 'Size', 'FOLDER_PATH', 'normal', 'bump'}
-
 
 NAMING_MAP = {
     'color': {'input': 'base_color', 'label': 'basecolor_tex'},
