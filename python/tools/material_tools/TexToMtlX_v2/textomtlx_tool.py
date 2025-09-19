@@ -29,8 +29,6 @@ from .txmtlx_config import (
 )
 from .mtx_cs_resolver import (
     UDIM_PATTERN,
-    guess_semantics_and_colorspace,
-    case_insensitive_replace,
     replace_udim_token,
     normalize_job_path,
     slugify,
@@ -155,8 +153,7 @@ class TexToMtlX(QtWidgets.QMainWindow):
         opt.addWidget(render_group)
         root.addLayout(opt)
 
-        # Optional features (default off) - true collapsed section
-        # Master toggle lives in root; options live in a group box hidden by default
+        # Optional features
         self.cb_enable_optional = QtWidgets.QCheckBox("Enable Optional Features")
         self.cb_enable_optional.setChecked(False)
         root.addWidget(self.cb_enable_optional)
@@ -173,6 +170,11 @@ class TexToMtlX(QtWidgets.QMainWindow):
         self.sp_disp_scale.setValue(0.1)
         self.sp_remap_low = QtWidgets.QDoubleSpinBox(); self.sp_remap_low.setRange(-1000, 1000); self.sp_remap_low.setValue(-0.5)
         self.sp_remap_high = QtWidgets.QDoubleSpinBox(); self.sp_remap_high.setRange(-1000, 1000); self.sp_remap_high.setValue(0.5)
+
+        # NEW: Place2D for UDIMs toggle (default ON for v1 parity)
+        self.cb_place2d_udim = QtWidgets.QCheckBox("Apply Place2D to UDIM sets")
+        self.cb_place2d_udim.setChecked(True)
+
         opt_container_layout.addWidget(QtWidgets.QLabel("Displacement Scale"), 0, 0)
         opt_container_layout.addWidget(self.sp_disp_scale, 0, 1)
         opt_container_layout.addWidget(self.cb_disp_remap, 1, 0, 1, 2)
@@ -180,11 +182,12 @@ class TexToMtlX(QtWidgets.QMainWindow):
         opt_container_layout.addWidget(self.sp_remap_low, 2, 1)
         opt_container_layout.addWidget(QtWidgets.QLabel("Remap High"), 3, 0)
         opt_container_layout.addWidget(self.sp_remap_high, 3, 1)
-        opt_container_layout.addWidget(self.cb_stage_matlib, 4, 0, 1, 2)
-        opt_container_layout.addWidget(self.cb_collect, 5, 0, 1, 2)
+        opt_container_layout.addWidget(self.cb_place2d_udim, 4, 0, 1, 2)
+        opt_container_layout.addWidget(self.cb_stage_matlib, 5, 0, 1, 2)
+        opt_container_layout.addWidget(self.cb_collect, 6, 0, 1, 2)
         root.addWidget(self.optional_group)
 
-        # Initialize collapsed: hide entire group and disable its children
+        # Initialize collapsed
         def _set_optional_enabled(enabled: bool):
             self.optional_group.setVisible(enabled)
             for w in self.optional_group.findChildren(QtWidgets.QWidget):
@@ -326,9 +329,11 @@ class TexToMtlX(QtWidgets.QMainWindow):
     # ---------- Creation flow ----------
     def _select_all(self):
         sm = self.list_view.selectionModel()
+        if not sm:
+            return
         for r in range(self.list_model.rowCount()):
             idx = self.list_model.index(r, 0)
-            sm.select(idx, QtCore.QItemSelectionModel.Select)
+            sm.select(idx, QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows)
 
     def _select_none(self):
         self.list_view.clearSelection()
@@ -374,7 +379,7 @@ class TexToMtlX(QtWidgets.QMainWindow):
         # Create subnet (MaterialX-first) in chosen library or stage material library
         context_node = self.node_lib
         matlib_node = None
-        if self.cb_stage_matlib.isChecked():
+        if getattr(self, 'cb_stage_matlib', None) and self.cb_stage_matlib.isChecked():
             # only if we are in /stage context
             stage = hou.node('/stage')
             if stage:
@@ -394,13 +399,12 @@ class TexToMtlX(QtWidgets.QMainWindow):
 
         # Optional Arnold path
         arnold_node = None
-        if self.cb_renderer_arnold.isChecked() and self.arnold_available:
+        if getattr(self, 'cb_renderer_arnold', None) and self.cb_renderer_arnold.isChecked() and self.arnold_available:
             arnold_node = self._build_arnold_network(context_node, mat_name, info)
 
         # If both exist and collect wanted
-        if self.cb_collect.isChecked() and (arnold_node is not None) and (subnet is not None):
+        if getattr(self, 'cb_collect', None) and self.cb_collect.isChecked() and (arnold_node is not None) and (subnet is not None):
             try:
-                # top-level collect uses slugified material to match assignment conventions
                 collect = context_node.createNode('collect', slugify(mat_name))
                 collect.setInput(0, subnet)
                 collect.setInput(1, arnold_node)
@@ -455,7 +459,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
                 for d in drops:
                     canonical = canonical.replace(d, "")
                 canonical = slugify(canonical)
-        # finalize canonical with CS token stripping, size attach rule and tail cleanup
         canonical = self._finalize_canonical(canonical, info)
         try:
             print(f"[TexToMtlX] canonical: pre='{pre}' -> post='{canonical}' size='{info.get('Size','')}'")
@@ -465,41 +468,31 @@ class TexToMtlX(QtWidgets.QMainWindow):
         if old:
             old.destroy()
         subnet = context_node.createNode('subnet', canonical)
-        # clean default items
         for it in list(subnet.allItems()):
             try:
                 it.destroy()
             except Exception:
                 pass
-        # setup parms similar to legacy (MaterialX-first)
-        # Keep minimal to avoid bloat; Solaris recognizes outputs by subnetconnector
         subnet.setMaterialFlag(True)
         return subnet
 
-    # ---- Canonical material name finalization ----
     def _finalize_canonical(self, name: str, info: dict) -> str:
-        # Remove color-space tokens and tidy separators
         CS_TAG_RX = re.compile(r"(?i)\b(srgb|acescg|aces|linear|scene[-_ ]?linear|raw)\b")
         n = CS_TAG_RX.sub("", name)
         n = re.sub(r"[_\s]+", "_", n).strip("_")
-        # Only attach size if truly like '1k', '2k', etc.
         sz = info.get('Size')
         if sz and re.match(r"(?i)^\d{1,2}k$", sz):
             n_with_size = f"{n}_{sz.lower()}"
         else:
             n_with_size = n
-        # Keep vNNN tails
         if re.search(r"(?i)(?:^|_)(v\d{2,4})$", n_with_size):
             return n_with_size
-        # Keep real size tails
         if re.search(r"(?i)_\d{1,2}k$", n_with_size):
             return n_with_size
-        # Drop accidental trailing plain number (not vNNN, not size)
         n_with_size = re.sub(r"(?<!v)(?:^|_)\d{2,4}$", "", n_with_size).strip("_")
         return n_with_size
 
     def _create_main_nodes(self, subnet, mat_name):
-        # v1 naming: keep readable suffixes without slugifying internal node names
         surf = subnet.createNode('mtlxstandard_surface', 'mtlxSurface')
         disp = subnet.createNode('mtlxdisplacement', 'mtlxDisplacement')
         out_surface = self._create_output(subnet, 'surface')
@@ -509,7 +502,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
         return surf, disp
 
     def _create_output(self, subnet, kind):
-        # v1 naming for outputs
         node = subnet.createNode('subnetconnector', f"{kind}_output")
         node.parm('connectorkind').set('output')
         node.parm('parmname').set(kind)
@@ -517,44 +509,82 @@ class TexToMtlX(QtWidgets.QMainWindow):
         node.parm('parmtype').set(kind)
         return node
 
-    def _setup_place2d(self, subnet, info):
-        if info.get('UDIM', False):
-            return None
-        coord = subnet.createNode('mtlxtexcoord', 'texcoord')
-        scale = subnet.createNode('mtlxconstant', 'scale'); scale.parm('value').set(1)
-        rot = subnet.createNode('mtlxconstant', 'rotation')
-        off = subnet.createNode('mtlxconstant', 'offset')
-        p2d = subnet.createNode('mtlxplace2d', 'place2d')
+    # --- Place2D management ---
+    def _ensure_place2d(self, subnet):
+        """Create/reuse a single Place2D stack and expose artist controls on the subnet."""
+        p2d   = subnet.node("place2d")        or subnet.createNode("mtlxplace2d", "place2d")
+        coord = subnet.node("texcoord")       or subnet.createNode("mtlxtexcoord", "texcoord")
+        scale = subnet.node("p2d_scale")      or subnet.createNode("mtlxconstant", "p2d_scale")
+        rot   = subnet.node("p2d_rotation")   or subnet.createNode("mtlxconstant", "p2d_rotation")
+        offs  = subnet.node("p2d_offset")     or subnet.createNode("mtlxconstant", "p2d_offset")
+
+        if scale.parm("value"): scale.parm("value").set(1.0)
+        if rot.parm("value"):   rot.parm("value").set(0.0)
+        if offs.parm("value"):  offs.parm("value").set(0.0)
+
+        # Wire texcoord stack
         p2d.setInput(0, coord)
         p2d.setInput(2, scale)
         p2d.setInput(3, rot)
-        p2d.setInput(4, off)
+        p2d.setInput(4, offs)
+
+        # Expose artist controls (once)
+        try:
+            ptg = subnet.parmTemplateGroup()
+            def ensure_float(name, label, default):
+                if ptg.find(name): return
+                ptg.append(hou.FloatParmTemplate(name, label, 1, default_value=(default,)))
+            ensure_float("p2d_scale_ui",  "UV Scale",   1.0)
+            ensure_float("p2d_rotate_ui", "UV Rotate",  0.0)
+            ensure_float("p2d_offset_ui", "UV Offset",  0.0)
+            subnet.setParmTemplateGroup(ptg)
+
+            if scale.parm("value"): scale.parm("value").setExpression('ch("../p2d_scale_ui")')
+            if rot.parm("value"):   rot.parm("value").setExpression('ch("../p2d_rotate_ui")')
+            if offs.parm("value"):  offs.parm("value").setExpression('ch("../p2d_offset_ui")')
+        except Exception:
+            pass
+
         return p2d
 
+    def _setup_place2d(self, subnet, info):
+        """Always build Place2D once. Return the node and a policy whether to use it for this material's textures."""
+        p2d = self._ensure_place2d(subnet)
+        use_for_udim = bool(getattr(self, 'cb_place2d_udim', None) and self.cb_place2d_udim.isChecked())
+        return (p2d, use_for_udim)
+
+    def _attach_place2d_if_needed(self, img_node, p2d_tuple, is_udim):
+        """Attach Place2D to the proper input (2 = texcoord) based on UDIM policy."""
+        if not img_node or not p2d_tuple:
+            return
+        p2d, use_for_udim = p2d_tuple
+        if (not is_udim) or use_for_udim:
+            try:
+                # Correct input for mtlximage/mtlxtiledimage: 2 = texcoord
+                img_node.setInput(2, p2d)
+            except Exception:
+                pass
+
     # ---------- Texture processing ----------
-    def _process_textures(self, subnet, surf, disp, info, place2d):
+    def _process_textures(self, subnet, surf, disp, info, p2d_tuple):
         input_names = surf.inputNames()
+        is_udim = bool(info.get('UDIM', False))
         for tex_type, tex_info in self._iterate_textures(info):
             node = self._create_texture_node(subnet, tex_info, info)
-            if place2d and not info.get('UDIM', False):
-                node.setInput(0, place2d)
+            self._attach_place2d_if_needed(node, p2d_tuple, is_udim)
             self._connect_texture(node, tex_type, surf, disp, input_names)
 
     def _iterate_textures(self, info):
         skip = {'UDIM', 'Size', 'FOLDER_PATH', 'normal', 'bump'}
-        # If height is being used as bump (because no displacement), record the resolved key to skip from displacement consumption
         height_used_as_bump = None
         if not ('displacement' in info):
-            # reuse finder to see if bump would resolve via height
             height_used_as_bump = self._find_tex_key(info, 'bump')
         for k, v in info.items():
             if k in skip:
                 continue
-            # k is a texture label in original dict, but we have mapping types from TEXTURE_TYPE_SORTED
             for t_type, cfg in self.TEXTURE_TYPE_SORTED:
                 tokens = [t.strip('_').lower() for t in cfg['tokens']]
                 if any(tok in k.lower() for tok in tokens):
-                    # If this candidate is displacement via a height key that was already used as bump, skip it
                     if t_type == 'displacement' and height_used_as_bump and k == height_used_as_bump:
                         continue
                     yield t_type, {
@@ -566,10 +596,8 @@ class TexToMtlX(QtWidgets.QMainWindow):
 
     def _create_texture_node(self, subnet, texture_info, info):
         node_type = 'mtlxtiledimage' if info.get('UDIM', False) else 'mtlximage'
-        # Determine deterministic label from NAMING_MAP
         ttype = texture_info['type']
         label = self.NAMING_MAP.get(ttype, {}).get('label', self._safe_human_name(texture_info['name'], subnet))
-        # ensure uniqueness but don't slugify arbitrary
         base_label = label
         name = base_label
         i = 1
@@ -577,25 +605,18 @@ class TexToMtlX(QtWidgets.QMainWindow):
             i += 1
             name = f"{base_label}_{i}"
         tex_node = subnet.createNode(node_type, name)
-        # configure signature/colorspace immediately to avoid Houdini locking
-        # file path is needed to choose colorspace only for color maps; normal/data are forced
         file_path = self._get_texture_path(texture_info['name'], info)
         self._configure_texture_node(tex_node, texture_info['type'], file_path)
-        # then set file parm
         tex_node.parm('file').set(file_path)
         return tex_node
 
     # ---------- Naming helpers (v1 internal style) ----------
     def _safe_human_name(self, base_name: str, parent_node):
-        # minimal sanitize: non-alnum/underscore -> underscore
         raw = str(base_name)
         safe = re.sub(r"[^A-Za-z0-9_]", "_", raw)
-        # prefix if starts with digit
         if safe and safe[0].isdigit():
             safe = "n_" + safe
-        # collapse consecutive underscores
         safe = re.sub(r"_+", "_", safe).strip("_") or "node"
-        # ensure unique under parent
         if parent_node is not None:
             name = safe
             i = 1
@@ -606,36 +627,30 @@ class TexToMtlX(QtWidgets.QMainWindow):
         return safe
 
     def _get_texture_path(self, texture_name, info):
-        # get first file for this logical texture
         file_rel = None
-        # texture_name can be either the type bucket key or original k; try both
         if texture_name in info:
             file_rel = info[texture_name][0] if isinstance(info[texture_name], list) else info[texture_name]
         else:
-            # search by best-effort among buckets for a file that matches name
             for k, v in info.items():
                 if isinstance(v, list) and v and (texture_name in v or any(texture_name.lower() in f.lower() for f in v)):
                     file_rel = v[0]
                     break
         if not file_rel:
             raise RuntimeError(f"Texture path not found for {texture_name}")
-        # TX swap
         if self.mtlTX:
             base, _ = os.path.splitext(file_rel)
             file_rel = base + '.tx'
         folder = info.get('FOLDER_PATH', '')
-        # $JOB normalization
         project_path = hou.getenv('JOB') or ''
         normalized_folder = normalize_job_path(folder, project_path) if project_path else folder
         if normalized_folder.endswith('/'):
             normalized_folder = normalized_folder[:-1]
         full = f"{normalized_folder}/{file_rel}"
-        # UDIM token replacement (first match)
         if info.get('UDIM', False):
             full = replace_udim_token(full)
         return full
 
-    # ---- Colorspace/signature inference helpers per policies P1-P4 ----
+    # ---- Colorspace/signature inference ----
     def _strip_udim(self, basename: str) -> str:
         return re.sub(r'_(\d{4})(?=\.[^.]+$)', '', basename, flags=re.I)
 
@@ -644,7 +659,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
 
     def parse_colorspace_from_name(self, path: str):
         name = self._lower_name(path)
-        # Order: ACES-ACEScg -> ACEScg -> ACES -> linear -> srgb -> raw
         patterns = [
             (r'(^|[_. -])aces\s*[-]\s*acescg($|[_. -])', 'acescg', 'aces-acescg'),
             (r'(^|[_. -])acescg($|[_. -])', 'acescg', 'acescg'),
@@ -659,16 +673,13 @@ class TexToMtlX(QtWidgets.QMainWindow):
         return {"intent": None, "matched": None}
 
     def _infer_semantics(self, tex_type: str, path: str):
-        # T1/T2: determine kind and explicit tag from filename tokens
         name = self._lower_name(path)
         ext = os.path.splitext(name)[1]
-        # classify by type tokens first (semantics-first safety)
         if tex_type == 'normal':
             kind = 'normal'
         elif tex_type in ('rough','metal','specular','alpha','ao','mask','bump','displacement','gloss','transmission'):
             kind = 'data'
         else:
-            # fallback to filename hints
             if re.search(r'(normal|nrm|nor|nrml)', name, re.I):
                 kind = 'normal'
             elif re.search(r'(rough(ness)?|rgh|metal(lic|ness)?|spec(ular)?|alpha|opacity|ao|occlusion|mask|id|height(map)?|disp|displace|dsp)', name, re.I):
@@ -677,7 +688,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
                 kind = 'color'
         explicit = self.parse_colorspace_from_name(path)
         intent = explicit["intent"]
-        # Map intent to canonical cs for chooser purposes
         map_to_cs = {
             'srgb': 'srgb_texture',
             'scene_linear': 'scene_linear',
@@ -688,7 +698,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
         }
         explicit_cs = map_to_cs.get(intent)
         unsafe_tag = False
-        # unsafe if data/normal tries to force srgb/linear
         if kind in ('data','normal') and explicit_cs in ('srgb_texture','scene_linear'):
             unsafe_tag = True
         return {"kind": kind, "explicit_cs": explicit_cs, "intent": intent, "unsafe_tag": unsafe_tag, "ext": ext}
@@ -717,12 +726,10 @@ class TexToMtlX(QtWidgets.QMainWindow):
         if cfg is None:
             return
         try:
-            # Collect colorspaces
             for cs in cfg.getColorSpaces():
                 name = cs.getName()
                 self._ocio_cs_map[name.lower()] = name
-            # Collect roles
-            for role in ('scene_linear', 'raw', 'data', 'reference', 'compositing_log', 'color_picking', 'default'):    
+            for role in ('scene_linear', 'raw', 'data', 'reference', 'compositing_log', 'color_picking', 'default'):
                 try:
                     n = cfg.getRole(role)
                     if n:
@@ -733,13 +740,8 @@ class TexToMtlX(QtWidgets.QMainWindow):
             pass
 
     def _map_intent_to_ocio(self, intent: str, kind: str):
-        """Return best OCIO colorspace name for intent using active config.
-        intent in {'acescg','aces','scene_linear','srgb','raw'}; kind in {'color','data','normal'}.
-        """
         self._load_ocio_config()
         if kind in ('data','normal'):
-            # Always RAW for safety
-            # Prefer role raw
             raw_name = self._ocio_roles.get('raw') or next((v for k,v in self._ocio_cs_map.items() if 'raw' in k), None)
             return raw_name or 'raw'
         if intent is None:
@@ -751,11 +753,9 @@ class TexToMtlX(QtWidgets.QMainWindow):
                     return v
             return None
         if intent == 'acescg' or intent == 'aces':
-            # prefer explicit ACEScg name
             cs = find_contains(['acescg'])
             if cs:
                 return cs
-            # fall back to scene_linear role
             if 'scene_linear' in self._ocio_roles:
                 return self._ocio_roles['scene_linear']
             return None
@@ -777,12 +777,10 @@ class TexToMtlX(QtWidgets.QMainWindow):
         return None
 
     def _choose_signature_and_cs(self, kind: str, explicit_cs: str|None, ext: str):
-        # T3 rules
         if kind == 'normal':
             return ('color3', 'raw')
         if kind == 'data':
             return ('float', 'raw')
-        # color
         if explicit_cs == 'raw':
             return ('color3', 'raw')
         if explicit_cs == 'scene_linear':
@@ -795,7 +793,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
 
     # ---- MtlX filecolorspace menu helpers ----
     def _get_filecolorspace_parm(self, img_node):
-        # Prefer 'filecolorspace2' if present (MaterialX nodes with OCIO menu), else fallback
         p = img_node.parm('filecolorspace2')
         if p is not None:
             return p
@@ -810,20 +807,18 @@ class TexToMtlX(QtWidgets.QMainWindow):
             return [], []
 
     def _pick_menu_value(self, parm, preferred_names):
-        # Try to find a menu item that matches any preferred name (exact then substring), against items and labels.
         if parm is None:
             return None
         items, labels = self._menu_items_labels(parm)
         low_items = [i.lower() for i in items]
         low_labels = [l.lower() for l in labels]
         prefs = [p.lower() for p in preferred_names if p]
-        # exact match first
         for p in prefs:
             if p in low_items:
                 return items[low_items.index(p)]
             if p in low_labels:
-                return items[low_labels.index(p)] if low_labels.index(p) < len(items) else None
-        # substring match
+                idx = low_labels.index(p)
+                return items[idx] if idx < len(items) else None
         for p in prefs:
             for idx, li in enumerate(low_items):
                 if p in li:
@@ -834,10 +829,8 @@ class TexToMtlX(QtWidgets.QMainWindow):
         return None
 
     def _preferred_for_intent(self, intent, ext, kind):
-        # Build ranked names for menu matching
         if kind in ('data','normal'):
             return ('Raw','Utility - Raw','raw')
-        # Color kinds only
         linear_list = ('ACEScg','acescg','ACES - ACEScg','scene_linear','linear','lin')
         srgb_list = ('sRGB - Texture','sRGB','srgb_texture')
         if intent in ('acescg','aces','scene_linear'):
@@ -846,20 +839,17 @@ class TexToMtlX(QtWidgets.QMainWindow):
             return srgb_list
         if intent == 'raw':
             return ('Raw','Utility - Raw','raw')
-        # No intent → heuristic by extension
         if ext.lower() == '.exr':
             return linear_list
         return srgb_list
 
     def apply_mtlx_sig_and_cs(self, img_node, *, kind: str, intent, file_path: str):
-        # Set signature first
         sig = 'color3' if kind in ('color','normal') else 'float'
         try:
             if img_node.parm('signature'):
                 img_node.parm('signature').set(sig)
         except Exception:
             pass
-        # Choose colorspace from node's own menu
         parm = self._get_filecolorspace_parm(img_node)
         if parm is not None:
             prefs = self._preferred_for_intent(intent, os.path.splitext(file_path)[1], kind)
@@ -871,14 +861,12 @@ class TexToMtlX(QtWidgets.QMainWindow):
                     pass
 
     def _configure_texture_node(self, node, tex_type, file_path):
-        # Compute semantics and route to menu-based setter. Adds warning comment on unsafe tags.
         sem = self._infer_semantics(tex_type, file_path)
         if sem.get('unsafe_tag') and hasattr(node, 'setComment'):
             try:
                 node.setComment('Ignored unsafe cs tag for data/normal; forced RAW')
             except Exception:
                 pass
-        # For normals, ensure kind='normal' so signature=color3 and colorspace RAW are chosen.
         self.apply_mtlx_sig_and_cs(node, kind=sem['kind'], intent=sem.get('intent'), file_path=file_path)
 
     def _connect_texture(self, texture_node, tex_type, surf, disp, input_names):
@@ -942,9 +930,7 @@ class TexToMtlX(QtWidgets.QMainWindow):
     def _setup_displacement(self, tex_node, disp):
         disp.parm('scale').set(self.sp_disp_scale.value())
         node_in = tex_node
-        if self.sender() is None:
-            pass
-        if self.cb_disp_remap.isChecked():
+        if getattr(self, 'cb_disp_remap', None) and self.cb_disp_remap.isChecked():
             base = tex_node.name()
             remap = tex_node.parent().createNode('mtlxremap', f"{base}_DISP_REMAP")
             remap.parm('outlow').set(self.sp_remap_low.value())
@@ -955,30 +941,19 @@ class TexToMtlX(QtWidgets.QMainWindow):
 
     # ---------- Bump/Normal ----------
     def _find_tex_key(self, info: dict, logical_type: str):
-        """Find the actual key name for a logical texture type ('bump' or 'normal').
-        Order:
-        1) exact key present in info (case-sensitive as stored)
-        2) search info.keys() using tokens from TEXTURE_TYPE[logical_type]['tokens'] (case-insensitive contains)
-        Special case: when logical_type == 'bump', allow using a 'height' token as bump ONLY if no displacement token/key exists in info.
-        Returns the matching key string or None.
-        """
         if not info or logical_type not in TEXTURE_TYPE:
             return None
-        # 1) exact
         if logical_type in info:
             return logical_type
         lowers = {k.lower(): k for k in info.keys()}
-        # 2) token-based search for the requested logical type
         tokens = TEXTURE_TYPE[logical_type].get('tokens', [])
         for tok in tokens:
             t = tok.strip('_').lower()
             for k_lower, orig in lowers.items():
                 if t and t in k_lower:
                     return orig
-        # 3) height-as-bump fallback: only when searching for bump AND displacement not present
         if logical_type == 'bump':
             has_disp = False
-            # check if a displacement key exists directly or via tokens
             if 'displacement' in info:
                 has_disp = True
             else:
@@ -988,27 +963,21 @@ class TexToMtlX(QtWidgets.QMainWindow):
                         has_disp = True
                         break
             if not has_disp:
-                # find a height-like key to use as bump
                 height_aliases = {'height', 'heightmap'}
                 for k_lower, orig in lowers.items():
                     if any(h in k_lower for h in height_aliases):
                         return orig
         return None
 
-    def _setup_bump_normal(self, subnet_context, mtlx_standard_surf, material_lib_info, place2d):
-        ''' Setup the bump and normal textures nodes and connections'''
-        # Node type: use tiledimage for UDIM sets, single-image otherwise
+    def _setup_bump_normal(self, subnet_context, mtlx_standard_surf, material_lib_info, p2d_tuple):
         node_type = "mtlxtiledimage" if material_lib_info.get("UDIM", False) else "mtlximage"
 
-
         input_names = mtlx_standard_surf.inputNames()
-        # Resolve bump/normal keys using the new helper
         bump_key = self._find_tex_key(material_lib_info, 'bump')
         normal_key = self._find_tex_key(material_lib_info, 'normal')
         if not bump_key and not normal_key:
             return
 
-        # Create deterministic image node names using NAMING_MAP labels with uniqueness
         def _unique_name(parent, base):
             name = base
             i = 1
@@ -1024,8 +993,7 @@ class TexToMtlX(QtWidgets.QMainWindow):
             bump_path = self._get_texture_path(key, material_lib_info)
             self._configure_texture_node(bump_image, 'bump', bump_path)
             bump_image.parm("file").set(bump_path)
-            if place2d and not material_lib_info.get("UDIM", False):
-                bump_image.setInput(0, place2d)
+            self._attach_place2d_if_needed(bump_image, p2d_tuple, bool(material_lib_info.get('UDIM', False)))
             bump_node.setInput(0, bump_image)
             return bump_node
 
@@ -1036,12 +1004,10 @@ class TexToMtlX(QtWidgets.QMainWindow):
             normal_path = self._get_texture_path(key, material_lib_info)
             self._configure_texture_node(normal_image, 'normal', normal_path)
             normal_image.parm("file").set(normal_path)
-            if place2d and not material_lib_info.get("UDIM", False):
-                normal_image.setInput(0, place2d)
+            self._attach_place2d_if_needed(normal_image, p2d_tuple, bool(material_lib_info.get('UDIM', False)))
             normal_node.setInput(0, normal_image)
             return normal_node
 
-        # Build graph
         if bump_key and normal_key:
             bump_node = _create_bump_from_key(bump_key)
             normal_node = _create_normal_from_key(normal_key)
@@ -1057,23 +1023,18 @@ class TexToMtlX(QtWidgets.QMainWindow):
             if 'normal' in input_names:
                 mtlx_standard_surf.setInput(input_names.index('normal'), normal_node)
 
-
     # ---------- Arnold MVP ----------
     def _build_arnold_network(self, context_node, mat_name, info):
         try:
-            # Verify node type availability before creating
             mat_cat = hou.nodeTypeCategories().get('Mat')
             if not (mat_cat and hou.nodeType(mat_cat, 'arnold_materialbuilder')):
                 return None
-            # arnold builder top-level uses slugified mat name for predictability
             ar = context_node.createNode('arnold_materialbuilder', 'arnold_' + slugify(mat_name))
             out = ar.node('OUT_material')
             surf = ar.createNode('standard_surface', 'mtlxSurface')
             if out:
                 out.setInput(0, surf)
-            # iterate textures, simple mapping
             for tex_type, tex_info in self._iterate_textures(info):
-                # Deterministic label for Arnold image nodes as well
                 base_label = self.NAMING_MAP.get(tex_type, {}).get('label', f"{tex_type}_tex")
                 name = base_label
                 i = 1
@@ -1081,14 +1042,11 @@ class TexToMtlX(QtWidgets.QMainWindow):
                     i += 1
                     name = f"{base_label}_{i}"
                 img = ar.createNode('image', name)
-                # file parm is 'filename' in Arnold image
                 p = self._get_texture_path(tex_info['name'], info)
                 if img.parm('filename'):
                     img.parm('filename').set(p)
-                # decide colorspace using the same policy as MaterialX
                 sem = self._infer_semantics(tex_type, p)
                 sig, cs = self._choose_signature_and_cs(sem['kind'], sem['explicit_cs'], sem['ext'])
-                # set color_family/color_space when parms exist; enforce RAW for data/normal
                 if img.parm('color_family') and img.parm('color_space'):
                     if sem['kind'] in ('data', 'normal'):
                         img.parm('color_family').set('Utility'); img.parm('color_space').set('Raw')
@@ -1098,7 +1056,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
                         except Exception:
                             pass
                     else:
-                        # Try OCIO mapping for color maps
                         ocio_name = self._map_intent_to_ocio(sem.get('intent'), sem['kind'])
                         if ocio_name and 'acescg' in ocio_name.lower():
                             img.parm('color_family').set('ACES'); img.parm('color_space').set('ACEScg')
@@ -1113,7 +1070,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
                                 img.parm('color_family').set('Utility'); img.parm('color_space').set('Raw')
                             else:
                                 img.parm('color_family').set('Utility'); img.parm('color_space').set('sRGB - Texture')
-                # connect
                 if tex_type == 'color':
                     surf.setNamedInput('base_color', img, 'rgba')
                 elif tex_type == 'metal':
@@ -1133,7 +1089,6 @@ class TexToMtlX(QtWidgets.QMainWindow):
                     n.setNamedInput('input', img, 'rgba')
                     surf.setNamedInput('normal', n, 'vector')
                 elif tex_type == 'displacement':
-                    # simple displacement path via OUT_material if available
                     mul = ar.createNode('arnold::multiply', 'displacement_amount')
                     if mul.parm('input2r'):
                         for ch in ('r', 'g', 'b'):
@@ -1144,8 +1099,7 @@ class TexToMtlX(QtWidgets.QMainWindow):
             ar.layoutChildren()
             ar.setMaterialFlag(False)
             return ar
-        except Exception as e:
-            # Fail silently to keep Karma-only path working
+        except Exception:
             return None
 
     # ---------- Report ----------
@@ -1167,19 +1121,16 @@ class TexToMtlX(QtWidgets.QMainWindow):
         dlg.resize(500, 400)
         dlg.exec()
 
-
     # ---------- Help menu ----------
     def _add_help_menu(self):
         try:
             mb = self.menuBar() if hasattr(self, 'menuBar') else None
-            # QMainWindow has menuBar(); but if not available, create a simple button-less fallback
             if mb is None:
                 mb = self.menuBar()
             help_menu = mb.addMenu("Help")
             act = help_menu.addAction("Instructions")
             act.triggered.connect(self._show_instructions)
         except Exception:
-            # fallback: ignore if running in non-Qt contexts
             pass
 
     def _show_instructions(self):
