@@ -793,29 +793,93 @@ class TexToMtlX(QtWidgets.QMainWindow):
             return ('color3', 'scene_linear')
         return ('color3', 'srgb_texture')
 
+    # ---- MtlX filecolorspace menu helpers ----
+    def _get_filecolorspace_parm(self, img_node):
+        # Prefer 'filecolorspace2' if present (MaterialX nodes with OCIO menu), else fallback
+        p = img_node.parm('filecolorspace2')
+        if p is not None:
+            return p
+        return img_node.parm('filecolorspace')
+
+    def _menu_items_labels(self, parm):
+        try:
+            items = list(parm.menuItems())
+            labels = list(parm.menuLabels())
+            return items, labels
+        except Exception:
+            return [], []
+
+    def _pick_menu_value(self, parm, preferred_names):
+        # Try to find a menu item that matches any preferred name (exact then substring), against items and labels.
+        if parm is None:
+            return None
+        items, labels = self._menu_items_labels(parm)
+        low_items = [i.lower() for i in items]
+        low_labels = [l.lower() for l in labels]
+        prefs = [p.lower() for p in preferred_names if p]
+        # exact match first
+        for p in prefs:
+            if p in low_items:
+                return items[low_items.index(p)]
+            if p in low_labels:
+                return items[low_labels.index(p)] if low_labels.index(p) < len(items) else None
+        # substring match
+        for p in prefs:
+            for idx, li in enumerate(low_items):
+                if p in li:
+                    return items[idx]
+            for idx, ll in enumerate(low_labels):
+                if p in ll:
+                    return items[idx] if idx < len(items) else None
+        return None
+
+    def _preferred_for_intent(self, intent, ext, kind):
+        # Build ranked names for menu matching
+        if kind in ('data','normal'):
+            return ('Raw','Utility - Raw','raw')
+        # Color kinds only
+        linear_list = ('ACEScg','acescg','ACES - ACEScg','scene_linear','linear','lin')
+        srgb_list = ('sRGB - Texture','sRGB','srgb_texture')
+        if intent in ('acescg','aces','scene_linear'):
+            return linear_list
+        if intent in ('srgb_texture','srgb'):
+            return srgb_list
+        if intent == 'raw':
+            return ('Raw','Utility - Raw','raw')
+        # No intent → heuristic by extension
+        if ext.lower() == '.exr':
+            return linear_list
+        return srgb_list
+
+    def apply_mtlx_sig_and_cs(self, img_node, *, kind: str, intent, file_path: str):
+        # Set signature first
+        sig = 'color3' if kind in ('color','normal') else 'float'
+        try:
+            if img_node.parm('signature'):
+                img_node.parm('signature').set(sig)
+        except Exception:
+            pass
+        # Choose colorspace from node's own menu
+        parm = self._get_filecolorspace_parm(img_node)
+        if parm is not None:
+            prefs = self._preferred_for_intent(intent, os.path.splitext(file_path)[1], kind)
+            picked = self._pick_menu_value(parm, prefs)
+            if picked is not None:
+                try:
+                    parm.set(picked)
+                except Exception:
+                    pass
+
     def _configure_texture_node(self, node, tex_type, file_path):
-        # T4 integration: compute policy-based signature/colorspace and set before any wiring
+        # Compute semantics and route to menu-based setter. Adds warning comment on unsafe tags.
         sem = self._infer_semantics(tex_type, file_path)
-        sig, cs = self._choose_signature_and_cs(sem['kind'], sem['explicit_cs'], sem['ext'])
         if sem.get('unsafe_tag') and hasattr(node, 'setComment'):
             try:
                 node.setComment('Ignored unsafe cs tag for data/normal; forced RAW')
             except Exception:
                 pass
-        if node.parm('signature'):
-            node.parm('signature').set(sig)
-        # Resolve OCIO name for color maps when intent provided
-        final_cs = cs
-        if sem['kind'] == 'color':
-            ocio_name = self._map_intent_to_ocio(sem.get('intent'), sem['kind'])
-            if ocio_name:
-                final_cs = ocio_name
-        if node.parm('filecolorspace'):
-            try:
-                node.parm('filecolorspace').set(final_cs)
-            except Exception:
-                # fallback to canonical token
-                node.parm('filecolorspace').set(cs)
+        # For normals, ensure kind='normal' so signature=color3 and colorspace RAW are chosen.
+        self.apply_mtlx_sig_and_cs(node, kind=sem['kind'], intent=sem.get('intent'), file_path=file_path)
 
     def _connect_texture(self, texture_node, tex_type, surf, disp, input_names):
         mapping = {
