@@ -642,13 +642,10 @@ class MtlxMaterial:
 
         # Create main nodes
 
-        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify(self.material_to_create + "_mtlxSurface"))
-        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify(self.material_to_create + "_mtlxDisplacement"))
+        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify_name_material(self.material_to_create + "_mtlxSurface",self.sanitize_options['drop_tokens']))
+        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify_name_material(self.material_to_create + "_mtlxDisplacement",self.sanitize_options['drop_tokens']))
 
         # Create output nodes
-
-
-
 
         surface_out = self._create_output_nodes(subnet_context, "surface")
         displacement_out = self._create_output_nodes(subnet_context, "displacement")
