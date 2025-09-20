@@ -2,7 +2,7 @@ import hou
 import loputils
 import re
 import unicodedata
-from typing import Optional, Set
+from typing import Optional, Set,Iterable
 
 def _is_in_solaris():
     ''' Checks if the current context is Stage'''
@@ -123,3 +123,22 @@ def slugify(text: str, drop_tokens: Optional[Set[str]] = None) -> str:
 
     # Join the remaining tokens with "_"
     return '_'.join(tokens)
+
+
+def slugify_name_material(value: str, drop_tokens: Optional[Iterable[str]] = None) -> str:
+    v = (value or "").strip().lower()
+
+    # Drop tokens literally, anywhere they appear
+    if drop_tokens:
+        for tok in sorted({t for t in drop_tokens if t}, key=len, reverse=True):
+            v = re.sub(re.escape(tok.lower()), "", v, flags=re.IGNORECASE)
+
+    # Replace non-alnum with underscore
+    v = re.sub(r"[^a-z0-9]+", "_", v)
+    v = re.sub(r"_+", "_", v).strip("_")
+
+    if not v:
+        return "material"
+    if not re.match(r"^[a-z]", v):
+        v = f"m_{v}"
+    return v

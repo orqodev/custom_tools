@@ -3,6 +3,7 @@ TexToMtlX Configuration Constants
 Centralized configuration for texture processing and MaterialX creation
 """
 import re
+import os
 
 # Text to display in the help menu
 
@@ -50,85 +51,45 @@ NAMING_MAP = {
 }
 
 # Texture type mappings with priorities and detection patterns
-TEXTURE_TYPE = {
-    "color": {
-        "tokens": ["_BaseColor", "_Diffuse", "_Albedo", "_Color", "_Col", "_Diff", "_basecolor", "_diffuse", "_albedo", "_color", "_col", "_diff"],
-        "priority": 1,
-        "description": "Base Color / Diffuse maps"
-    },
-    "metal": {
-        "tokens": ["_Metallic", "_Metal", "_Met", "_metallic", "_metal", "_met"],
-        "priority": 2,
-        "description": "Metallic maps"
-    },
-    "rough": {
-        "tokens": ["_Roughness", "_Rough", "_roughness", "_rough", "_R"],
-        "priority": 3,
-        "description": "Roughness maps"
-    },
-    "specular": {
-        "tokens": ["_Specular", "_Spec", "_specular", "_spec"],
-        "priority": 4,
-        "description": "Specular maps"
-    },
-    "gloss": {
-        "tokens": ["_Glossiness", "_Gloss", "_glossiness", "_gloss"],
-        "priority": 5,
-        "description": "Glossiness maps"
-    },
-    "normal": {
-        "tokens": ["_Normal", "_Norm", "_NRM", "_normal", "_norm", "_nrm"],
-        "priority": 6,
-        "description": "Normal maps"
-    },
-    "bump": {
-        "tokens": ["_Bump", "_bump"],
-        "priority": 7,
-        "description": "Bump maps"
-    },
-    "displacement": {
-        "tokens": ["_Displacement", "_Height", "_Disp", "_displacement", "_height", "_disp"],
-        "priority": 8,
-        "description": "Displacement / Height maps"
-    },
-    "emission": {
-        "tokens": ["_Emission", "_Emissive", "_Emm", "_Emit", "_emission", "_emissive", "_emm", "_emit"],
-        "priority": 9,
-        "description": "Emission maps"
-    },
-    "alpha": {
-        "tokens": ["_Opacity", "_Alpha", "_opacity", "_alpha"],
-        "priority": 10,
-        "description": "Opacity / Alpha maps"
-    },
-    "transmission": {
-        "tokens": ["_Transmission", "_Trans", "_Refraction", "_transmission", "_trans", "_refraction"],
-        "priority": 11,
-        "description": "Transmission maps"
-    },
-    "sss": {
-        "tokens": ["_SubsurfaceColor", "_SSS", "_Subsurface", "_subsurfacecolor", "_sss", "_subsurface"],
-        "priority": 12,
-        "description": "Subsurface Scattering maps"
-    },
-    "ao": {
-        "tokens": ["_AO", "_AmbientOcclusion", "_ambient_occlusion", "_ao", "_Occlusion", "_occlusion", "_Cavity", "_cavity"],
-        "priority": 13,
-        "description": "Ambient Occlusion maps"
-    },
-    "mask": {
-        "tokens": ["_Mask", "_mask", "_ID", "_id", "_MatID", "_matid"],
-        "priority": 14,
-        "description": "Mask/ID maps"
-    }
-}
+TEXTURE_TYPE =  [
+    "diffuse", "diff", "albedo", "alb", "base", "col", "color", "basecolor",
+    "metalness", "metal", "mlt", "met","metallic",
+    "specular", "specularity", "spec", "spc",
+    "roughness", "rough", "rgh",
+    "transmission", "transparency", "trans",
+    "translucency", "sss",
+    "emission", "emissive", "emit", "emm",
+    "opacity", "opac", "alpha",
+    "ambient_occlusion", "ao", "occlusion", "cavity",
+    "bump", "bmp",
+    "displacement", "height", "displace", "disp", "dsp", "heightmap",
+    "user", "mask",
+    "normal", "nor", "nrm", "nrml", "norm"
+]
 
 # Sorted texture types by priority for consistent processing order
-TEXTURE_TYPE_SORTED = sorted(TEXTURE_TYPE.items(), key=lambda x: x[1]["priority"])
+TEXTURE_TYPE_SORTED = {
+'texturesColor': ["diffuse", "diff", "albedo", "alb", "base", "col", "color", "basecolor"],
+"texturesMetal": ["metalness", "metal", "mlt", "met", "metallic"],
+"texturesSpecular": ["specular", "specularity", "spec", "spc"],
+"texturesRough": ["roughness", "rough", "rgh"],
+"texturesTrans": ["transmission", "transparency", "trans"],
+"texturesGloss": ["gloss", "glossy", "glossiness"],
+"texturesEmm": ["emission", "emissive", "emit", "emm"],
+"texturesAlpha": ["opacity", "opac", "alpha"],
+"texturesAO": ["ambient_occlusion", "ao", "occlusion", "cavity"],
+"texturesBump": ["bump", "bmp", "height"],
+"texturesDisp": ["displacement", "displace", "disp", "dsp", "heightmap"],
+"texturesExtra": ["user", "mask"],
+"texturesNormal": ["normal", "nor", "nrm", "nrml", "norm"],
+"texturesSSS": ["translucency"]
+}
 
 # Size detection pattern for resolution parsing
 # Match only 1–2 digit K sizes (e.g., 1k, 2K, 8k, 16k). Avoid plain numbers and UDIMs.
 SIZE_PATTERN = re.compile(r'(?i)(?:^|[_-])(\d{1,2}k)\b')
+UDIM_PATTERN = re.compile(r'(?:_)?(\d{4}())')
+
 
 # Default drop tokens for material name sanitization
 DEFAULT_DROP_TOKENS = [
@@ -156,6 +117,7 @@ DEFAULT_DROP_TOKENS = [
 
 # Worker thread configuration
 WORKER_FRACTION = 0.5  # Use 50% of available CPU cores for TX conversion
+MAX_WORKERS = os.cpu_count()
 
 # Default imaketx path (can be overridden by user)
 DEFAULT_IMAKETX_PATH = "imaketx"
@@ -258,63 +220,3 @@ def is_ldr_extension(extension):
     """Check if file extension indicates LDR format"""
     ldr_extensions = {".jpg", ".jpeg", ".png", ".tga", ".bmp"}
     return extension.lower() in ldr_extensions
-
-# --- Extend token lists with additional aliases from tool instructions ---
-# Supports textures named like MATERIAL_TEXTURE_UDIM or MATERIAL_TEXTURE (with/without UDIMs)
-# The following aliases are appended to cover more naming conventions in the wild.
-try:
-    # Color
-    TEXTURE_TYPE['color']['tokens'].extend([
-        '_base', '_col', '_color', '_basecolor', '_diffuse', '_diff', '_albedo', '_alb'
-    ])
-    # Metal
-    TEXTURE_TYPE['metal']['tokens'].extend([
-        '_metalness', '_mlt', '_met'
-    ])
-    # Specular
-    TEXTURE_TYPE['specular']['tokens'].extend([
-        '_specularity', '_spc', '_spec'
-    ])
-    # Roughness
-    TEXTURE_TYPE['rough']['tokens'].extend([
-        '_roughness', '_rough', '_rgh'
-    ])
-    # Transmission
-    TEXTURE_TYPE['transmission']['tokens'].extend([
-        '_transmission', '_transparency', '_trans'
-    ])
-    # SSS
-    TEXTURE_TYPE['sss']['tokens'].extend([
-        '_transluncecy', '_translucency', '_sss'
-    ])
-    # Emission
-    TEXTURE_TYPE['emission']['tokens'].extend([
-        '_emission', '_emissive', '_emit', '_emm'
-    ])
-    # Opacity
-    TEXTURE_TYPE['alpha']['tokens'].extend([
-        '_opacity', '_opac', '_alpha'
-    ])
-    # Ambient/AO
-    TEXTURE_TYPE['ao']['tokens'].extend([
-        '_ambient_occlusion', '_ao', '_occlusion', '_cavity'
-    ])
-    # Mask/ID
-    TEXTURE_TYPE['mask']['tokens'].extend([
-        '_mask', '_id', '_matid'
-    ])
-    # Bump
-    TEXTURE_TYPE['bump']['tokens'].extend([
-        '_bump', '_bmp'
-    ])
-    # Displacement / Height
-    TEXTURE_TYPE['displacement']['tokens'].extend([
-        '_displacement', '_displace', '_disp', '_dsp', '_heightmap', '_height'
-    ])
-    # Normal
-    TEXTURE_TYPE['normal']['tokens'].extend([
-        '_normal', '_nor', '_nrm', '_nrml', '_norm'
-    ])
-except Exception:
-    # If structure changed, ignore silently to avoid breaking runtime
-    pass

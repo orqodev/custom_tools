@@ -11,7 +11,23 @@ import threading
 from PySide6 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import slugify
+from modules.misc_utils import slugify, slugify_name_material,_sanitize
+
+from tools.material_tools.TexToMtlX_V2.txmtlx_config import (
+    TEXT_TO_DISPLAY,
+    TEXTURE_EXT,
+    TEXTURE_TYPE,
+    UDIM_PATTERN,
+    TEXTURE_TYPE_SORTED,
+    SIZE_PATTERN,
+    DEFAULT_DROP_TOKENS,
+    WORKER_FRACTION,
+    DEFAULT_IMAKETX_PATH,
+    UI_CONFIG,
+    MAX_WORKERS,
+)
+from tools.material_tools.TexToMtlX_v2.txmtlx_config import SKIP_KEYS
+
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
@@ -24,10 +40,22 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.main_layout = QtWidgets.QVBoxLayout(self.central_widget)
 
         # WINDOW PROPERTIES
-        self.setWindowTitle("TexToMtlX Tool")
-        self.resize(340, 570)
-        self.setParent(hou.qt.mainWindow(), QtCore.Qt.Window)
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowTitle(UI_CONFIG.get("window_title", "TexToMtlX v2"))
+        w, h = UI_CONFIG.get("window_size", (600, 800))
+        self.resize(w, h)
+        try:
+            screen = QtWidgets.QApplication.primaryScreen()
+            screen_geometry = screen.availableGeometry()
+            x = (screen_geometry.width() - w) // 2
+            y = (screen_geometry.height() - h) // 2
+            self.move(x, y)
+        except Exception:
+            pass
+        try:
+            self.setParent(hou.qt.mainWindow(), QtCore.Qt.Window)
+            self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        except Exception:
+            pass
 
         ## DATA
         self.mtlTX = False
@@ -47,25 +75,11 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.node_lib = None
         self.folders_path = []
 
-        # Texture related constans
-        self.TEXTURE_EXT = ['.jpeg', '.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff', '.exr', '.targa']
-        self.TEXTURE_TYPE = [
-            "diffuse", "diff", "albedo", "alb", "base", "col", "color", "basecolor",
-            "metalness", "metal", "mlt", "met","metallic",
-            "specular", "specularity", "spec", "spc",
-            "roughness", "rough", "rgh",
-            "transmission", "transparency", "trans",
-            "translucency", "sss",
-            "emission", "emissive", "emit", "emm",
-            "opacity", "opac", "alpha",
-            "ambient_occlusion", "ao", "occlusion", "cavity",
-            "bump", "bmp",
-            "displacement", "height", "displace", "disp", "dsp", "heightmap",
-            "user", "mask",
-            "normal", "nor", "nrm", "nrml", "norm"
-        ]
-        self.UDIM_PATTERN = re.compile(r'(?:_)?(\d{4}())')
-        self.SIZE_PATTERN = re.compile(r'(?:_)?(\d+[Kk])')
+        # Texture related constants
+        self.TEXTURE_EXT = TEXTURE_EXT
+        self.TEXTURE_TYPE = TEXTURE_TYPE
+        self.UDIM_PATTERN = UDIM_PATTERN
+        self.SIZE_PATTERN = SIZE_PATTERN
         self.texture_list = {}
 
     def _setup_help_section(self):
@@ -96,6 +110,15 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.material_layout.addWidget(self.checkbox, 1, 1)
 
         self.main_layout.addLayout(self.material_layout)
+
+        self.cb_sanitize = QtWidgets.QCheckBox("Sanitize Material Names")
+        self.cb_sanitize.setChecked(True)
+        self.le_drop_tokens = QtWidgets.QLineEdit(",".join(DEFAULT_DROP_TOKENS[:5]))
+        san_row = QtWidgets.QHBoxLayout()
+        san_row.addWidget(self.cb_sanitize)
+        san_row.addWidget(QtWidgets.QLabel("Drop tokens (comma separated)"))
+        san_row.addWidget(self.le_drop_tokens)
+        self.main_layout.addLayout(san_row)
 
     def _setup_list_section(self):
         '''Setup the material list section'''
@@ -158,27 +181,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
     def help_menu(self):
         ''' Simple Method to show instructions on how to use the tool'''
-
-        text_to_display = """
-                        Instructions\n\n\nSupports textures with  and without UDIMs.
-                        \nMATERIAL_TEXTURE_UDIM or MATERIAL_TEXTURE 
-                        \nFor Example: tires_Alb_1001.tif or tires_Alb_tif
-                        \nNaming Convention for the textures:
-                        \nColor: diffuse, diff, albedo, alb, base, col, color, basecolor,
-                        \nMetal: diffuse, metalness, metal, mlt, met,
-                        \nSpecular: specular, specularity, spec, spc,
-                        \nRoughness: roughness, rough, rgh,
-                        \nTransmission: transmission, transparency, trans,
-                        \nSSS: transluncecy, sss,
-                        \nEmission: emission, emissive, emit, emm,
-                        \nOpacity: opacity, opac, alpha,
-                        \nAmbient: ambient_occlusion, ao, occlusion, cavity,
-                        \nBump: bump, bmp,
-                        \nHeight: Displacement,displace, disp, dsp, heightmap, height,
-                        \nExtra: user, mask,
-                        \nNormal: normal, nor, nrm, nrml, norm,
-                        """
-
+        text_to_display = TEXT_TO_DISPLAY
         hou.ui.displayMessage(text_to_display, severity=hou.severityType.ImportantMessage)
 
     def get_mtl_lib(self):
@@ -313,12 +316,8 @@ class TxToMtlx(QtWidgets.QMainWindow):
             )
             return False
 
-    def on_checkbox(self, state):
-        ''' Check checkbox is on or off'''
-        if state == QtCore.Qt.Checked:
-            self.mtlTX = True
-        else:
-            self.mtlTX = False
+    def on_checkbox(self, _state):
+        self.mtlTX = self.checkbox.isChecked()
 
     def select_all_mtl(self):
         ''' Selects all the items in the list view'''
@@ -341,24 +340,25 @@ class TxToMtlx(QtWidgets.QMainWindow):
             return
 
         # Show sanitization dialog
-        sanitize_options = self._show_sanitization_dialog()
-        if sanitize_options is None:  # User cancelled
-            return
+        drop_tokens = set()
+        if self.cb_sanitize.isChecked() and self.le_drop_tokens.text().strip():
+            drop_tokens = {t.strip().lower() for t in self.le_drop_tokens.text().split(',') if t.strip()}
+        self.sanitize_options = {"enabled": self.cb_sanitize.isChecked(), "drop_tokens": drop_tokens}
 
         self.progress_bar.setMaximum(len(selected_rows))
         progress_bar_default = 0
         # Common data
+        print(self.mtlTX,"TX1")
         common_data = {
             'mtlTX': self.mtlTX,
             'path': self.node_path,
             'node': self.node_lib,
-            'sanitize_options': sanitize_options,
         }
 
         for index in selected_rows:
             row = index.row()
             key = list(self.texture_list.keys())[row]
-            create_material = MtlxMaterial(key, **common_data,folder_path=self.texture_list[key]["FOLDER_PATH"], texture_list=self.texture_list)
+            create_material = MtlxMaterial(key, **common_data,folder_path=self.texture_list[key]["FOLDER_PATH"], texture_list=self.texture_list, sanitize_options=self.sanitize_options)
             create_material.create_materialx()
 
             self.progress_bar.setValue(progress_bar_default + 1)
@@ -366,82 +366,6 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
         hou.ui.displayMessage(f"Material creation completed!!", severity=hou.severityType.Message)
 
-    def _show_sanitization_dialog(self):
-        """Show dialog to ask user about material name sanitization options"""
-
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle("Material Name Sanitization")
-        dialog.setModal(True)
-        dialog.resize(400, 250)
-
-        layout = QtWidgets.QVBoxLayout(dialog)
-
-        # Title label
-        title_label = QtWidgets.QLabel("Material Name Sanitization Options")
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
-        layout.addWidget(title_label)
-
-        # Sanitize checkbox
-        sanitize_checkbox = QtWidgets.QCheckBox("Enable material name sanitization")
-        sanitize_checkbox.setChecked(True)  # Default to enabled
-        layout.addWidget(sanitize_checkbox)
-
-        # Description label
-        desc_label = QtWidgets.QLabel(
-            "Sanitization will:\n"
-            "• Convert to lowercase and normalize unicode\n"
-            "• Remove trailing UDIM patterns (e.g., _1001)\n"
-            "• Replace non-alphanumeric characters with underscores\n"
-            "• Remove specified drop tokens"
-        )
-        desc_label.setStyleSheet("margin: 10px 0px; color: #666;")
-        layout.addWidget(desc_label)
-
-        # Custom drop tokens section
-        tokens_label = QtWidgets.QLabel("Custom drop tokens (comma-separated):")
-        layout.addWidget(tokens_label)
-
-        tokens_input = QtWidgets.QLineEdit()
-        tokens_input.setPlaceholderText("e.g., base,bake,baked,bake1,pbr,custom")
-        tokens_input.setText("base,bake,baked,bake1,pbr")  # Default tokens
-        layout.addWidget(tokens_input)
-
-        # Help label
-        help_label = QtWidgets.QLabel(
-            "Note: These tokens will be removed from material names during sanitization."
-        )
-        help_label.setStyleSheet("font-size: 11px; color: #888; margin-top: 5px;")
-        layout.addWidget(help_label)
-
-        # Buttons
-        button_layout = QtWidgets.QHBoxLayout()
-
-        ok_button = QtWidgets.QPushButton("OK")
-        cancel_button = QtWidgets.QPushButton("Cancel")
-
-        button_layout.addStretch()
-        button_layout.addWidget(ok_button)
-        button_layout.addWidget(cancel_button)
-
-        layout.addLayout(button_layout)
-
-        # Connect buttons
-        ok_button.clicked.connect(dialog.accept)
-        cancel_button.clicked.connect(dialog.reject)
-
-        # Show dialog and get result
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            # Parse custom tokens
-            custom_tokens = set()
-            if tokens_input.text().strip():
-                custom_tokens = {token.strip().lower() for token in tokens_input.text().split(',') if token.strip()}
-
-            return {
-                'enabled': sanitize_checkbox.isChecked(),
-                'drop_tokens': custom_tokens if custom_tokens else None
-            }
-        else:
-            return None  # User cancelled
 
 class MtlxMaterial:
 
@@ -451,7 +375,7 @@ class MtlxMaterial:
         self.node_path = path
         self.node_lib = node
         self.texture_list = texture_list
-        self.imaketx_path = None
+        self.imaketx_path = DEFAULT_IMAKETX_PATH
         self.folder_path = folder_path
         self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
 
@@ -459,25 +383,10 @@ class MtlxMaterial:
         self._setup_imaketx()
 
     def init_constants(self):
-        self.TEXTURE_TYPE_SORTED = {
-            'texturesColor': ["diffuse", "diff", "albedo", "alb", "base", "col", "color", "basecolor"],
-            "texturesMetal": ["metalness", "metal", "mlt", "met", "metallic"],
-            "texturesSpecular": ["specular", "specularity", "spec", "spc"],
-            "texturesRough": ["roughness", "rough", "rgh"],
-            "texturesTrans": ["transmission", "transparency", "trans"],
-            "texturesGloss": ["gloss", "glossy", "glossiness"],
-            "texturesEmm": ["emission", "emissive", "emit", "emm"],
-            "texturesAlpha": ["opacity", "opac", "alpha"],
-            "texturesAO": ["ambient_occlusion", "ao", "occlusion", "cavity"],
-            "texturesBump": ["bump", "bmp", "height"],
-            "texturesDisp": ["displacement", "displace", "disp", "dsp", "heightmap"],
-            "texturesExtra": ["user", "mask"],
-            "texturesNormal": ["normal", "nor", "nrm", "nrml", "norm"],
-            "texturesSSS": ["translucency"]
-        }
+        self.TEXTURE_TYPE_SORTED = TEXTURE_TYPE_SORTED
         # Variables to setupt the worker pool
-        self.MAX_WORKERS = os.cpu_count()
-        self.WORKER_LIMIT = max(1,int(self.MAX_WORKERS * 0.5))
+        print(self.mtlTX,"TX")
+        self.WORKER_LIMIT = max(1,int(MAX_WORKERS * WORKER_FRACTION))
 
     def _setup_imaketx(self):
         """Initialize imaketx tool"""
@@ -492,70 +401,70 @@ class MtlxMaterial:
         if not os.path.exists(self.imaketx_path):
             raise RuntimeError(f"imaketx tool not found at: {self.imaketx_path}")
 
-    def _convert_to_tx(self,textures_paths):
-        ''' Convert textures to TX using parallel processing with monitoring '''
-
+    def _convert_to_tx(self, textures_paths):
+        """Convert textures to TX using parallel processing with correct progress."""
         if not self.mtlTX:
             return
+
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger("TX CONVERSION")
 
+        # Normalize absolute paths and dedupe
+        tex_paths = []
+        for p in textures_paths:
+            full = os.path.join(self.folder_path, p) if not os.path.isabs(p) else p
+            if full.lower().endswith(".rat"):
+                continue
+            if os.path.isfile(full):
+                tex_paths.append(os.path.abspath(full))
+        tex_paths = sorted(set(tex_paths))
+        total = len(tex_paths)
+        if total == 0:
+            logger.info("No textures to convert.")
+            return True
+
         def convert_single_texture(texture_path):
             thread_id = threading.current_thread().ident
-            start_time = time.time()
-
+            start = time.time()
             try:
                 logger.info(f"Thread {thread_id}: Starting conversion of {os.path.basename(texture_path)}")
-                # Setup the outfile for the imaketx tool
-                output_path = os.path.splitext(texture_path)[0] + ".tx"
-                command = f'"{self.imaketx_path}" "{texture_path}" "{output_path}" "--newer"'
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                end_time = time.time()
-                duration = round(end_time - start_time, 2)
+                out_path = os.path.splitext(texture_path)[0] + ".tx"
+                cmd = f'"{self.imaketx_path}" "{texture_path}" "{out_path}" "--newer"'
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                dur = time.time() - start
                 if result.returncode == 0:
-                    logger.info(f"Thread {thread_id}: Finished conversion of {os.path.basename(texture_path)} in {duration} seconds")
+                    logger.info(f"Thread {thread_id}: Finished {os.path.basename(texture_path)} in {dur:.2f} s")
                     return True
                 else:
-                    logger.error(f"Thread {thread_id}: Failed to convert {os.path.basename(texture_path)} to TX format in {result.stderr}")
+                    logger.error(f"Thread {thread_id}: Failed {os.path.basename(texture_path)}: {result.stderr.strip()}")
                     return False
-
             except Exception as e:
-                logger.error(f"Thread {thread_id}: Error converting {os.path.basename(texture_path)}: {str(e)}")
+                logger.error(f"Thread {thread_id}: Error {os.path.basename(texture_path)}: {e}")
                 return False
 
-        textures_paths = [os.path.join(self.folder_path, tex) for tex in textures_paths]
-        total_textures = len(textures_paths)
+        start_all = time.time()
+        completed = failed = 0
 
-        start_time = time.time()
-        completed = 0
-        failed = 0
+        with ThreadPoolExecutor(max_workers=self.WORKER_LIMIT) as ex:
+            future_to_tex = {ex.submit(convert_single_texture, p): p for p in tex_paths}
 
-        with ThreadPoolExecutor(max_workers=self.WORKER_LIMIT) as executor:
-            # Submit all the task and get the futures
-            future_to_texture = {}
-            for path in textures_paths:
-                future_to_texture[executor.submit(convert_single_texture, path)] = path
-                # Process completed futures as they finish
-                for future in as_completed(future_to_texture):
-                    texture_path = future_to_texture[future]
-                    try:
-                        if future.result():
-                            completed += 1
-                        else:
-                            failed += 1
-                    except Exception as e:
-                        logger.error(f"Error processing {os.path.basename(texture_path)}: {str(e)}")
-                        failed += 1
-                    # Log progress
-                    progress = ((completed + failed ) / total_textures)*100
-                    logger.info(f"Progress: {progress:.1f}% ({(completed + failed ) / total_textures})")
+            # Iterate ONCE over completions
+            for i, fut in enumerate(as_completed(future_to_tex), start=1):
+                try:
+                    ok = fut.result()
+                    completed += 1 if ok else 0
+                    failed    += 0 if ok else 1
+                except Exception as e:
+                    failed += 1
+                    logger.error(f"Unhandled error: {e}")
 
-        end_time = time.time()
-        total_time = round(end_time - start_time, 2)
+                # Proper progress: 0..100%
+                pct = (i / total) * 100.0
+                logger.info(f"Progress: {pct:.1f}% ({i}/{total})")
 
-        logger.info(f"Completed conversion in {total_time} seconds, Successfull converted: {completed}, Failed: {failed}")
-
-        return completed > 0 and failed == 0
+        dur_all = time.time() - start_all
+        logger.info(f"Completed conversion in {dur_all:.2f} seconds, Successfully converted: {completed}, Failed: {failed}")
+        return failed == 0
 
     def create_materialx(self):
         '''Creates a MaterialX setup'''
@@ -606,11 +515,10 @@ class MtlxMaterial:
         Returns:
             subnet_context - subnet MtxMaterial to use as context to create the material and others nodes
         '''
-
         # Create canonical name using sanitization options
         if self.sanitize_options['enabled']:
             # Use slugify with custom drop tokens if provided
-            canonical = slugify(self.material_to_create, self.sanitize_options['drop_tokens'])
+            canonical = slugify_name_material(self.material_to_create, self.sanitize_options['drop_tokens'])
         else:
             # Use original material name without sanitization
             canonical = self.material_to_create
@@ -821,7 +729,7 @@ class MtlxMaterial:
 
     def _iterate_textures(self, material_lib_info):
         ''' Iterator for processsing textures based on their types and ignore the skip_keys'''
-        skip_keys = ['UDIM', 'Size', 'normal', "nor", "nrm", "nrml", "norm", "bump", "bmp"]
+        skip_keys = SKIP_KEYS
         for texture in material_lib_info:
             if texture in skip_keys:
                 continue
@@ -1039,9 +947,6 @@ class MtlxMaterial:
         if not any(bump_normal_data.values()):
             return
 
-
-
-
         if bump_normal_data["bump"] and bump_normal_data["normal"]:
             bump_node = _create_bump()
             normal_node = _create_normal()
@@ -1083,3 +988,4 @@ class MtlxMaterial:
         ''' Layout nodes in the network'''
         subnet_context.layoutChildren()
         self.node_lib.layoutChildren()
+
