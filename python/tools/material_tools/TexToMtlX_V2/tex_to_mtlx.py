@@ -25,8 +25,8 @@ from tools.material_tools.TexToMtlX_V2.txmtlx_config import (
     DEFAULT_IMAKETX_PATH,
     UI_CONFIG,
     MAX_WORKERS,
+    SKIP_KEYS
 )
-from tools.material_tools.TexToMtlX_v2.txmtlx_config import SKIP_KEYS
 
 
 class TxToMtlx(QtWidgets.QMainWindow):

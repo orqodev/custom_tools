@@ -32,6 +32,7 @@ TEXTURE_EXT = {
     ".jpg", ".jpeg", ".png", ".tga", ".bmp", ".tiff", ".tif", 
     ".exr", ".hdr", ".hdri", ".dpx", ".pic", ".rat", ".tx"
 }
+SKIP_KEYS = {'UDIM', 'Size', 'FOLDER_PATH', 'normal', 'bump'}
 
 NAMING_MAP = {
     'color': {'input': 'base_color', 'label': 'basecolor_tex'},
