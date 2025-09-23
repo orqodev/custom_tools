@@ -3,7 +3,6 @@ import os
 import hou
 
 def run_triplanar_from_disk():
-
     disk_textures = []
     materials = []
 
@@ -1932,9 +1931,6 @@ def run_triplanar_from_disk():
         # layout materials
         mtl_lib.layoutChildren()
         mtl_lib.setCurrent(True, clear_all_selected=True)
-
-        def run_triplanar_from_disk():
-
 
 
 

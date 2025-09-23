@@ -384,6 +384,7 @@ class NodeBatchSetterUI(QtWidgets.QMainWindow):
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.table.itemSelectionChanged.connect(self._update_selection_count)
+        self.table.itemDoubleClicked.connect(self._on_table_double_click)
         main.addWidget(self.table, 1)
 
         # -------- Bottom actions --------
@@ -575,6 +576,40 @@ class NodeBatchSetterUI(QtWidgets.QMainWindow):
         total = self.table.rowCount()
         selected = len({i.row() for i in self.table.selectedIndexes()})
         self.count_lbl.setText(f"{total} matches ({selected} selected)")
+
+    def _on_table_double_click(self, item: QtWidgets.QTableWidgetItem):
+        try:
+            row = item.row()
+            node_path = self._row_nodepath.get(row)
+            if not node_path:
+                return
+            node = hou.node(node_path)
+            if not node:
+                hou.ui.displayMessage(f"Node not found anymore: {node_path}",
+                                      severity=hou.severityType.Warning)
+                return
+
+            # Select it in Houdini and navigate the Network Editor there
+            hou.clearAllSelected()
+            node.setSelected(True)
+
+            net_pane = None
+            for pane in hou.ui.paneTabs():
+                if isinstance(pane, hou.NetworkEditor):
+                    net_pane = pane
+                    break
+
+            if net_pane:
+                parent_path = node.parent().path() if node.parent() else node.path()
+                net_pane.cd(parent_path)
+                # Ensure our node is visible and focused
+                net_pane.frameSelection()
+            else:
+                hou.ui.displayMessage("No Network Editor pane found to navigate.",
+                                      severity=hou.severityType.Warning)
+        except Exception as e:
+            hou.ui.displayMessage(f"Failed to navigate: {e}",
+                                  severity=hou.severityType.Error)
 
     # ---------------- Apply (only if node has all parms) ----------------
 
