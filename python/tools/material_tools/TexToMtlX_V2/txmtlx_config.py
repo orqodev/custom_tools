@@ -94,6 +94,8 @@ UDIM_PATTERN = re.compile(r'(?:_)?(\d{4}())')
 
 # Default drop tokens for material name sanitization
 DEFAULT_DROP_TOKENS = [
+    #BMS assets textures
+    "base", "bake", "baked", "bake1", "pbr",
     # Resolution indicators
     "1K", "2K", "4K", "8K", "16K", "1k", "2k", "4k", "8k", "16k",
     "512", "1024", "2048", "4096", "8192", "16384",

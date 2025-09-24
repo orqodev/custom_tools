@@ -559,17 +559,4 @@ def texture_from_disk():
     mtl_lib.layoutChildren()
     mtl_lib.setCurrent(True, clear_all_selected=True)
 
-    def run_texture_from_disk():
-        """Shelf entry point for Texture From Disk.
-        This function reloads the module to execute the top-level script flow.
-        Keeps behavior identical while allowing shelf tools to call a function.
-        """
-        import importlib, sys
-        mod = sys.modules.get(__name__)
-        if mod is not None:
-            importlib.reload(mod)
-        else:
-            importlib.import_module(__name__)
 
-    if __name__ == "__main__":
-        run_texture_from_disk()
