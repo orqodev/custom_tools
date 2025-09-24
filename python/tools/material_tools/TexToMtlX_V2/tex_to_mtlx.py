@@ -561,7 +561,6 @@ class MtlxMaterial:
             # Create subnet according to policy
             subnet_context, mat_name, action = self._create_material_subnet(material_lib_info)
             if action == "skipped":
-                # Nothing to do; return early
                 return mat_name, "skipped"
 
             # Main nodes
@@ -583,7 +582,7 @@ class MtlxMaterial:
             return mat_name, action
 
         except Exception as e:
-            print(f"Failed to create material subnet. {str(e)}")
+            print(f"Failed to create material subnet in {mat_name}. {str(e)} ")
             hou.ui.displayMessage(f"Error creating MaterialX : {str(e)}", severity=hou.severityType.Error)
             # Report failure as skipped so the loop continues gracefully
             return self.material_to_create, "skipped"
