@@ -110,7 +110,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.material_layout.addWidget(self.checkbox, 1, 1)
 
         self.main_layout.addLayout(self.material_layout)
-
+        # Sanitize material names
         self.cb_sanitize = QtWidgets.QCheckBox("Sanitize Material Names")
         self.cb_sanitize.setChecked(True)
         self.le_drop_tokens = QtWidgets.QLineEdit(",".join(DEFAULT_DROP_TOKENS[:5]))
@@ -120,13 +120,37 @@ class TxToMtlx(QtWidgets.QMainWindow):
         san_row.addWidget(self.le_drop_tokens)
         self.main_layout.addLayout(san_row)
 
+        # --- EXISTING MATERIAL POLICY ---
+        policy_row = QtWidgets.QHBoxLayout()
+        policy_row.addWidget(QtWidgets.QLabel("If material already exists:"))
+
+        self.cb_exist_policy = QtWidgets.QComboBox()
+        self.cb_exist_policy.addItems(["Skip", "Override", "Rename (_001)"])
+        self.cb_exist_policy.setCurrentIndex(0)
+        self.cb_exist_policy.setToolTip(
+            "Skip: leave existing material untouched\n"
+            "Override: delete and recreate\n"
+            "Rename: keep existing, create a new one with _001/_002 suffix"
+        )
+
+        policy_row.addWidget(self.cb_exist_policy)
+        self.main_layout.addLayout(policy_row)
+
+
     def _setup_list_section(self):
-        '''Setup the material list section'''
+        """Setup the material list section (with name filter)."""
         self.list_layout = QtWidgets.QVBoxLayout()
+
+        # --- FILTER ROW (name only) ---
+        filt_row = QtWidgets.QHBoxLayout()
+        self.le_filter = QtWidgets.QLineEdit()
+        self.le_filter.setPlaceholderText("Type to filter materials by name…")
+        filt_row.addWidget(QtWidgets.QLabel("Filter:"))
+        filt_row.addWidget(self.le_filter, 1)
+        self.list_layout.addLayout(filt_row)
 
         # HEADER LAYOUT
         self.header_layout = QtWidgets.QHBoxLayout()
-
         self.lb_material_list = QtWidgets.QLabel("List of Materials:")
         self.bt_sel_all = QtWidgets.QPushButton("All")
         self.bt_sel_non = QtWidgets.QPushButton("Reset")
@@ -135,19 +159,33 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.bt_sel_non.setEnabled(False)
 
         self.header_layout.addWidget(self.lb_material_list)
+        self.header_layout.addStretch(1)
         self.header_layout.addWidget(self.bt_sel_all)
         self.header_layout.addWidget(self.bt_sel_non)
 
         # MATERIAL LIST
         self.material_list = QtWidgets.QListView()
         self.material_list.setMinimumHeight(200)
+
+        # SOURCE MODEL
         self.model = QtGui.QStandardItemModel()
-        self.material_list.setModel(self.model)
+
+        # PROXY (name filter only)
+        self.proxy = QtCore.QSortFilterProxyModel(self)
+        self.proxy.setSourceModel(self.model)
+        self.proxy.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.proxy.setFilterRole(QtCore.Qt.DisplayRole)
+        self.proxy.setFilterKeyColumn(0)  # the only column in the list
+
+        self.material_list.setModel(self.proxy)
         self.material_list.setSelectionMode(QtWidgets.QListView.MultiSelection)
 
         self.list_layout.addLayout(self.header_layout)
         self.list_layout.addWidget(self.material_list)
         self.main_layout.addLayout(self.list_layout)
+
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, activated=self.le_filter.setFocus)
+        QtGui.QShortcut(QtGui.QKeySequence("Escape"), self, activated=self.le_filter.clear)
 
     def _setup_create_section(self):
         """Setup the create button and progress bar section"""
@@ -178,6 +216,14 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.bt_sel_all.clicked.connect(self.select_all_mtl)
         self.bt_sel_non.clicked.connect(self.deselect_all_mtl)
         self.bt_create.clicked.connect(self.create_materials)
+        self.le_filter.textChanged.connect(self._apply_name_filter)
+
+    def _apply_name_filter(self, text: str):
+        # Case-insensitive "contains" using QRegularExpression
+        escaped = re.escape(text)  # you already import re at top
+        regex = QtCore.QRegularExpression(escaped)
+        regex.setPatternOptions(QtCore.QRegularExpression.CaseInsensitiveOption)
+        self.proxy.setFilterRegularExpression(regex)
 
     def help_menu(self):
         ''' Simple Method to show instructions on how to use the tool'''
@@ -331,45 +377,85 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.material_list.clearSelection()
 
     def create_materials(self):
-        ''' Passes the info needed to the MtlxMaterialClass'''
-
-        selected_rows = self.material_list.selectedIndexes()
-
-        if len(selected_rows) == 0:
-            hou.ui.displayMessage(f"Please select at least one material.", severity=hou.severityType.Error)
+        """Passes the info needed to the MtlxMaterialClass"""
+        selected_indexes = self.material_list.selectionModel().selectedIndexes()
+        if not selected_indexes:
+            hou.ui.displayMessage("Please select at least one material.", severity=hou.severityType.Error)
             return
 
-        # Show sanitization dialog
+        # Names straight from the view's DisplayRole (works with/without filter)
+        selected_names = [idx.data(QtCore.Qt.DisplayRole)
+                          for idx in selected_indexes
+                          if idx.data(QtCore.Qt.DisplayRole)]
+
+        # Sanitization options
         drop_tokens = set()
         if self.cb_sanitize.isChecked() and self.le_drop_tokens.text().strip():
             drop_tokens = {t.strip().lower() for t in self.le_drop_tokens.text().split(',') if t.strip()}
         self.sanitize_options = {"enabled": self.cb_sanitize.isChecked(), "drop_tokens": drop_tokens}
 
-        self.progress_bar.setMaximum(len(selected_rows))
-        progress_bar_default = 0
-        # Common data
-        print(self.mtlTX,"TX1")
+        # Existence policy
+        exist_policy = self.cb_exist_policy.currentText()  # "Skip" | "Override" | "Rename (_001)"
+
+        # Progress
+        self.progress_bar.setMaximum(len(selected_names))
+        progress_bar_value = 0
+
         common_data = {
-            'mtlTX': self.mtlTX,
-            'path': self.node_path,
-            'node': self.node_lib,
+            "mtlTX": self.mtlTX,
+            "path": self.node_path,
+            "node": self.node_lib,
         }
 
-        for index in selected_rows:
-            row = index.row()
-            key = list(self.texture_list.keys())[row]
-            create_material = MtlxMaterial(key, **common_data,folder_path=self.texture_list[key]["FOLDER_PATH"], texture_list=self.texture_list, sanitize_options=self.sanitize_options)
-            create_material.create_materialx()
+        # Summary
+        summary = {"created": [], "overridden": [], "skipped": [], "renamed": []}
 
-            self.progress_bar.setValue(progress_bar_default + 1)
-            progress_bar_default += 1
+        for key in selected_names:
+            # Guard: name should exist in texture_list
+            mat_info = self.texture_list.get(key)
+            if not mat_info:
+                # Skip gracefully if list/model got out of sync
+                summary["skipped"].append(f"{key} (not found)")
+                self.progress_bar.setValue(progress_bar_value := progress_bar_value + 1)
+                continue
 
-        hou.ui.displayMessage(f"Material creation completed!!", severity=hou.severityType.Message)
+            worker = MtlxMaterial(
+                key,
+                **common_data,
+                folder_path=mat_info["FOLDER_PATH"],
+                texture_list=self.texture_list,
+                sanitize_options=self.sanitize_options,
+                exist_policy=exist_policy,
+            )
+
+            mat_name, action = worker.create_materialx()
+            if action in summary:
+                summary[action].append(mat_name)
+            else:
+                summary["skipped"].append(mat_name)
+
+            self.progress_bar.setValue(progress_bar_value := progress_bar_value + 1)
+
+        # Summary dialog
+        msg_parts = []
+        for k in ("created", "overridden", "renamed", "skipped"):
+            items = summary[k]
+            if items:
+                msg_parts.append(
+                    f"{k.capitalize()}: {len(items)}\n- "
+                    + "\n- ".join(items[:10])
+                    + ("" if len(items) <= 10 else "\n- ...")
+                )
+        if not msg_parts:
+            msg_parts = ["No materials processed."]
+
+        hou.ui.displayMessage("\n\n".join(msg_parts), severity=hou.severityType.Message)
+
+
 
 
 class MtlxMaterial:
-
-    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None):
+    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None, exist_policy="Skip"):
         self.material_to_create = mat
         self.mtlTX = mtlTX
         self.node_path = path
@@ -378,14 +464,15 @@ class MtlxMaterial:
         self.imaketx_path = DEFAULT_IMAKETX_PATH
         self.folder_path = folder_path
         self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
+        self.exist_policy = exist_policy
 
         self.init_constants()
         self._setup_imaketx()
 
+
     def init_constants(self):
         self.TEXTURE_TYPE_SORTED = TEXTURE_TYPE_SORTED
         # Variables to setupt the worker pool
-        print(self.mtlTX,"TX")
         self.WORKER_LIMIT = max(1,int(MAX_WORKERS * WORKER_FRACTION))
 
     def _setup_imaketx(self):
@@ -468,77 +555,109 @@ class MtlxMaterial:
 
     def create_materialx(self):
         '''Creates a MaterialX setup'''
-
         try:
-            ## Get the material info and handle TX conversion
             material_lib_info = self._prepare_material_info()
 
-            ## Create and setup the material subnet for MaterialX
-            subnet_context = self._create_material_subnet(material_lib_info)
+            # Create subnet according to policy
+            subnet_context, mat_name, action = self._create_material_subnet(material_lib_info)
+            if action == "skipped":
+                # Nothing to do; return early
+                return mat_name, "skipped"
 
+            # Main nodes
             mtlx_standard_surf, mtlx_displacement = self._create_main_nodes(subnet_context)
 
-            # Setup the place 2d node if needed
+            # Place2D if non-UDIM
             place2d = self._setup_place2d(subnet_context, material_lib_info)
 
-            # Process all textures
+            # Textures
             self._process_textures(subnet_context, mtlx_standard_surf, mtlx_displacement, material_lib_info, place2d)
 
-            # Handle the bump and normals maps
+            # Bump/Normal
             self._setup_bump_normal(subnet_context, mtlx_standard_surf, material_lib_info, place2d)
 
+            # Layout
             self._layout_nodes(subnet_context)
 
+            # Return final name + action ("created" or "overridden" or "renamed")
+            return mat_name, action
+
         except Exception as e:
-            print(f"Failed to create material subnet.{str(e)}")
+            print(f"Failed to create material subnet. {str(e)}")
             hou.ui.displayMessage(f"Error creating MaterialX : {str(e)}", severity=hou.severityType.Error)
+            # Report failure as skipped so the loop continues gracefully
+            return self.material_to_create, "skipped"
+
 
     def _prepare_material_info(self):
-        ''' Prepares the material information and handles the TX conversion '''
-        # From the material dictionare gets the infor for the material to be created
-        material_lib_info = self.texture_list[self.material_to_create]
-        # TX conversion
-        if self.mtlTX:
-            all_textures = []
-            for texture_type, texture_path in material_lib_info.items():
-                if texture_type not in ['UDIM', 'Size']:
-                    if isinstance(texture_path, list):
-                        all_textures.extend(texture_path)
-                self._convert_to_tx(all_textures)
-        return material_lib_info
-        # Returns the texture information for the material we want to convert
+            ''' Prepares the material information and handles the TX conversion '''
+            # From the material dictionare gets the infor for the material to be created
+            material_lib_info = self.texture_list[self.material_to_create]
+            # TX conversion
+            if self.mtlTX:
+                all_textures = []
+                for texture_type, texture_path in material_lib_info.items():
+                    if texture_type not in ['UDIM', 'Size']:
+                        if isinstance(texture_path, list):
+                            all_textures.extend(texture_path)
+                    self._convert_to_tx(all_textures)
+            return material_lib_info
+            # Returns the texture information for the material we want to convert
 
     def _create_material_subnet(self, material_lib_info):
-        ''' Create and setup the material subnet
-        Args:
-            material_lib_info (dict) - this is the dictionary with the information regarding the material we want to create
+        """
+        Create and setup the material subnet.
         Returns:
-            subnet_context - subnet MtxMaterial to use as context to create the material and others nodes
-        '''
-        # Create canonical name using sanitization options
+            (mtlx_subnet_or_None, material_name, action)
+            action in {"created","overridden","skipped","renamed"}
+        """
+        # Canonical name
         if self.sanitize_options['enabled']:
-            # Use slugify with custom drop tokens if provided
             canonical = slugify_name_material(self.material_to_create, self.sanitize_options['drop_tokens'])
         else:
-            # Use original material name without sanitization
             canonical = self.material_to_create
 
-        material_name = f"{canonical}_{material_lib_info['Size']}" \
-                        if 'Size' in material_lib_info else canonical
+        base_name = f"{canonical}_{material_lib_info['Size']}" if 'Size' in material_lib_info else canonical
 
-        # Remove existing material if it exists
-        existing_material = self.node_lib.node(material_name)
-        if existing_material:
-            existing_material.destroy()
-        mtlx_subnet = self.node_lib.createNode("subnet", material_name)
+        # Existence check
+        existing = self.node_lib.node(base_name)
+        final_name = base_name
+        action = "created"
+
+        if existing:
+            if self.exist_policy == "Skip":
+                return None, base_name, "skipped"
+
+            if self.exist_policy == "Override":
+                try:
+                    existing.destroy()
+                    action = "overridden"
+                except Exception as e:
+                    raise RuntimeError(f"Failed to delete existing material '{base_name}': {e}")
+
+            if self.exist_policy.startswith("Rename"):
+                # Find unique suffix _001, _002...
+                idx = 1
+                while True:
+                    candidate = f"{base_name}_{idx:03d}"
+                    if self.node_lib.node(candidate) is None:
+                        final_name = candidate
+                        action = "renamed"
+                        break
+                    idx += 1
+
+        # Create subnet
+        mtlx_subnet = self.node_lib.createNode("subnet", final_name)
         subnet_context = self.node_lib.node(mtlx_subnet.name())
-        delete_subnet_output = subnet_context.allItems()
-        for index, item in enumerate(delete_subnet_output):
-            delete_subnet_output[index].destroy()
+
+        # Clean default inside
+        for item in subnet_context.allItems():
+            item.destroy()
 
         self._setup_material_parameters(mtlx_subnet)
         mtlx_subnet.setMaterialFlag(True)
-        return mtlx_subnet
+        return mtlx_subnet, final_name, action
+
 
     def _setup_material_parameters(self, mtlx_subnet):
         ''' Setting up the USD material X builder parameters
