@@ -18,7 +18,6 @@ def create_lookdev_camera(asset_name):
     # Add code to modify the stage.
     stage = node.editableStage()
 
-    print(asset_name)
     _create_parameters(node,asset_name)
 
     # Get parameters values
@@ -45,15 +44,16 @@ def create_lookdev_camera(asset_name):
     if not target_prim or not target_prim.IsValid():
         raise hou.NodeError(f"Target prim not found or invalid at path: {target_path}")
 
-    # Use the BBoxCache instead; directly using extentsHint is annoying/painful
-    bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode.EarliestTime(), ['default', 'render'])
-
-    # Additional validation before computing bounds
+    # Compute world-space bounds for framing (purposes: default, render)
     try:
-        bounds = bbox_cache.ComputeLocalBound(target_prim).GetBox()
+        bounds = _compute_world_bounds(target_prim)
     except Exception as e:
         raise hou.NodeError(f"Failed to compute bounding box for prim at {target_path}: {str(e)}")
-
+    # Derive center and diagonal for lookdev rig
+    bmin = bounds.GetMin()
+    bmax = bounds.GetMax()
+    center = (bmin + bmax) * 0.5
+    diag = (bmax - bmin).GetLength()
     # Check which camera to use
     camera_to_use = existing_camera_path if use_existing_camera else camera_path
 
@@ -80,57 +80,19 @@ def create_lookdev_camera(asset_name):
 
     if animate:
         for frame in range(frames):
-            # Create an animated camera by settings the matrix values at each camera frame
             current_frame = start_frame + frame
             time_code = Usd.TimeCode(current_frame)
-            # Calculate the spin angle base on the frame
+            # Calculate the spin angle based on the frame
             current_spin = spin + (frame/frames * 360)
-            temp_stage = Usd.Stage.CreateInMemory()
-            temp_camera =  _create_framed_camera(temp_stage, bounds, pitch, current_spin, distance)
-            temp_xform = UsdGeom.Xformable(temp_camera)
-            for xform_op in temp_xform.GetOrderedXformOps():
-                if xform_op.GetOpName().endswith('frameToBounds'):
-                    matrix = xform_op.Get()
-                    # Apply the matrix to our actual camera at this time sample
-                    main_xform_camera = UsdGeom.Xformable(camera)
-                    if frame == 0:
-                        transform_op = main_xform_camera.AddTransformOp(opSuffix="orbitTransform")
-                        transform_op.Set(matrix)
-                    else:
-                        # Get the existing transform op
-                        for op in main_xform_camera.GetOrderedXformOps():
-                            if op.GetOpName().endswith('orbitTransform'):
-                                # Set the matrix at this time sample
-                                op.Set(matrix,time_code)
-                    break
+            matrix = _make_orbit_matrix_via_assetutils(bounds, pitch, current_spin, distance)
+            _author_single_matrix_xform(camera.GetPrim(), matrix, time_code)
 
 
 
     else:
-        #Static Camera
-        #Create cameras using the method createFramedCameraToBounds
-        if existing_camera:
-            # For existing camera add a transform to place the camera
-            main_xform_camera = UsdGeom.Xformable(camera)
-            # Create a temporary stage to generate the camera transforms
-            temp_stage = Usd.Stage.CreateInMemory()
-            temp_camera = _create_framed_camera(temp_stage, bounds, pitch, spin, distance)
-            temp_xform = UsdGeom.Xformable(temp_camera)
-            for xform_op in temp_xform.GetOrderedXformOps():
-                if xform_op.GetOpName().endswith('frameToBounds'):
-                    matrix = xform_op.Get()
-                    transform_op = main_xform_camera.AddTransformOp(opSuffix="orbitTransform")
-                    transform_op.Set(matrix)
-                    break
-        else:
-            # Create a new camera
-            assetutils.createFramedCameraToBounds(
-                stage,
-                bounds,
-                cameraprimpath = camera_path,
-                rotatex=25 + pitch,
-                rotatey=35 + spin,
-                offsetdistance=distance)
+        # Static Camera
+        matrix = _make_orbit_matrix_via_assetutils(bounds, pitch, spin, distance)
+        _author_single_matrix_xform(camera.GetPrim(), matrix)
 
 def _create_framed_camera(stage, bounds, pitch, spin, distance):
     '''
@@ -157,6 +119,58 @@ def _create_framed_camera(stage, bounds, pitch, spin, distance):
         offsetdistance=distance)
 
     return temp_camera
+
+
+def _compute_world_bounds(prim):
+    """Compute world bounds (default + render purposes) and return the Gf.Range3d box."""
+    bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ["default", "render"])
+    # ComputeWorldBound returns Gf.BBox3d; GetBox() is Gf.Range3d
+    return bbox_cache.ComputeWorldBound(prim).GetBox()
+
+
+def _make_orbit_matrix_via_assetutils(bounds, pitch, spin, distance):
+    """Generate a single framing matrix using assetutils.createFramedCameraToBounds."""
+    temp_stage = Usd.Stage.CreateInMemory()
+    temp_cam = assetutils.createFramedCameraToBounds(
+        temp_stage,
+        bounds,
+        cameraprimpath="/TempCamera",
+        rotatex=25 + pitch,
+        rotatey=35 + spin,
+        offsetdistance=distance,
+    )
+    # Extract the transform authored by assetutils that frames to bounds
+    temp_xf = UsdGeom.Xformable(temp_cam)
+    for xform_op in temp_xf.GetOrderedXformOps():
+        # be permissive in matching; SideFX typically uses suffix 'frameToBounds'
+        if xform_op.GetOpName().endswith("frameToBounds") or xform_op.GetOpType() == UsdGeom.XformOp.TypeTransform:
+            return xform_op.Get()
+    # Fallback to identity if nothing found
+    return Gf.Matrix4d(1)
+
+
+def _author_single_matrix_xform(camera_prim, matrix, timecode=None):
+    """Author exactly one TransformOp named orbitTransform; add time samples if provided.
+    camera_prim can be a Usd.Prim or schema with GetPrim().
+    """
+    prim = camera_prim if isinstance(camera_prim, Usd.Prim) else camera_prim.GetPrim()
+    xform = UsdGeom.Xformable(prim)
+    # Find existing orbitTransform op if present
+    existing = None
+    for op in xform.GetOrderedXformOps():
+        if op.GetOpName().endswith("orbitTransform"):
+            existing = op
+            break
+    if existing is None:
+        # Clear any previous stack and author a single transform op
+        xform.ClearXformOpOrder()
+        existing = xform.AddTransformOp(opSuffix="orbitTransform")
+    # Author value (time sampled if timecode provided)
+    if timecode is None:
+        existing.Set(matrix)
+    else:
+        existing.Set(matrix, timecode)
+
 
 
 def _create_parameters(node,asset_name):
