@@ -13619,7 +13619,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template2 = hou.StringParmTemplate("target", "Target Prim", 1, default_value=(["/turntable/asset/"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
     hou_parm_template.addParmTemplate(hou_parm_template2)
     # Code for parameter template
-    hou_parm_template2 = hou.StringParmTemplate("camera_path", "Camera Path", 1, default_value=(["/ThumbnailCamera"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+    hou_parm_template2 = hou.StringParmTemplate("camera_path", "Camera Path", 1, default_value=(["/turntable/lookdev/ThumbnailCamera"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
     hou_parm_template.addParmTemplate(hou_parm_template2)
     # Code for parameter template
     hou_parm_template2 = hou.ToggleParmTemplate("use_existing_camera", "Use Existing Camera", default_value=False)
@@ -13689,7 +13689,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm = hou_node.parm("target")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set("`chs(\"../../graftstages1/primpath\")`")
+    hou_parm.set("`chs(\"../../graftstage_asset/primpath\")`")
     hou_parm.setAutoscope(False)
 
 
@@ -13699,7 +13699,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm = hou_node.parm("camera_path")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set("/__ThumbnailCamera__")
+    hou_parm.set("/turntable/lookdev/__ThumbnailCamera__")
     hou_parm.setAutoscope(False)
 
 
@@ -17381,12 +17381,6 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     # Code for parameter template
     hou_parm_template = hou.StringParmTemplate("inputname", "Input Name Default", 1, default_value=(["`opinput(\".\", @input)`"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="import expressionmenu\nreturn expressionmenu.buildExpressionsMenu(\n    'Lop/switch/inputname')", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.StringReplace)
     hou_parm_template_group.append(hou_parm_template)
-    # Code for parameter template
-    hou_parm_template = hou.IntParmTemplate("new_select_input", "New Select Input", 1, default_value=([0]), min=0, max=1, min_is_strict=False, max_is_strict=False, look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal, menu_use_token=False)
-    hou_parm_template.setScriptCallback("from tools import viewport_tools as vpt;vpt.set_stage_viewport_camera_from_switch()")
-    hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python)
-    hou_parm_template.setTags({"export_disable": "1", "script_callback": "from tools import viewport_tools as vpt;vpt.set_stage_viewport_camera_from_switch()", "script_callback_language": "python"})
-    hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
     # Code for /stage/lookdev_setup/switch2/chooseinputbyname parm
     if locals().get("hou_node") is None:
@@ -17404,8 +17398,59 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm = hou_node.parm("input")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
+    hou_parm.set(1)
     hou_parm.setAutoscope(False)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../look_dev_setup\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../look_dev_setup\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../look_dev_setup\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../look_dev_setup\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
 
 
     # Code for /stage/lookdev_setup/switch2/selectinputname parm
@@ -17466,80 +17511,6 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.deleteAllKeyframes()
     hou_parm.set("`opinput(\".\", @input)`")
     hou_parm.setAutoscope(False)
-
-
-    # Code for /stage/lookdev_setup/switch2/new_select_input parm
-    if locals().get("hou_node") is None:
-        hou_node = hou.node(f"/stage/{node_name}/switch2")
-    hou_parm = hou_node.parm("new_select_input")
-    hou_parm.lock(False)
-    hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
-    hou_parm.setAutoscope(False)
-
-    # Code for first keyframe.
-    # Code for keyframe.
-    hou_keyframe = hou.Keyframe()
-    hou_keyframe.setTime(0)
-    hou_keyframe.setValue(0)
-    hou_keyframe.useValue(False)
-    hou_keyframe.setSlope(0)
-    hou_keyframe.useSlope(False)
-    hou_keyframe.setAccel(0)
-    hou_keyframe.useAccel(False)
-    hou_keyframe.setExpression("ch(\"input\")", hou.exprLanguage.Hscript)
-    hou_parm.setKeyframe(hou_keyframe)
-
-    # Code for last keyframe.
-    # Code for keyframe.
-    hou_keyframe = hou.Keyframe()
-    hou_keyframe.setTime(0)
-    hou_keyframe.setValue(0)
-    hou_keyframe.useValue(False)
-    hou_keyframe.setSlope(0)
-    hou_keyframe.useSlope(False)
-    hou_keyframe.setAccel(0)
-    hou_keyframe.useAccel(False)
-    hou_keyframe.setExpression("ch(\"input\")", hou.exprLanguage.Hscript)
-    hou_parm.setKeyframe(hou_keyframe)
-
-    # Code for keyframe.
-    hou_keyframe = hou.Keyframe()
-    hou_keyframe.setTime(0)
-    hou_keyframe.setValue(0)
-    hou_keyframe.useValue(False)
-    hou_keyframe.setSlope(0)
-    hou_keyframe.useSlope(False)
-    hou_keyframe.setAccel(0)
-    hou_keyframe.useAccel(False)
-    hou_keyframe.setExpression("ch(\"input\")", hou.exprLanguage.Hscript)
-    hou_parm.setKeyframe(hou_keyframe)
-
-    # Code for keyframe.
-    hou_keyframe = hou.Keyframe()
-    hou_keyframe.setTime(0)
-    hou_keyframe.setValue(0)
-    hou_keyframe.useValue(False)
-    hou_keyframe.setSlope(0)
-    hou_keyframe.useSlope(False)
-    hou_keyframe.setAccel(0)
-    hou_keyframe.useAccel(False)
-    hou_keyframe.setExpression("ch(\"input\")", hou.exprLanguage.Hscript)
-    hou_parm.setKeyframe(hou_keyframe)
-
-
-    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
-
-    hou_node.setUserData("___Version___", "21.0.440")
-    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
-        hou_node.syncNodeVersionIfNeeded("21.0.440")
-    # Update the parent node.
-    hou_parent = hou_node
-
-
-    # Restore the parent and current nodes.
-    hou_parent = hou_parent.parent()
-    hou_node = hou_node.parent()
 
     # Code to establish connections for /stage/lookdev_setup/output0
     hou_node = hou_parent.node("output0")
@@ -17603,6 +17574,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     # Restore the parent and current nodes.
     hou_parent = hou_parent.parent()
     hou_node = hou_node.parent()
+
     return hou_node
 
 

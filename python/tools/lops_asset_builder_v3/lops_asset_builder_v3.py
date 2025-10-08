@@ -52,6 +52,8 @@ from pxr import Usd,UsdGeom
 from modules.misc_utils import _sanitize, slugify
 from tools.lops_asset_builder_v3.component_material_custom import build_component_material_custom
 from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_custom_creation
+from tools.lops_asset_builder_v3.create_transform_nodes import build_transform_camera_and_scene_node, \
+    build_lights_spin_xform
 from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
 
 # Global configuration for network organization
@@ -152,10 +154,11 @@ def create_component_builder(selected_directory=None):
             #Create primitive node
             primitive_node = stage_context.createNode("primitive", _sanitize(f"{node_name}_geo"))
             primitive_node.parm("primpath").set("/turntable/asset/\n/turntable/lookdev/\n/turntable/lights/")
+            primitive_node.parm("parentprimtype").set("UsdGeomScope")
 
             #Create graftstage node asset
             graftstage_asset_node = stage_context.createNode("graftstages", "graftstage_asset")
-            graftstage_asset_node.parm("primpath").set("/turntable/asset/")
+            graftstage_asset_node.parm("primpath").set("/turntable/asset")
             graftstage_asset_node.parm("destpath").set("/")
             graftstage_asset_node.setInput(0,primitive_node)
             graftstage_asset_node.setInput(1,comp_out)
@@ -193,24 +196,36 @@ def create_component_builder(selected_directory=None):
             graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
             graftstage_envlights_node.parm("primpath").set("/turntable/envlights/")
             graftstage_lights_node.parm("destpath").set("/")
-            graftstage_envlights_node.setInput(0,subnetwork_lookdevsetup_node)
+            graftstage_envlights_node.setInput(0,switch_lookdev_setup_node)
+            stage_context.layoutChildren()
 
-            # Create Camera Node
-            camera_render = stage_context.createNode('camera','camera_render')
-            camera_render.setInput(0,)
+            # Create Env Lights
+            domelight1_node = stage_context.createNode("domelight::3.0", "domelight1")
+            domelight2_node = stage_context.createNode("domelight::3.0", "domelight2")
+            domelight3_node = stage_context.createNode("domelight::3.0", "domelight3")
+            switch_envlights_selection_node = stage_context.createNode("switch","switch_envlights_selection")
+            switch_envlights_selection_node.setInput(0,domelight1_node)
+            switch_envlights_selection_node.setInput(1,domelight2_node)
+            switch_envlights_selection_node.setInput(2,domelight3_node)
+            envlights_nodes_to_layout = [domelight1_node,domelight2_node,domelight3_node]
+            stage_context.layoutChildren(items=envlights_nodes_to_layout)
+            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(0, 5))
+            graftstage_envlights_node.setInput(1,switch_envlights_selection_node)
 
-            # Create Python Script
-            camera_python_script = create_camera_lookdev(stage_context, node_name)
-
-            # Connect script
-            camera_python_script.setInput(0, camera_render)
+            transform_camera_and_scene_node = build_transform_camera_and_scene_node()
+            transform_camera_and_scene_node.setInput(0,graftstage_envlights_node)
+            switch_transform_camera_and_scene_node = stage_context.createNode("switch","switch_transform_camera_and_scene_node")
+            switch_transform_camera_and_scene_node.setInput(0,graftstage_envlights_node)
+            switch_transform_camera_and_scene_node.setInput(1,transform_camera_and_scene_node)
+            transform_envlights_node = build_lights_spin_xform()
+            transform_envlights_node.setInput(0,switch_transform_camera_and_scene_node)
 
             # Create Karma nodes
             karma_settings,usdrender_rop = create_karma_nodes(stage_context)
-            karma_settings.setInput(0, camera_python_script)
+            karma_settings.setInput(0, transform_envlights_node)
             usdrender_rop.setInput(0, karma_settings)
             # Karma Nodes to layout
-            karma_nodes = [camera_render,camera_python_script,karma_settings,usdrender_rop]
+            karma_nodes = [transform_camera_and_scene_node,switch_transform_camera_and_scene_node,transform_envlights_node,karma_settings,usdrender_rop]
             stage_context.layoutChildren(items=karma_nodes)
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
 
