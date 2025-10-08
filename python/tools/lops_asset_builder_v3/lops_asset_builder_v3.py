@@ -42,6 +42,7 @@ import os
 
 import hou
 import voptoolutils
+from sympy import primitive
 
 from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
 import colorsys
@@ -50,6 +51,8 @@ from typing import List, Type, Optional, Dict, Tuple, Any
 from pxr import Usd,UsdGeom
 from modules.misc_utils import _sanitize, slugify
 from tools.lops_asset_builder_v3.component_material_custom import build_component_material_custom
+from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_custom_creation
+from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
 
 # Global configuration for network organization
 NETWORK_CONFIG = {
@@ -124,6 +127,7 @@ def create_component_builder(selected_directory=None):
                     hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
                     return
             comp_geo, material_lib, comp_material, comp_out = _create_inital_nodes(stage_context, node_name)
+            print("CREATION")
             # Nodes to layout
             nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
             stage_context.layoutChildren(nodes_to_layout)
@@ -141,21 +145,63 @@ def create_component_builder(selected_directory=None):
 
             # Sticky note creation
             create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(0, 5))
+
             # Select the Component Output
             comp_out.setSelected(True, clear_all_selected=True)
 
+            #Create primitive node
+            primitive_node = stage_context.createNode("primitive", _sanitize(f"{node_name}_geo"))
+            primitive_node.parm("primpath").set("/turntable/asset/\n/turntable/lookdev/\n/turntable/lights/")
+
+            #Create graftstage node asset
+            graftstage_asset_node = stage_context.createNode("graftstages", "graftstage_asset")
+            graftstage_asset_node.parm("primpath").set("/turntable/asset/")
+            graftstage_asset_node.parm("destpath").set("/")
+            graftstage_asset_node.setInput(0,primitive_node)
+            graftstage_asset_node.setInput(1,comp_out)
+
+            # Create grafstages node lights
+            graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
+            graftstage_lights_node.parm("primpath").set("/turntable/lights/")
+            graftstage_lights_node.parm("destpath").set("/")
+            graftstage_lights_node.setInput(0,graftstage_asset_node)
 
             # Create light rig
-            light_rig_nodes_to_layout, merge_node = lops_light_rig.create_three_point_light()
+            light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light()
+
             # Light Rig Nodes to layout
             create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(-1, 0))
-            # Set Display Flag
-            comp_out.setGenericFlag(hou.nodeFlag.Display, True)
+
+            # Hook grafstages light to lightmixer
+            graftstage_lights_node.setInput(1,light_mixer)
+
+            # Create switch to activate and deactivate lights
+            switch_lights_node = stage_context.createNode("switch", "switch_lights_rig")
+            switch_lights_node.setInput(0,graftstage_asset_node)
+            switch_lights_node.setInput(1,graftstage_lights_node)
+
+            # Create Subnetwork lookdev setup
+            subnetwork_lookdevsetup_node = create_subnet_lookdev_setup(node_name="lookdev_setup")
+            subnetwork_lookdevsetup_node.setInput(0,switch_lights_node)
+
+            # Create switch to activate and lookdev
+            switch_lookdev_setup_node = stage_context.createNode("switch", "switch_lookdev_setup")
+            switch_lookdev_setup_node.setInput(0,switch_lights_node)
+            switch_lookdev_setup_node.setInput(1,subnetwork_lookdevsetup_node)
+
+            # Create grafstages node lights
+            graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
+            graftstage_envlights_node.parm("primpath").set("/turntable/envlights/")
+            graftstage_lights_node.parm("destpath").set("/")
+            graftstage_envlights_node.setInput(0,subnetwork_lookdevsetup_node)
+
             # Create Camera Node
             camera_render = stage_context.createNode('camera','camera_render')
-            camera_render.setInput(0,merge_node)
+            camera_render.setInput(0,)
+
             # Create Python Script
             camera_python_script = create_camera_lookdev(stage_context, node_name)
+
             # Connect script
             camera_python_script.setInput(0, camera_render)
 
@@ -176,10 +222,9 @@ def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
     comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{node_name}_geo"))
     material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl"))
-    comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_mtl"))
-    comp_out = stage_context.createNode("componentoutput", _sanitize(node_name))
+    comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant"))
+    comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
 
-    comp_geo.parm("geovariantname").set(node_name)
     material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
 
     # Connect nodes

@@ -17,7 +17,7 @@ def _get_or_create(subnet, type_name, node_name):
     return n, created
 
 def build_component_material_custom(parent_path="/stage",
-                                    node_name="component_material_custom1",
+                                    node_name="component_material_custom",
                                     replace_existing=False):
     parent = hou.node(parent_path)
     if not parent:

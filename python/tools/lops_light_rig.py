@@ -100,13 +100,10 @@ def create_three_point_light():
     # Support nodes
     xform_light = stage.createNode("xform","three_points_transform")
     light_mixer = stage.createNode("lightmixer","three_points_mixer")
-    graft_branch = stage.createNode("graftbranches","three_points_merge")
 
     # xform to control all lights
     xform_light.parm("primpattern").set("%type:Light")
 
-    # configure graft branch
-    graft_branch.parm("srcprimpath1").set("/")
 
     # Add lights to light mixer
     lights_to_mixer = (
@@ -141,16 +138,11 @@ def create_three_point_light():
 
 
     # Layout nodes
-    graft_branch.setInput(0,target_node)
-    graft_branch.setInput(1,light_mixer)
     light_mixer.setInput(0,xform_light)
     xform_light.setInput(0,back_light)
     back_light.setInput(0,fill_light)
     fill_light.setInput(0,key_light)
 
-    nodes_to_layout = [key_light, fill_light, back_light, graft_branch, light_mixer,xform_light]
-    graft_position = graft_branch.moveToGoodPosition()
-    new_position_graft = hou.Vector2(graft_position[0]-2.5,graft_position[1])
-    graft_branch.setPosition(new_position_graft)
+    nodes_to_layout = [key_light, fill_light, back_light, light_mixer,xform_light]
     stage.layoutChildren(items=nodes_to_layout)
-    return nodes_to_layout, graft_branch
+    return nodes_to_layout,light_mixer
