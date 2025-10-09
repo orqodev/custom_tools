@@ -129,7 +129,7 @@ def create_component_builder(selected_directory=None):
                     hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
                     return
             comp_geo, material_lib, comp_material, comp_out = _create_inital_nodes(stage_context, node_name)
-            print("CREATION")
+
             # Nodes to layout
             nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
             stage_context.layoutChildren(nodes_to_layout)
@@ -146,7 +146,7 @@ def create_component_builder(selected_directory=None):
             _create_materials(comp_geo, folder_textures, material_lib, material_names)
 
             # Sticky note creation
-            create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(0, 5))
+            create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(-2, 11))
 
             # Select the Component Output
             comp_out.setSelected(True, clear_all_selected=True)
@@ -173,7 +173,7 @@ def create_component_builder(selected_directory=None):
             light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light()
 
             # Light Rig Nodes to layout
-            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(-1, 0))
+            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
 
             # Hook grafstages light to lightmixer
             graftstage_lights_node.setInput(1,light_mixer)
@@ -197,7 +197,6 @@ def create_component_builder(selected_directory=None):
             graftstage_envlights_node.parm("primpath").set("/turntable/envlights/")
             graftstage_lights_node.parm("destpath").set("/")
             graftstage_envlights_node.setInput(0,switch_lookdev_setup_node)
-            stage_context.layoutChildren()
 
             # Create Env Lights
             domelight1_node = stage_context.createNode("domelight::3.0", "domelight1")
@@ -207,26 +206,35 @@ def create_component_builder(selected_directory=None):
             switch_envlights_selection_node.setInput(0,domelight1_node)
             switch_envlights_selection_node.setInput(1,domelight2_node)
             switch_envlights_selection_node.setInput(2,domelight3_node)
-            envlights_nodes_to_layout = [domelight1_node,domelight2_node,domelight3_node]
+            envlights_nodes_to_layout = [domelight1_node,domelight2_node,domelight3_node,switch_envlights_selection_node]
             stage_context.layoutChildren(items=envlights_nodes_to_layout)
-            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(0, 5))
+            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(7, 6))
             graftstage_envlights_node.setInput(1,switch_envlights_selection_node)
+            switch_env_lights = stage_context.createNode("switch","switch_env_lights")
+            switch_env_lights.setInput(0,switch_lookdev_setup_node)
+            switch_env_lights.setInput(1,graftstage_envlights_node)
+            lookdev_setup_layout = [graftstage_envlights_node,switch_env_lights, switch_lookdev_setup_node,subnetwork_lookdevsetup_node,switch_lights_node,graftstage_lights_node,graftstage_asset_node,primitive_node]
+            stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
+            create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
 
+            # Camera and Animations
             transform_camera_and_scene_node = build_transform_camera_and_scene_node()
-            transform_camera_and_scene_node.setInput(0,graftstage_envlights_node)
+            transform_camera_and_scene_node.setInput(0,switch_env_lights)
             switch_transform_camera_and_scene_node = stage_context.createNode("switch","switch_transform_camera_and_scene_node")
-            switch_transform_camera_and_scene_node.setInput(0,graftstage_envlights_node)
+            switch_transform_camera_and_scene_node.setInput(0,switch_env_lights)
             switch_transform_camera_and_scene_node.setInput(1,transform_camera_and_scene_node)
             transform_envlights_node = build_lights_spin_xform()
             transform_envlights_node.setInput(0,switch_transform_camera_and_scene_node)
-
+            switch_animate_lights = stage_context.createNode("switch","switch_animate_lights")
+            switch_animate_lights.setInput(0,switch_transform_camera_and_scene_node)
+            switch_animate_lights.setInput(1,transform_envlights_node)
             # Create Karma nodes
             karma_settings,usdrender_rop = create_karma_nodes(stage_context)
-            karma_settings.setInput(0, transform_envlights_node)
+            karma_settings.setInput(0, switch_animate_lights)
             usdrender_rop.setInput(0, karma_settings)
             # Karma Nodes to layout
-            karma_nodes = [transform_camera_and_scene_node,switch_transform_camera_and_scene_node,transform_envlights_node,karma_settings,usdrender_rop]
-            stage_context.layoutChildren(items=karma_nodes)
+            karma_nodes = [switch_transform_camera_and_scene_node,transform_camera_and_scene_node,switch_animate_lights,transform_envlights_node,karma_settings,usdrender_rop]
+            stage_context.layoutChildren(items=karma_nodes,horizontal_spacing=0.25, vertical_spacing=1)
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
 
     except Exception as e:
