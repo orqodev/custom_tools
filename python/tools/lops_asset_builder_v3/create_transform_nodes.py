@@ -60,8 +60,8 @@ def build_transform_camera_and_scene_node(
 
 def build_lights_spin_xform(
         parent_path="/stage",
-        node_name="animate_lights_xform",
-        primpattern="%type:Light",        # all lights on the stage
+        node_name="animate_lights",
+        primpattern="/turntable/lights",        # all lights on the stage
         use_frame_range=True,             # True: 0→360 over $FSTART→$FEND ; False: deg/sec
         deg_per_sec=90.0,                 # used when use_frame_range=False
         replace_existing=False

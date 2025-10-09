@@ -165,7 +165,7 @@ def create_component_builder(selected_directory=None):
 
             # Create grafstages node lights
             graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
-            graftstage_lights_node.parm("primpath").set("/turntable/lights/")
+            graftstage_lights_node.parm("primpath").set("/turntable/")
             graftstage_lights_node.parm("destpath").set("/")
             graftstage_lights_node.setInput(0,graftstage_asset_node)
 
@@ -194,7 +194,7 @@ def create_component_builder(selected_directory=None):
 
             # Create grafstages node lights
             graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
-            graftstage_envlights_node.parm("primpath").set("/turntable/envlights/")
+            graftstage_envlights_node.parm("primpath").set("/turntable/lights")
             graftstage_lights_node.parm("destpath").set("/")
             graftstage_envlights_node.setInput(0,switch_lookdev_setup_node)
 
@@ -202,6 +202,9 @@ def create_component_builder(selected_directory=None):
             domelight1_node = stage_context.createNode("domelight::3.0", "domelight1")
             domelight2_node = stage_context.createNode("domelight::3.0", "domelight2")
             domelight3_node = stage_context.createNode("domelight::3.0", "domelight3")
+            domelight1_node.parm("primpath").set("/$OS")
+            domelight2_node.parm("primpath").set("/$OS")
+            domelight3_node.parm("primpath").set("/$OS")
             switch_envlights_selection_node = stage_context.createNode("switch","switch_envlights_selection")
             switch_envlights_selection_node.setInput(0,domelight1_node)
             switch_envlights_selection_node.setInput(1,domelight2_node)
@@ -236,6 +239,7 @@ def create_component_builder(selected_directory=None):
             karma_nodes = [switch_transform_camera_and_scene_node,transform_camera_and_scene_node,switch_animate_lights,transform_envlights_node,karma_settings,usdrender_rop]
             stage_context.layoutChildren(items=karma_nodes,horizontal_spacing=0.25, vertical_spacing=1)
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
+            comp_out.setSelected(True, clear_all_selected=True)
 
     except Exception as e:
         # Use print instead of UI message to allow non-interactive operation

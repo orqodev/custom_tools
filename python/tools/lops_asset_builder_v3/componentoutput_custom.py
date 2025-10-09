@@ -955,7 +955,7 @@ def componentoutput_custom_creation(node_name="componentoutput_custom",parent_pa
     hou_parm = hou_node.parm("viewthumbnailcam")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
 

@@ -59,7 +59,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.setTags({"sidefx::look": "heading"})
     hou_parm_template_group.append(hou_parm_template)
     # Code for parameter template
-    hou_parm_template = hou.ToggleParmTemplate("animate", "Animate", default_value=True, default_expression='on', default_expression_language=hou.scriptLanguage.Hscript)
+    hou_parm_template = hou.ToggleParmTemplate("animate", "Animate", default_value=False, default_expression='off', default_expression_language=hou.scriptLanguage.Hscript)
     hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python)
     hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"})
     hou_parm_template_group.append(hou_parm_template)
@@ -102,7 +102,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm = hou_node.parm("use_existing_camera")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
 
@@ -152,7 +152,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm = hou_node.parm("animate")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
 
