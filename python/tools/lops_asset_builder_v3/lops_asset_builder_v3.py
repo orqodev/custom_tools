@@ -55,6 +55,8 @@ from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_c
 from tools.lops_asset_builder_v3.create_transform_nodes import build_transform_camera_and_scene_node, \
     build_lights_spin_xform
 from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
+from tools.lops_asset_builder_v3.ui_variants import AssetMaterialVariantsDialog
+from PySide6 import QtWidgets
 
 # Global configuration for network organization
 NETWORK_CONFIG = {
@@ -69,83 +71,99 @@ def create_component_builder(selected_directory=None):
     Main function to create the component builder based on a provided asset
     '''
 
-    # Get File
-    if selected_directory == None:
-        selected_directory = hou.ui.selectFile(title="Select the file you want to import",
-                                               file_type=hou.fileType.Geometry,
-                                               multiple_select=True)
-    selected_directory = hou.text.expandString(selected_directory)
-    path, filename = os.path.split(selected_directory.split(";")[0])
-
     try:
-        if os.path.exists(path):
+            try:
+                dlg = AssetMaterialVariantsDialog(
+                    default_asset="",
+                    default_maps=""
+                )
+                if dlg.exec_() != QtWidgets.QDialog.Accepted:
+                    return
+                ui = dlg.data()
+                main_asset_file = ui.get("main_asset")
+                asset_variants = ui.get("asset_variants") or []
+                asset_vset_name = ui.get("asset_variant_set") or "assetVariant"
+                material_name = _sanitize(ui.get("material_name"))
+                look_vset_name = ui.get("material_variant_set") or "lookVariant"
+                folder_textures = ui.get("main_textures")
+                mtl_variants = ui.get("material_variants") or []
+                # Validate
+                if not (main_asset_file and os.path.isfile(main_asset_file)):
+                    hou.ui.displayMessage("Main asset file is invalid.", severity=hou.severityType.Error)
+                    return
+                if not (folder_textures and os.path.isdir(folder_textures)):
+                    hou.ui.displayMessage("Main texture folder is invalid.", severity=hou.severityType.Error)
+                    return
+            except Exception as _e:
+                print(f"Warning: Variants UI failed: {_e}. Proceeding without variants.")
+
+            print(f"main_asset_file: {main_asset_file}",
+                  f"asset_variants: {asset_variants}",
+                  f"asset_vset_name: {asset_vset_name}",
+                  f"material_name: {material_name}",
+                  f"look_vset_name: {look_vset_name}",
+                  f"folder_textures: {folder_textures}",
+                  f"mtl_variants: {mtl_variants}",
+                  sep="\n"      )
+
+            path, filename = os.path.split(main_asset_file.split(";")[0])
+
             # Define context
             stage_context = hou.node("/stage")
             # Get the path and filename and the folder with the texturesRR
             node_name = _get_stage_node_name(filename)
 
-            # Ask user to choose texture folder path instead of hardcoding "maps"
-            default_maps_folder = os.path.join(path, "maps").replace(os.sep, "/")
+            assets = [main_asset_file] + asset_variants
+            geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
+            comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
+            if asset_vset_name:
+                geometry_variants_node.parm("variantset").set(asset_vset_name)
+            nodes_to_layout = [geometry_variants_node, comp_out]
 
-            # Check if default maps folder exists
-            if os.path.exists(default_maps_folder):
-                # Ask user if they want to use default or choose custom path
-                choice = hou.ui.displayMessage(
-                    f"Found default 'maps' folder at:\n{default_maps_folder}\n\nDo you want to use this folder or choose a different one?",
-                    buttons=("Use Default", "Choose Different", "Cancel"),
-                    severity=hou.severityType.Message,
-                    default_choice=0
-                )
+            for index,asset in enumerate(assets):
+                path, filename = os.path.split(asset.split(";")[0])
+                # Get asset name and extension
+                asset_name = filename.split(".")[0]
+                asset_extension = filename.split(".")[-1]
+                if filename.endswith("bgeo.sc"):
+                    asset_name = filename.split(".")[0]
+                    asset_extension = "bgeo.sc"
+                comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
+                geometry_variants_node.setInput(index, comp_geo)
+                _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out)
+                nodes_to_layout.append(comp_geo)
 
-                if choice == 0:  # Use Default
-                    folder_textures = default_maps_folder
-                elif choice == 1:  # Choose Different
-                    custom_folder = hou.ui.selectFile(
-                        title="Select folder containing textures",
-                        file_type=hou.fileType.Directory,
-                        multiple_select=False
-                    )
-                    if custom_folder:
-                        folder_textures = hou.text.expandString(custom_folder)
-                    else:
-                        hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
-                        return
-                else:  # Cancel
-                    return
-            else:
-                # No default maps folder found, ask user to select one
-                hou.ui.displayMessage(
-                    f"No 'maps' folder found at:\n{default_maps_folder}\n\nPlease select the folder containing your textures.",
-                    severity=hou.severityType.Message
-                )
-                custom_folder = hou.ui.selectFile(
-                    title="Select folder containing textures",
-                    file_type=hou.fileType.Directory,
-                    multiple_select=False
-                )
-                if custom_folder:
-                    folder_textures = hou.text.expandString(custom_folder)
+            mtl_folders = mtl_variants
+            mtl_folders.append(folder_textures)
+
+            comp_material_last = None
+            for index,mtl_folder in enumerate(mtl_folders):
+                mtl_folder_name = os.path.basename(mtl_folder)
+                material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl_{mtl_folder_name}"))
+                comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant_{mtl_folder_name}"))
+                if look_vset_name:
+                    comp_material.parm("variantset").set(look_vset_name)
+                material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
+                if index == 0:
+                    comp_material.setInput(0, geometry_variants_node)
                 else:
-                    hou.ui.displayMessage("No texture folder selected. Operation cancelled.", severity=hou.severityType.Warning)
-                    return
-            comp_geo, material_lib, comp_material, comp_out = _create_inital_nodes(stage_context, node_name)
+                    comp_material.setInput(0, comp_material_last)
+                comp_material.setInput(1, material_lib)
+                comp_material_last = comp_material
+                # Extract material names from the asset paths
+                asset_paths = main_asset_file.split(";")
+                material_names = _extract_material_names(asset_paths)
+                print(f"Found {len(material_names)} materials in assets: {material_names}")
+                # Create the materials using the text_to_mtlx script with targeted material creation
+                _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
+                nodes_to_layout.append(material_lib)
+                nodes_to_layout.append(comp_material)
+            comp_out.setInput(0, comp_material_last)
 
-            # Nodes to layout
-            nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
+            #Nodes to layout
             stage_context.layoutChildren(nodes_to_layout)
 
-             # Extract material names from the asset paths
-            asset_paths = selected_directory.split(";")
-            material_names = _extract_material_names(asset_paths)
-            print(f"Found {len(material_names)} materials in assets: {material_names}")
-
-            # Prepare imported geo
-            _prepare_imported_asset(comp_geo, selected_directory, path, comp_out, node_name)
-
-            # Create the materials using the text_to_mtlx script with targeted material creation
-            _create_materials(comp_geo, folder_textures, material_lib, material_names)
-
-            # Sticky note creation
+            #Sticky note creation
             create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(-2, 11))
 
             # Select the Component Output
@@ -247,6 +265,7 @@ def create_component_builder(selected_directory=None):
 
 def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
+
     comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{node_name}_geo"))
     material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl"))
     comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant"))
@@ -408,7 +427,7 @@ def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transfo
         print(f"Error: Error linking nodes to parameters: {str(e)}")
 
 
-def _prepare_imported_asset(parent, selected_directory, path, out_node, node_name):
+def _prepare_imported_asset(parent, name, extension, path, out_node):
     '''
 
     Creates the network layout for the default, proxy and sim outputs
@@ -429,49 +448,25 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         proxy_output = hou.node(f"{parent.path()}/proxy")
         sim_output = hou.node(f"{parent.path()}/simproxy")
 
-        # Create the file nodes that imports the assets
-        filenames = selected_directory.split(";")
-        file_nodes = []
-        asset_paths = []
-        switch_node = parent.createNode("switch", _sanitize(f"switch_{node_name}"))
-
-        for i, filename in enumerate(filenames):
-            # Get asset name and extension
-            file_path, filename = os.path.split(filename.strip())
-            asset_name = filename.split(".")[0]
-            extension = filename.split(".")[-1]
-            if ".bgeo.sc" in filename:
-                asset_name = filename.split(".")[0]
-                extension = "bgeo.sc"
-
-            # Store full path for parameters
-            full_asset_path = f"{file_path}/{filename}"
-            asset_paths.append(full_asset_path)
-
-            file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
-            if extension in file_extension:
-                file_import = parent.createNode("file", _sanitize(f"import_{asset_name}"))
-                parm_name = "file"
-            elif extension == "abc":
-                file_import = parent.createNode("alembic", _sanitize(f"import_{asset_name}"))
-                parm_name = "fileName"
-            else:
-                continue
-
-            # Set Parms for main nodes
-            file_import.parm(parm_name).set(full_asset_path)
-            switch_node.setInput(i, file_import)
-            file_nodes.append(file_import)
-
-        # Create transform node for external control (like in batch_import_workflow)
-        transform_node = parent.createNode("xform", _sanitize(f"transform_{node_name}"))
-        transform_node.setInput(0, switch_node)
+        # Create the file node that imports the asset
+        file_extension = ["fbx", "obj", "bgeo", "bgeo.sc"]
+        if extension in file_extension:
+            file_import = parent.createNode("file", _sanitize(f"import_{name}"))
+            parm_name = "file"
+        elif extension == "abc":
+            file_import = parent.createNode("alembic", _sanitize(f"import_{name}"))
+            parm_name = "fileName"
+        else:
+            return
 
         # Create the main nodes
-        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{node_name}"))
+        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{name}"))
         attrib_wrangler = parent.createNode("attribwrangle", "convert_mat_to_name")
         attrib_delete = parent.createNode("attribdelete", "keep_P_N_UV_NAME")
         remove_points = parent.createNode("add", _sanitize(f"remove_points"))
+
+        # Set Parms for main nodes
+        file_import.parm(parm_name).set(f"{path}/{name}.{extension}")
 
         match_size.setParms({
             "justify_x": 0,
@@ -482,7 +477,6 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
         attrib_wrangler.setParms({
             "class": 1,
             "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
-
         })
 
         attrib_delete.setParms({
@@ -494,8 +488,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         remove_points.parm("remove").set(True)
 
-        # Connect Main nodes - now using transform_node instead of switch_node directly
-        match_size.setInput(0, transform_node)
+        # Connect Main nodes
+        match_size.setInput(0, file_import)
         attrib_wrangler.setInput(0, match_size)
         attrib_delete.setInput(0, attrib_wrangler)
         remove_points.setInput(0, attrib_delete)
@@ -564,24 +558,8 @@ def _prepare_imported_asset(parent, selected_directory, path, out_node, node_nam
 
         parent.layoutChildren()
 
-        # Create UI parameters for multi-asset switch workflow
-        # This adds controls to the top-level componentgeometry node
-        top_level_parent = out_node.parent()  # Get the stage context
-        comp_geo_node = None
-
-        # Find the componentgeometry node to add parameters to
-        for node in top_level_parent.children():
-            if node.type().name() == "componentgeometry" and node_name in node.name():
-                comp_geo_node = node
-                break
-
-        if comp_geo_node and len(asset_paths) > 1:
-            # Only create multi-asset parameters if we have multiple assets
-            _create_group_parameters(comp_geo_node, node_name, asset_paths, switch_node, transform_node)
-
     except Exception as e:
-        # Use print instead of UI message to allow non-interactive operation
-        print(f"Error: An error happened in prepare imported assets: {str(e)}")
+        hou.ui.displayMessage(f"An error happened in prepare imported assets: {str(e)}", severity=hou.severityType.Error)
 
 def create_camera_lookdev(parent,asset_name):
     '''
