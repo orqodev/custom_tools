@@ -81,9 +81,9 @@ def create_component_builder(selected_directory=None):
                     return
                 ui = dlg.data()
                 main_asset_file = ui.get("main_asset")
+                asset_name_ui = (ui.get("asset_name") or "").strip()
                 asset_variants = ui.get("asset_variants") or []
                 asset_vset_name = ui.get("asset_variant_set") or "assetVariant"
-                material_name = _sanitize(ui.get("material_name"))
                 look_vset_name = ui.get("material_variant_set") or "lookVariant"
                 folder_textures = ui.get("main_textures")
                 mtl_variants = ui.get("material_variants") or []
@@ -98,9 +98,9 @@ def create_component_builder(selected_directory=None):
                 print(f"Warning: Variants UI failed: {_e}. Proceeding without variants.")
 
             print(f"main_asset_file: {main_asset_file}",
+                  f"asset_name: {asset_name_ui}",
                   f"asset_variants: {asset_variants}",
                   f"asset_vset_name: {asset_vset_name}",
-                  f"material_name: {material_name}",
                   f"look_vset_name: {look_vset_name}",
                   f"folder_textures: {folder_textures}",
                   f"mtl_variants: {mtl_variants}",
@@ -110,8 +110,8 @@ def create_component_builder(selected_directory=None):
 
             # Define context
             stage_context = hou.node("/stage")
-            # Get the path and filename and the folder with the texturesRR
-            node_name = _get_stage_node_name(filename)
+            # Determine stage node name from UI or fallback logic
+            node_name = asset_name_ui or _get_stage_node_name(filename)
 
             assets = [main_asset_file] + asset_variants
             geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
