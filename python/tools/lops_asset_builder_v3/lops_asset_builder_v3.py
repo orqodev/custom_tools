@@ -162,6 +162,7 @@ def create_component_builder(selected_directory=None):
             switch_lookdev_setup_node = stage_context.createNode("switch", "switch_lookdev_setup")
             switch_lookdev_setup_node.setInput(0, switch_env_lights)
             switch_lookdev_setup_node.setInput(1, subnetwork_lookdevsetup_node)
+            switch_lookdev_setup_node.parm("input").set(1)
             lookdev_setup_layout = lookdev_setup_layout + [graftstage_envlights_node,switch_env_lights, switch_lookdev_setup_node,subnetwork_lookdevsetup_node,graftstage_asset_node,primitive_node]
             stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
             create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
