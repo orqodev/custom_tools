@@ -1,53 +1,12 @@
-"""
-LOPS Asset Builder v2
-=====================
-
-A tool for building assets in Houdini's LOPS context with automatic material creation
-and network organization.
-
-Features:
-- Automatic component creation for assets
-- Material discovery and creation
-- Light rig setup
-- Camera and render setup
-- Configurable network organization
-
-Network Organization:
---------------------
-The tool provides configurable network organization with the following features:
-- Optional network boxes for visual grouping
-- Category-based color coding (Asset, Light, Camera, Material, Render)
-- Configurable positioning with offsets
-- Automatically disabled for TOP functions to prevent issues
-
-To configure network organization:
-```python
-from tools.lops_asset_builder_v2 import lops_asset_builder_v2
-
-# Disable network boxes
-lops_asset_builder_v2.configure_network_organization(create_boxes=False)
-
-# Enable network boxes with category-based colors
-lops_asset_builder_v2.configure_network_organization(create_boxes=True, use_categories=True)
-
-# Use random colors instead of categories
-lops_asset_builder_v2.configure_network_organization(use_categories=False)
-
-# Set a default offset for all nodes
-lops_asset_builder_v2.configure_network_organization(default_offset=hou.Vector2(1, 0))
-```
-"""
-
 import os
 
 import hou
 import voptoolutils
-from sympy import primitive
 
-from tools import tex_to_mtlx, lops_light_rig, lops_lookdev_camera
+from tools import tex_to_mtlx, lops_light_rig
 import colorsys
 import random
-from typing import List, Type, Optional, Dict, Tuple, Any
+from typing import List, Type
 from pxr import Usd,UsdGeom
 from modules.misc_utils import _sanitize, slugify
 from tools.lops_asset_builder_v3.component_material_custom import build_component_material_custom
@@ -55,15 +14,8 @@ from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_c
 from tools.lops_asset_builder_v3.create_transform_nodes import build_transform_camera_and_scene_node, \
     build_lights_spin_xform
 from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
-from tools.lops_asset_builder_v3.ui_variants import AssetMaterialVariantsDialog
+from tools.lops_asset_builder_v3.asset_builder_ui import AssetMaterialVariantsDialog
 from PySide6 import QtWidgets
-
-# Global configuration for network organization
-NETWORK_CONFIG = {
-    "create_network_boxes": True,  # Set to False to disable network boxes
-    "use_categories": True,        # Set to False to use random colors instead of category-based colors
-    "default_offset": hou.Vector2(0, 0)
-}
 
 
 def create_component_builder(selected_directory=None):
@@ -72,191 +24,169 @@ def create_component_builder(selected_directory=None):
     '''
 
     try:
-            try:
-                dlg = AssetMaterialVariantsDialog(
-                    default_asset="",
-                    default_maps=""
-                )
-                if dlg.exec_() != QtWidgets.QDialog.Accepted:
-                    return
-                ui = dlg.data()
-                main_asset_file = ui.get("main_asset")
-                asset_name_ui = (ui.get("asset_name") or "").strip()
-                asset_variants = ui.get("asset_variants") or []
-                asset_vset_name = ui.get("asset_variant_set") or "assetVariant"
-                look_vset_name = ui.get("material_variant_set") or "lookVariant"
-                folder_textures = ui.get("main_textures")
-                mtl_variants = ui.get("material_variants") or []
-                # Validate
-                if not (main_asset_file and os.path.isfile(main_asset_file)):
-                    hou.ui.displayMessage("Main asset file is invalid.", severity=hou.severityType.Error)
-                    return
-                if not (folder_textures and os.path.isdir(folder_textures)):
-                    hou.ui.displayMessage("Main texture folder is invalid.", severity=hou.severityType.Error)
-                    return
-            except Exception as _e:
-                print(f"Warning: Variants UI failed: {_e}. Proceeding without variants.")
-
-            print(f"main_asset_file: {main_asset_file}",
-                  f"asset_name: {asset_name_ui}",
-                  f"asset_variants: {asset_variants}",
-                  f"asset_vset_name: {asset_vset_name}",
-                  f"look_vset_name: {look_vset_name}",
-                  f"folder_textures: {folder_textures}",
-                  f"mtl_variants: {mtl_variants}",
-                  sep="\n"      )
-
-            path, filename = os.path.split(main_asset_file.split(";")[0])
+            dialog = AssetMaterialVariantsDialog(
+                default_asset="",
+                default_maps=""
+            )
+            if dialog.exec_() != QtWidgets.QDialog.Accepted:
+                return
+            ui = dialog.data()
+            main_asset_file_path = ui.get("main_asset_file_path") or ""
+            asset_name_input = (ui.get("asset_name_input") or "").strip() or "ASSET"
+            asset_variants = ui.get("asset_variants") or []
+            asset_vset_name = ui.get("asset_variant_set") or "geo_variant"
+            mtl_vset_name = ui.get("material_variant_set") or "mtl_variant"
+            folder_textures = ui.get("main_textures") or ""
+            mtl_variants = ui.get("material_variants") or []
+            create_lookdev = bool(ui.get("create_lookdev_setup", True))
+            create_light_rig = bool(ui.get("create_light_rig", True))
+            env_light_paths = ui.get("env_light_paths") or []
+            # Validate
+            if not (main_asset_file_path and os.path.isfile(main_asset_file_path)):
+                hou.ui.displayMessage("Main asset file is invalid.", severity=hou.severityType.Error)
+                return
+            if not (folder_textures and os.path.isdir(folder_textures)):
+                hou.ui.displayMessage("Main texture folder is invalid.", severity=hou.severityType.Error)
+                return
 
             # Define context
             stage_context = hou.node("/stage")
             # Determine stage node name from UI or fallback logic
-            node_name = asset_name_ui or _get_stage_node_name(filename)
+            node_name = asset_name_input
 
-            assets = [main_asset_file] + asset_variants
-            geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
-            comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
-            if asset_vset_name:
-                geometry_variants_node.parm("variantset").set(asset_vset_name)
-            nodes_to_layout = [geometry_variants_node, comp_out]
-
-            for index,asset in enumerate(assets):
-                path, filename = os.path.split(asset.split(";")[0])
-                # Get asset name and extension
-                asset_name = filename.split(".")[0]
-                asset_extension = filename.split(".")[-1]
-                if filename.endswith("bgeo.sc"):
-                    asset_name = filename.split(".")[0]
-                    asset_extension = "bgeo.sc"
-                comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
-                geometry_variants_node.setInput(index, comp_geo)
-                _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out)
-                nodes_to_layout.append(comp_geo)
-
-            mtl_folders = mtl_variants
-            mtl_folders.append(folder_textures)
-
-            comp_material_last = None
-            for index,mtl_folder in enumerate(mtl_folders):
-                mtl_folder_name = os.path.basename(mtl_folder)
-                material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl_{mtl_folder_name}"))
-                comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant_{mtl_folder_name}"))
-                if look_vset_name:
-                    comp_material.parm("variantset").set(look_vset_name)
-                material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
-                if index == 0:
-                    comp_material.setInput(0, geometry_variants_node)
-                else:
-                    comp_material.setInput(0, comp_material_last)
-                comp_material.setInput(1, material_lib)
-                comp_material_last = comp_material
-                # Extract material names from the asset paths
-                asset_paths = main_asset_file.split(";")
-                material_names = _extract_material_names(asset_paths)
-                print(f"Found {len(material_names)} materials in assets: {material_names}")
-                # Create the materials using the text_to_mtlx script with targeted material creation
-                _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
-                nodes_to_layout.append(material_lib)
-                nodes_to_layout.append(comp_material)
-            comp_out.setInput(0, comp_material_last)
+            geometry_variants_node, comp_out, nodes_to_layout, comp_material_last = build_geo_and_mtl_variants(
+                stage_context=stage_context,
+                node_name=node_name,
+                main_asset_file_path=main_asset_file_path,
+                asset_variants=asset_variants,
+                asset_vset_name=asset_vset_name,
+                mtl_variants=mtl_variants,
+                folder_textures=folder_textures,
+                mtl_vset_name=mtl_vset_name,
+            )
 
             #Nodes to layout
             stage_context.layoutChildren(nodes_to_layout)
 
             #Sticky note creation
-            create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(-2, 11))
+            create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(-4, 18))
 
             # Select the Component Output
             comp_out.setSelected(True, clear_all_selected=True)
 
-            #Create primitive node
+            # If lookdev is disabled, stop here as requested
+            if not create_lookdev:
+                return
+
+            lookdev_setup_layout = []
+            # Create primitive scope node
             primitive_node = stage_context.createNode("primitive", _sanitize(f"{node_name}_geo"))
             primitive_node.parm("primpath").set("/turntable/asset/\n/turntable/lookdev/\n/turntable/lights/")
             primitive_node.parm("parentprimtype").set("UsdGeomScope")
 
-            #Create graftstage node asset
+            # Create graftstage for asset
             graftstage_asset_node = stage_context.createNode("graftstages", "graftstage_asset")
             graftstage_asset_node.parm("primpath").set("/turntable/asset")
             graftstage_asset_node.parm("destpath").set("/")
             graftstage_asset_node.setInput(0,primitive_node)
             graftstage_asset_node.setInput(1,comp_out)
 
-            # Create grafstages node lights
-            graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
-            graftstage_lights_node.parm("primpath").set("/turntable/")
-            graftstage_lights_node.parm("destpath").set("/")
-            graftstage_lights_node.setInput(0,graftstage_asset_node)
+            current_stream = graftstage_asset_node
+            if create_light_rig:
+                # Create grafstages node lights
+                graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
+                graftstage_lights_node.parm("primpath").set("/turntable/")
+                graftstage_lights_node.parm("destpath").set("/")
+                graftstage_lights_node.setInput(0,current_stream)
 
-            # Create light rig
-            light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light()
+                # Create light rig
+                light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light()
 
-            # Light Rig Nodes to layout
-            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
+                # Light Rig Nodes to layout
+                create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
 
-            # Hook grafstages light to lightmixer
-            graftstage_lights_node.setInput(1,light_mixer)
+                # Hook grafstages light to lightmixer
+                graftstage_lights_node.setInput(1,light_mixer)
 
-            # Create switch to activate and deactivate lights
-            switch_lights_node = stage_context.createNode("switch", "switch_lights_rig")
-            switch_lights_node.setInput(0,graftstage_asset_node)
-            switch_lights_node.setInput(1,graftstage_lights_node)
+                # Create switch to activate and deactivate lights
+                switch_lights_rig_node = stage_context.createNode("switch", "switch_lights_rig")
+                switch_lights_rig_node.setInput(0,current_stream)
+                switch_lights_rig_node.setInput(1,graftstage_lights_node)
+                switch_lights_rig_node.parm("input").set(1)
+                lookdev_setup_layout.extend([switch_lights_rig_node,graftstage_lights_node])
+
+                current_stream = switch_lights_rig_node
+
+
+            # Create grafstages node for env lights
+            graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
+            graftstage_envlights_node.parm("primpath").set("/turntable/lights")
+            graftstage_envlights_node.parm("destpath").set("/")
+            graftstage_envlights_node.setInput(0, current_stream)
+
+            # Create Env Lights (dynamic count based on env_light_paths)
+            domes = []
+            if env_light_paths:
+                for idx, path in enumerate(env_light_paths):
+                    base = os.path.splitext(os.path.basename(path))[0]
+                    dome = stage_context.createNode("domelight::3.0", _sanitize(f"{base or 'env_light'}_{idx+1}"))
+                    dome.parm("primpath").set("/$OS")
+                    dome.parm("xn__inputstexturefile_r3ah").set(path)
+                    domes.append(dome)
+            else:
+                dome = stage_context.createNode("domelight::3.0", "env_light")
+                dome.parm("primpath").set("/$OS")
+                domes.append(dome)
+
+            switch_envlights_selection_node = stage_context.createNode("switch", "switch_envlights_selection")
+            for i, dome in enumerate(domes):
+                switch_envlights_selection_node.setInput(i, dome)
+            envlights_nodes_to_layout = domes + [switch_envlights_selection_node]
+
+            stage_context.layoutChildren(items=envlights_nodes_to_layout)
+            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6))
+
+            graftstage_envlights_node.setInput(1, switch_envlights_selection_node)
+            switch_env_lights = stage_context.createNode("switch", "switch_env_lights")
+            switch_env_lights.setInput(0, current_stream)
+            switch_env_lights.setInput(1, graftstage_envlights_node)
+
+            # Enable the Env Lights branch by default when Lookdev is active
+            switch_env_lights.parm("input").set(1)
 
             # Create Subnetwork lookdev setup
             subnetwork_lookdevsetup_node = create_subnet_lookdev_setup(node_name="lookdev_setup")
-            subnetwork_lookdevsetup_node.setInput(0,switch_lights_node)
+            subnetwork_lookdevsetup_node.setInput(0, switch_env_lights)
 
-            # Create switch to activate and lookdev
+            # Create switch to activate lookdev
             switch_lookdev_setup_node = stage_context.createNode("switch", "switch_lookdev_setup")
-            switch_lookdev_setup_node.setInput(0,switch_lights_node)
-            switch_lookdev_setup_node.setInput(1,subnetwork_lookdevsetup_node)
-
-            # Create grafstages node lights
-            graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
-            graftstage_envlights_node.parm("primpath").set("/turntable/lights")
-            graftstage_lights_node.parm("destpath").set("/")
-            graftstage_envlights_node.setInput(0,switch_lookdev_setup_node)
-
-            # Create Env Lights
-            domelight1_node = stage_context.createNode("domelight::3.0", "domelight1")
-            domelight2_node = stage_context.createNode("domelight::3.0", "domelight2")
-            domelight3_node = stage_context.createNode("domelight::3.0", "domelight3")
-            domelight1_node.parm("primpath").set("/$OS")
-            domelight2_node.parm("primpath").set("/$OS")
-            domelight3_node.parm("primpath").set("/$OS")
-            switch_envlights_selection_node = stage_context.createNode("switch","switch_envlights_selection")
-            switch_envlights_selection_node.setInput(0,domelight1_node)
-            switch_envlights_selection_node.setInput(1,domelight2_node)
-            switch_envlights_selection_node.setInput(2,domelight3_node)
-            envlights_nodes_to_layout = [domelight1_node,domelight2_node,domelight3_node,switch_envlights_selection_node]
-            stage_context.layoutChildren(items=envlights_nodes_to_layout)
-            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(7, 6))
-            graftstage_envlights_node.setInput(1,switch_envlights_selection_node)
-            switch_env_lights = stage_context.createNode("switch","switch_env_lights")
-            switch_env_lights.setInput(0,switch_lookdev_setup_node)
-            switch_env_lights.setInput(1,graftstage_envlights_node)
-            lookdev_setup_layout = [graftstage_envlights_node,switch_env_lights, switch_lookdev_setup_node,subnetwork_lookdevsetup_node,switch_lights_node,graftstage_lights_node,graftstage_asset_node,primitive_node]
+            switch_lookdev_setup_node.setInput(0, switch_env_lights)
+            switch_lookdev_setup_node.setInput(1, subnetwork_lookdevsetup_node)
+            lookdev_setup_layout = lookdev_setup_layout + [graftstage_envlights_node,switch_env_lights, switch_lookdev_setup_node,subnetwork_lookdevsetup_node,graftstage_asset_node,primitive_node]
             stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
             create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
 
             # Camera and Animations
             transform_camera_and_scene_node = build_transform_camera_and_scene_node()
-            transform_camera_and_scene_node.setInput(0,switch_env_lights)
-            switch_transform_camera_and_scene_node = stage_context.createNode("switch","switch_transform_camera_and_scene_node")
-            switch_transform_camera_and_scene_node.setInput(0,switch_env_lights)
-            switch_transform_camera_and_scene_node.setInput(1,transform_camera_and_scene_node)
+            transform_camera_and_scene_node.setInput(0, switch_lookdev_setup_node)
+            switch_transform_camera_and_scene_node = stage_context.createNode("switch", "switch_transform_camera_and_scene_node")
+            switch_transform_camera_and_scene_node.setInput(0, switch_lookdev_setup_node)
+            switch_transform_camera_and_scene_node.setInput(1, transform_camera_and_scene_node)
             transform_envlights_node = build_lights_spin_xform()
-            transform_envlights_node.setInput(0,switch_transform_camera_and_scene_node)
-            switch_animate_lights = stage_context.createNode("switch","switch_animate_lights")
-            switch_animate_lights.setInput(0,switch_transform_camera_and_scene_node)
-            switch_animate_lights.setInput(1,transform_envlights_node)
+            transform_envlights_node.setInput(0, switch_transform_camera_and_scene_node)
+            switch_animate_lights = stage_context.createNode("switch", "switch_animate_lights")
+            switch_animate_lights.setInput(0, switch_transform_camera_and_scene_node)
+            switch_animate_lights.setInput(1, transform_envlights_node)
+
             # Create Karma nodes
-            karma_settings,usdrender_rop = create_karma_nodes(stage_context)
+            karma_settings, usdrender_rop = create_karma_nodes(stage_context)
             karma_settings.setInput(0, switch_animate_lights)
             usdrender_rop.setInput(0, karma_settings)
+
             # Karma Nodes to layout
-            karma_nodes = [switch_transform_camera_and_scene_node,transform_camera_and_scene_node,switch_animate_lights,transform_envlights_node,karma_settings,usdrender_rop]
-            stage_context.layoutChildren(items=karma_nodes,horizontal_spacing=0.25, vertical_spacing=1)
-            create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -6))
+            karma_nodes = [switch_transform_camera_and_scene_node, transform_camera_and_scene_node, switch_animate_lights, transform_envlights_node, karma_settings, usdrender_rop]
+            stage_context.layoutChildren(items=karma_nodes, horizontal_spacing=0.25, vertical_spacing=1)
+            create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -5))
             comp_out.setSelected(True, clear_all_selected=True)
 
     except Exception as e:
@@ -281,151 +211,6 @@ def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
 
     # Nodes to layout
     return comp_geo, material_lib, comp_material, comp_out
-
-
-def _create_group_parameters(parent_node, node_name, asset_paths, switch_node, transform_node):
-    """
-    Create parameters for multi-asset switch workflow.
-    Inspired by batch_import_workflow.py, this function adds UI controls
-    for switching between assets and controlling transforms.
-
-    Args:
-        parent_node (hou.Node): The parent node to add parameters to
-        node_name (str): Name of the asset group
-        asset_paths (list): List of asset file paths
-        switch_node (hou.Node): The switch node to control
-        transform_node (hou.Node): The transform node to control
-    """
-    try:
-        ptg = parent_node.parmTemplateGroup()
-
-        # Add separator for multi-asset controls
-        separator = hou.SeparatorParmTemplate(f"{node_name}_multi_sep", f"{node_name} Multi-Asset Controls")
-        ptg.append(separator)
-
-        # Add asset switch parameter
-        num_assets = len(asset_paths) if asset_paths else 1
-        switch_parm = hou.IntParmTemplate(
-            f"{node_name}_asset_switch",
-            f"Selected Asset Index",
-            1,
-            default_value=(0,),
-            min=0,
-            max=max(0, num_assets - 1),
-            help=f"Switch between {num_assets} imported assets"
-        )
-        ptg.append(switch_parm)
-
-        # Add transform controls folder
-        transform_folder = hou.FolderParmTemplate(
-            f"{node_name}_transform", 
-            f"Asset Transform", 
-            folder_type=hou.folderType.Tabs
-        )
-
-        # Translation vector parameter
-        translate = hou.FloatParmTemplate(
-            f"{node_name}_translate", 
-            "Translate", 
-            3, 
-            default_value=(0, 0, 0)
-        )
-
-        # Rotation vector parameter  
-        rotate = hou.FloatParmTemplate(
-            f"{node_name}_rotate", 
-            "Rotate", 
-            3, 
-            default_value=(0, 0, 0)
-        )
-
-        # Scale vector parameter
-        scale = hou.FloatParmTemplate(
-            f"{node_name}_scale", 
-            "Scale", 
-            3, 
-            default_value=(1, 1, 1)
-        )
-
-        transform_folder.addParmTemplate(translate)
-        transform_folder.addParmTemplate(rotate)
-        transform_folder.addParmTemplate(scale)
-        ptg.append(transform_folder)
-
-        # Add asset information folder
-        if asset_paths and len(asset_paths) > 1:
-            info_folder = hou.FolderParmTemplate(
-                f"{node_name}_assets_info", 
-                f"Asset Files", 
-                folder_type=hou.folderType.Tabs
-            )
-
-            for i, asset_path in enumerate(asset_paths):
-                asset_info = hou.StringParmTemplate(
-                    f"{node_name}_asset_file_{i}",
-                    f"Asset {i+1}",
-                    1,
-                    default_value=(asset_path,),
-                    string_type=hou.stringParmType.FileReference,
-                    file_type=hou.fileType.Geometry,
-                    help=f"Path to asset file {i+1}"
-                )
-                info_folder.addParmTemplate(asset_info)
-
-            ptg.append(info_folder)
-
-        # Apply parameters to parent node
-        parent_node.setParmTemplateGroup(ptg)
-
-        # Link nodes to parameters
-        _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node)
-
-    except Exception as e:
-        # Use print instead of UI message to allow non-interactive operation
-        print(f"Error: Error creating group parameters: {str(e)}")
-
-
-def _link_group_nodes_to_parameters(parent_node, node_name, switch_node, transform_node):
-    """
-    Link switch and transform nodes to the UI parameters.
-
-    Args:
-        parent_node (hou.Node): The parent node with parameters (componentgeometry node)
-        node_name (str): Name of the asset group
-        switch_node (hou.Node): The switch node to control (inside sopnet/geo)
-        transform_node (hou.Node): The transform node to control (inside sopnet/geo)
-    """
-    try:
-        # Link switch node to parameter
-        # Switch node is at: /stage/componentgeometry/sopnet/geo/switch_node
-        # Parameters are at: /stage/componentgeometry/
-        # So we need to go up 3 levels: ../../../
-        if switch_node:
-            switch_node.parm("input").setExpression(f'ch("../../../{node_name}_asset_switch")')
-
-        # Link transform node using vector parameters
-        # Transform node is at: /stage/componentgeometry/sopnet/geo/transform_node
-        # Parameters are at: /stage/componentgeometry/
-        # So we need to go up 3 levels: ../../../
-        if transform_node:
-            transform_mappings = [
-                ("t", f"{node_name}_translate"),
-                ("r", f"{node_name}_rotate"),
-                ("s", f"{node_name}_scale")
-            ]
-
-            for xform_base, parent_param in transform_mappings:
-                # Link each component
-                xform_components = ["x", "y", "z"]
-                for i, component in enumerate(xform_components):
-                    xform_param = f"{xform_base}{component}"
-                    parent_param_name = f"{parent_param}{component}"
-                    transform_node.parm(xform_param).setExpression(f'ch("../../../{parent_param_name}")')
-
-    except Exception as e:
-        # Use print instead of UI message to allow non-interactive operation
-        print(f"Error: Error linking nodes to parameters: {str(e)}")
-
 
 def _prepare_imported_asset(parent, name, extension, path, out_node):
     '''
@@ -709,8 +494,6 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
             return True
 
         material_handler = tex_to_mtlx.TxToMtlx()
-        stage = parent.stage()
-        prims_name = _find_prims_by_attribute(stage, UsdGeom.Mesh)
         materials_created_length = 0
 
         # Combined texture list from all subfolders
@@ -822,6 +605,76 @@ def _extract_material_names(asset_paths):
 
     return sorted(list(material_names))
 
+
+def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_path: str,
+                               asset_variants: list, asset_vset_name: str,
+                               mtl_variants: list, folder_textures: str,
+                               mtl_vset_name: str):
+    """
+    Build the geometry variants, material variants, and materials, returning
+    key nodes for further wiring.
+
+    Returns:
+        tuple: (geometry_variants_node, comp_out, nodes_to_layout, comp_material_last)
+    """
+    # Assemble assets list
+    assets = [main_asset_file_path] + (asset_variants or [])
+
+    # Create base nodes
+    geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
+    comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
+    if asset_vset_name:
+        geometry_variants_node.parm("variantset").set(asset_vset_name)
+    nodes_to_layout = [geometry_variants_node, comp_out]
+
+    # Geometry variants population
+    for index, asset in enumerate(assets):
+        path, filename = os.path.split(asset.split(";")[0])
+        # Get asset name and extension
+        asset_name = filename.split(".")[0]
+        asset_extension = filename.split(".")[-1]
+        if filename.endswith("bgeo.sc"):
+            asset_name = filename.split(".")[0]
+            asset_extension = "bgeo.sc"
+        comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
+        geometry_variants_node.setInput(index, comp_geo)
+        _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out)
+        nodes_to_layout.append(comp_geo)
+
+    # Material variants list (mtl_variants + main textures at end)
+    mtl_folders = list(mtl_variants or [])
+    if folder_textures:
+        mtl_folders.append(folder_textures)
+
+    comp_material_last = None
+    for index, mtl_folder in enumerate(mtl_folders):
+        mtl_folder_name = os.path.basename(mtl_folder)
+        material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl_{mtl_folder_name}"))
+        comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant_{mtl_folder_name}"))
+        if mtl_vset_name:
+            comp_material.parm("variantset").set(mtl_vset_name)
+        material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
+        if index == 0:
+            comp_material.setInput(0, geometry_variants_node)
+        else:
+            comp_material.setInput(0, comp_material_last)
+        comp_material.setInput(1, material_lib)
+        comp_material_last = comp_material
+        # Extract material names from the main asset path only (as before)
+        asset_paths = main_asset_file_path.split(";")
+        material_names = _extract_material_names(asset_paths)
+        print(f"Found {len(material_names)} materials in assets: {material_names}")
+        # Create the materials using the text_to_mtlx script with targeted material creation
+        # _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
+        nodes_to_layout.append(material_lib)
+        nodes_to_layout.append(comp_material)
+
+    # Wire final material output to component output
+    if comp_material_last is not None:
+        comp_out.setInput(0, comp_material_last)
+
+    return geometry_variants_node, comp_out, nodes_to_layout, comp_material_last
+
 def _find_prims_by_attribute(stage: Usd.Stage, prim_type: Type[Usd.Typed]) -> List[Usd.Prim]:
     prims_name = set()
 
@@ -851,175 +704,6 @@ def _random_color():
 
     return (main_colour, secondary_colour)
 
-def create_tops_component_builder(directory: str, filename: str) -> Optional[hou.Node]:
-    '''
-    Creates a component builder for use in TOP networks without creating lights, rigs, camera, and render nodes.
-    Enhanced with material discovery and targeted material creation.
-
-    Args:
-        directory (str): Directory containing the asset file
-        filename (str): Name of the asset file (including extension)
-
-    Returns:
-        Optional[hou.Node]: The component output node if successful, None otherwise
-
-    Example:
-        # In a Python TOP node:
-        import os
-        from tools.lops_asset_builder_v2 import lops_asset_builder_v2
-
-        # Get directory and filename from TOP work item
-        directory = work_item.attribValue("directory")
-        filename = work_item.attribValue("filename")
-
-        # Create the component builder
-        output_node = lops_asset_builder_v2.create_tops_component_builder(directory, filename)
-
-        # Set work item to success or failure based on result
-        if output_node:
-            work_item.addStatusMessage("Component builder created successfully")
-            work_item.setSuccess(True)
-        else:
-            work_item.addStatusMessage("Failed to create component builder")
-            work_item.setFailure(True)
-    '''
-    try:
-        # Construct the full path to the asset
-        selected_directory = os.path.join(directory, filename)
-        selected_directory = hou.text.expandString(selected_directory)
-
-        if not os.path.exists(selected_directory):
-            print(f"Error: File does not exist: {selected_directory}")
-            return None
-
-        # Define context
-        stage_context = hou.node("/stage")
-
-        # Get the path and filename and the folder with the textures
-        path, filename = os.path.split(selected_directory)
-        # Get maps folder path - keep original format for Houdini but use normalized path for existence check
-        folder_textures = os.path.join(path, "maps").replace(os.sep, "/")
-        folder_textures_check = os.path.normpath(os.path.join(path, "maps"))
-
-        # Check if maps folder exists
-        if not os.path.exists(folder_textures_check):
-            print(f"Maps folder does not exist: {folder_textures_check}")
-            # Continue execution - _create_materials will handle missing folder and create template materials
-
-        # Get asset name and extension
-        asset_name = filename.split(".")[0]
-        asset_extension = filename.split(".")[-1]
-        if filename.endswith("bgeo.sc"):
-            asset_name = filename.split(".")[0]
-            asset_extension = "bgeo.sc"
-
-        # Extract material names from the asset
-        asset_paths = [selected_directory]
-        material_names = _extract_material_names(asset_paths)
-        print(f"Found {len(material_names)} materials in {selected_directory}: {material_names}")
-
-        # Create nodes for the component builder setup
-        comp_geo = stage_context.createNode("componentgeometry", f"{asset_name}_geo")
-        material_lib = stage_context.createNode("materiallibrary", f"{asset_name}_mtl")
-        comp_material = stage_context.createNode("componentmaterial", f"{asset_name}_assign")
-        comp_out = stage_context.createNode("componentoutput", asset_name)
-
-        comp_geo.parm("geovariantname").set(asset_name)
-        material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
-        comp_material.parm("nummaterials").set(0)
-
-        # Create auto assigment for materials
-        comp_material_edit = comp_material.node("edit")
-        output_node = comp_material_edit.node("output0")
-
-        assign_material = comp_material_edit.createNode("assignmaterial", f"{asset_name}_assign")
-        # SET PARMS
-        assign_material.setParms({
-            "primpattern1": "%type:Mesh",
-            "matspecmethod1": 2,
-            "matspecvexpr1": '"/ASSET/mtl/"+@primname;',
-            "bindpurpose1": "full",
-        })
-
-        # Connect nodes
-        comp_material.setInput(0, comp_geo)
-        comp_material.setInput(1, material_lib)
-        comp_out.setInput(0, comp_material)
-
-        # Connect the input of assign material node to the first subnet indirect input
-        assign_material.setInput(0, comp_material_edit.indirectInputs()[0])
-        output_node.setInput(0, assign_material)
-
-        # Nodes to layout
-        nodes_to_layout = [comp_geo, material_lib, comp_material, comp_out]
-        stage_context.layoutChildren(nodes_to_layout)
-
-        # Prepare imported geo
-        _prepare_imported_asset(comp_geo, selected_directory, path, comp_out, asset_name)
-
-        # Create the materials using the text_to_mtlx script with targeted material creation
-        _create_materials(comp_geo, folder_textures, material_lib, material_names)
-
-        # Network organization is disabled for TOP functions as it can cause issues
-        # Just perform a basic layout of the nodes
-        stage_context.layoutChildren(nodes_to_layout)
-
-        # Set Display Flag
-        comp_out.setGenericFlag(hou.nodeFlag.Display, True)
-
-        # Set the lopoutput parameter to use @directory\@filename\ format
-        comp_out.parm("lopoutput").set(r'`@directory`/`@filename`/')
-
-        return comp_out
-
-    except Exception as e:
-        print(f"An error happened in create_tops_component_builder: {str(e)}")
-        return None
-
-
-def configure_network_organization(create_boxes=None, use_categories=None, default_offset=None):
-    """
-    Configure the network organization settings.
-
-    Args:
-        create_boxes (bool, optional): Whether to create network boxes
-        use_categories (bool, optional): Whether to use category-based colors
-        default_offset (hou.Vector2, optional): Default position offset for nodes
-
-    Returns:
-        dict: The current network configuration
-    """
-    global NETWORK_CONFIG
-
-    if create_boxes is not None:
-        NETWORK_CONFIG["create_network_boxes"] = bool(create_boxes)
-
-    if use_categories is not None:
-        NETWORK_CONFIG["use_categories"] = bool(use_categories)
-
-    if default_offset is not None:
-        NETWORK_CONFIG["default_offset"] = default_offset
-
-    return NETWORK_CONFIG
-
-
-def _get_stage_node_name(filename):
-    """Ask user for the Stage node name."""
-    filename = filename.split(".")[0]
-    if filename.endswith("bgeo.sc"):
-        filename = filename.split(".")[0]
-    try:
-        stage_name = hou.ui.readInput(
-            "Enter name for the top-level LOPS Stage node:",
-            initial_contents=filename,
-            title="LOPS Group Importer - Stage Node Name"
-        )
-        if stage_name[0] == 0:  # User clicked OK
-            return stage_name[1].strip() or filename
-        else:  # User cancelled
-            return filename
-    except:
-        return filename
 
 def create_organized_net_note(asset_name, nodes_to_layout, offset_vector=hou.Vector2(0, 0), create_network_boxes=True, category=None):
     '''

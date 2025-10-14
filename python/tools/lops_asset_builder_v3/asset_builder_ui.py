@@ -5,10 +5,10 @@ Pure UI: no LOP logic inside. Returns a dict via .data().
 Fields:
 - Main Asset File Path (file picker, Geometry)
 - Asset Name (auto-filled from Main Asset File Path; editable)
-- Asset Variant Set name (default: assetVariant)
+- Asset Variant Set name (default: geo_variant)
 - Asset Variant Files list (multi select, Geometry)
-- Main Texture Folder (folder picker)
-- Material Variant Set name (default: lookVariant)
+- Main Textures Folder (folder picker)
+- Material Variant Set name (default: mtl_variant)
 - Material Variant Folders list (multi select, folders)
 
 Buttons: OK / Cancel, Add/Remove for both lists.
@@ -33,15 +33,24 @@ def _basename_variant(name: str) -> str:
 class _ListEditor(QtWidgets.QWidget):
     """Reusable list editor with Add/Remove buttons."""
 
-    def __init__(self, parent: QtWidgets.QWidget | None, mode: str = "file") -> None:
+    def __init__(self, parent: QtWidgets.QWidget | None, mode: str = "file", file_filter: str | None = None) -> None:
         super().__init__(parent)
         self.mode = mode  # "file" or "dir"
+        self.file_filter = file_filter
         self._setup_ui()
 
     def _setup_ui(self) -> None:
         layout = QtWidgets.QVBoxLayout(self)
         self.listw = QtWidgets.QListWidget(self)
         self.listw.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        # Improve visibility of long paths and overall height
+        self.listw.setMinimumHeight(160)
+        self.listw.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.listw.setTextElideMode(QtCore.Qt.TextElideMode.ElideMiddle)
+        self.listw.setUniformItemSizes(True)
+        self.listw.setWordWrap(False)
+        self.listw.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.listw.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         layout.addWidget(self.listw)
 
         btns = QtWidgets.QHBoxLayout()
@@ -61,23 +70,33 @@ class _ListEditor(QtWidgets.QWidget):
     def set_items(self, values: List[str]) -> None:
         self.listw.clear()
         for v in values:
-            self.listw.addItem(v)
+            if not v:
+                continue
+            item = QtWidgets.QListWidgetItem(v)
+            item.setToolTip(v)
+            self.listw.addItem(item)
 
     def _on_add(self) -> None:
         if self.mode == "file":
+            title = "Select files"
+            flt = self.file_filter or "Geometry (*.usd *.usda *.usdc *.abc *.obj *.bgeo *.bgeo.sc);;All Files (*)"
             files, _ = QtWidgets.QFileDialog.getOpenFileNames(
                 self,
-                "Select geometry files",
+                title,
                 "",
-                "Geometry (*.usd *.usda *.usdc *.abc *.obj *.bgeo *.bgeo.sc);;All Files (*)",
+                flt,
             )
             for f in files or []:
                 if f:
-                    self.listw.addItem(f)
+                    item = QtWidgets.QListWidgetItem(f)
+                    item.setToolTip(f)
+                    self.listw.addItem(item)
         else:
             dir_ = QtWidgets.QFileDialog.getExistingDirectory(self, "Select folder")
             if dir_:
-                self.listw.addItem(dir_)
+                item = QtWidgets.QListWidgetItem(dir_)
+                item.setToolTip(dir_)
+                self.listw.addItem(item)
 
     def _on_remove(self) -> None:
         for it in self.listw.selectedItems():
@@ -94,7 +113,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
 
     def __init__(self, default_asset: str = "", default_maps: str = "", parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Asset & Material Variants")
+        self.setWindowTitle("LOPS Asset Builder")
         self.setModal(True)
         self._build_ui(default_asset, default_maps)
 
@@ -123,7 +142,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         self._on_main_asset_changed(self.ed_main_asset.text())
 
         # Asset Variant Set name
-        self.ed_asset_vset = QtWidgets.QLineEdit("assetVariant")
+        self.ed_asset_vset = QtWidgets.QLineEdit("geo_variant")
         form.addRow("Asset Variant Set", self.ed_asset_vset)
 
         # Asset Variant Files list
@@ -137,16 +156,37 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         row_maps = QtWidgets.QHBoxLayout()
         row_maps.addWidget(self.ed_main_maps)
         row_maps.addWidget(btn_maps)
-        form.addRow("Main Texture Folder", row_maps)
+        form.addRow("Main Textures Folder", row_maps)
         btn_maps.clicked.connect(self._pick_folder)
 
         # Material Variant Set
-        self.ed_look_vset = QtWidgets.QLineEdit("lookVariant")
+        self.ed_look_vset = QtWidgets.QLineEdit("mtl_variant")
         form.addRow("Material Variant Set", self.ed_look_vset)
 
         # Material Variant Folders list
         self.maps_list = _ListEditor(self, mode="dir")
         form.addRow("Material Variant Folders", self.maps_list)
+
+        # Lookdev setup toggle
+        self.cb_create_lookdev = QtWidgets.QCheckBox("Create Lookdev Setup")
+        # Disabled by default per request
+        self.cb_create_lookdev.setChecked(False)
+        form.addRow("Lookdev Setup", self.cb_create_lookdev)
+
+        # Setup Light Rig toggle
+        self.cb_create_light_rig = QtWidgets.QCheckBox("Setup Light Rig")
+        self.cb_create_light_rig.setChecked(True)
+        form.addRow("Light Rig", self.cb_create_light_rig)
+
+        # Env Light HDRI paths (optional)
+        image_filter = "Images (*.exr *.hdr *.rat *.jpg *.jpeg *.png *.tif *.tiff);;All Files (*)"
+        self.env_lights_list = _ListEditor(self, mode="file", file_filter=image_filter)
+        form.addRow("Env Light HDRI Paths", self.env_lights_list)
+
+        # React to lookdev toggle to enable/disable dependent controls (use boolean signal)
+        self.cb_create_lookdev.toggled.connect(self._on_lookdev_toggled)
+        # Initialize state
+        self._on_lookdev_toggled(self.cb_create_lookdev.isChecked())
 
         lay.addLayout(form)
 
@@ -159,7 +199,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         btn_box.rejected.connect(self.reject)
 
         # Small size policy
-        self.resize(520, 520)
+        self.resize(560, 640)
 
     def _pick_asset(self) -> None:
         val, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -198,13 +238,21 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
             derived = self._derive_asset_name(text)
             self.ed_asset_name.setText(derived)
 
+    def _on_lookdev_toggled(self, enabled: bool) -> None:
+        # Enable/disable dependent widgets when Lookdev is toggled
+        self.env_lights_list.setEnabled(bool(enabled))
+        self.cb_create_light_rig.setEnabled(bool(enabled))
+
     def data(self) -> Dict[str, object]:
         return {
-            "main_asset": self.ed_main_asset.text().strip(),
-            "asset_name": self.ed_asset_name.text().strip(),
-            "asset_variant_set": (self.ed_asset_vset.text().strip() or "assetVariant"),
+            "main_asset_file_path": self.ed_main_asset.text().strip(),
+            "asset_name_input": self.ed_asset_name.text().strip(),
+            "asset_variant_set": (self.ed_asset_vset.text().strip() or "geo_variant"),
             "asset_variants": [s for s in self.asset_list.items() if s],
-            "material_variant_set": (self.ed_look_vset.text().strip() or "lookVariant"),
+            "material_variant_set": (self.ed_look_vset.text().strip() or "mtl_variant"),
             "main_textures": self.ed_main_maps.text().strip(),
             "material_variants": [s for s in self.maps_list.items() if s],
+            "create_lookdev_setup": bool(self.cb_create_lookdev.isChecked()),
+            "create_light_rig": bool(self.cb_create_light_rig.isChecked()),
+            "env_light_paths": [s for s in self.env_lights_list.items() if s],
         }
