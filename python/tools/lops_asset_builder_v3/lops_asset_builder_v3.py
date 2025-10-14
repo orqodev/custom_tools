@@ -665,7 +665,7 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
         material_names = _extract_material_names(asset_paths)
         print(f"Found {len(material_names)} materials in assets: {material_names}")
         # Create the materials using the text_to_mtlx script with targeted material creation
-        # _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
+        _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
         nodes_to_layout.append(material_lib)
         nodes_to_layout.append(comp_material)
 
