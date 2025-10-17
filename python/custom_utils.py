@@ -99,7 +99,7 @@ def get_logger(name="houdini_debug",log_file_name="houdini_debug.log",level=logg
     active_project = hou.getenv("PROJECT")
     project_path = hou.getenv("JOB")
     project_base_path = os.path.basename(project_path)
-    print(project_path)
+
     if (active_project and project_base_path) and active_project.lower() == project_base_path.lower():
         folder_path = os.path.join(project_path, "logs")
     else:

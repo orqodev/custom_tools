@@ -1,4 +1,5 @@
 import os
+import time
 
 import hou
 import voptoolutils
@@ -14,8 +15,13 @@ from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_c
 from tools.lops_asset_builder_v3.create_transform_nodes import build_transform_camera_and_scene_node, \
     build_lights_spin_xform
 from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
-from tools.lops_asset_builder_v3.asset_builder_ui import AssetMaterialVariantsDialog
-from PySide6 import QtWidgets
+from tools.lops_asset_builder_v3.asset_builder_ui import AssetMaterialVariantsDialog, ProgressReporter
+from PySide6 import QtWidgets, QtCore
+
+
+# UI components moved to asset_builder_ui.py: SimpleProgressDialog
+
+
 
 
 def create_component_builder(selected_directory=None):
@@ -23,30 +29,41 @@ def create_component_builder(selected_directory=None):
     Main function to create the component builder based on a provided asset
     '''
 
+    # 1) Show the selection dialog first; do not start progress/logging yet
+    dialog = AssetMaterialVariantsDialog(
+        default_asset="",
+        default_maps=""
+    )
+    if dialog.exec_() != QtWidgets.QDialog.Accepted:
+        # User cancelled before starting the process — nothing to log
+        return
+
+    # 2) Collect UI data after confirmation
+    ui = dialog.data()
+    main_asset_file_path = ui.get("main_asset_file_path") or ""
+    asset_name_input = (ui.get("asset_name_input") or "").strip() or "ASSET"
+    asset_variants = ui.get("asset_variants") or []
+    asset_vset_name = ui.get("asset_variant_set") or "geo_variant"
+    mtl_vset_name = ui.get("material_variant_set") or "mtl_variant"
+    folder_textures = ui.get("main_textures") or ""
+    mtl_variants = ui.get("material_variants") or []
+    create_lookdev = bool(ui.get("create_lookdev_setup", True))
+    create_light_rig = bool(ui.get("create_light_rig", True))
+    env_light_paths = ui.get("env_light_paths") or []
+
+    # 3) Now start progress and logging UI, after OK
+    progress = ProgressReporter("LOPs Asset Builder v3")
+    progress.set_total(12)
     try:
-            dialog = AssetMaterialVariantsDialog(
-                default_asset="",
-                default_maps=""
-            )
-            if dialog.exec_() != QtWidgets.QDialog.Accepted:
-                return
-            ui = dialog.data()
-            main_asset_file_path = ui.get("main_asset_file_path") or ""
-            asset_name_input = (ui.get("asset_name_input") or "").strip() or "ASSET"
-            asset_variants = ui.get("asset_variants") or []
-            asset_vset_name = ui.get("asset_variant_set") or "geo_variant"
-            mtl_vset_name = ui.get("material_variant_set") or "mtl_variant"
-            folder_textures = ui.get("main_textures") or ""
-            mtl_variants = ui.get("material_variants") or []
-            create_lookdev = bool(ui.get("create_lookdev_setup", True))
-            create_light_rig = bool(ui.get("create_light_rig", True))
-            env_light_paths = ui.get("env_light_paths") or []
-            # Validate
+            progress.step("Validating inputs")
+            # Inputs were already validated by the dialog's accept(); these are just safety checks with logging
             if not (main_asset_file_path and os.path.isfile(main_asset_file_path)):
-                hou.ui.displayMessage("Main asset file is invalid.", severity=hou.severityType.Error)
+                progress.log("Error: invalid main asset file.")
+                progress.mark_finished("Error: invalid main asset file.")
                 return
             if not (folder_textures and os.path.isdir(folder_textures)):
-                hou.ui.displayMessage("Main texture folder is invalid.", severity=hou.severityType.Error)
+                progress.log("Error: invalid texture folder.")
+                progress.mark_finished("Error: invalid texture folder.")
                 return
 
             # Define context
@@ -54,6 +71,7 @@ def create_component_builder(selected_directory=None):
             # Determine stage node name from UI or fallback logic
             node_name = asset_name_input
 
+            progress.step("Building geometry and material variants")
             geometry_variants_node, comp_out, nodes_to_layout, comp_material_last = build_geo_and_mtl_variants(
                 stage_context=stage_context,
                 node_name=node_name,
@@ -63,8 +81,10 @@ def create_component_builder(selected_directory=None):
                 mtl_variants=mtl_variants,
                 folder_textures=folder_textures,
                 mtl_vset_name=mtl_vset_name,
+                progress=progress,
             )
 
+            progress.step("Organizing network layout")
             #Nodes to layout
             stage_context.layoutChildren(nodes_to_layout)
 
@@ -76,8 +96,11 @@ def create_component_builder(selected_directory=None):
 
             # If lookdev is disabled, stop here as requested
             if not create_lookdev:
+                progress.log("Lookdev setup disabled; finished base setup.")
+                progress.mark_finished("Done")
                 return
 
+            progress.step("Creating lookdev scope and graft stages")
             lookdev_setup_layout = []
             # Create primitive scope node
             primitive_node = stage_context.createNode("primitive", _sanitize(f"{node_name}_geo"))
@@ -93,6 +116,7 @@ def create_component_builder(selected_directory=None):
 
             current_stream = graftstage_asset_node
             if create_light_rig:
+                progress.step("Building light rig")
                 # Create grafstages node lights
                 graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
                 graftstage_lights_node.parm("primpath").set("/turntable/")
@@ -100,7 +124,7 @@ def create_component_builder(selected_directory=None):
                 graftstage_lights_node.setInput(0,current_stream)
 
                 # Create light rig
-                light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light()
+                light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light(selected_node=comp_out)
 
                 # Light Rig Nodes to layout
                 create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
@@ -119,6 +143,7 @@ def create_component_builder(selected_directory=None):
 
 
             # Create grafstages node for env lights
+            progress.step("Creating environment lights")
             graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
             graftstage_envlights_node.parm("primpath").set("/turntable/lights")
             graftstage_envlights_node.parm("destpath").set("/")
@@ -154,6 +179,7 @@ def create_component_builder(selected_directory=None):
             # Enable the Env Lights branch by default when Lookdev is active
             switch_env_lights.parm("input").set(1)
 
+            progress.step("Creating lookdev subnetwork")
             # Create Subnetwork lookdev setup
             subnetwork_lookdevsetup_node = create_subnet_lookdev_setup(node_name="lookdev_setup")
             subnetwork_lookdevsetup_node.setInput(0, switch_env_lights)
@@ -167,6 +193,7 @@ def create_component_builder(selected_directory=None):
             stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
             create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
 
+            progress.step("Creating camera, animations, and render nodes")
             # Camera and Animations
             transform_camera_and_scene_node = build_transform_camera_and_scene_node()
             transform_camera_and_scene_node.setInput(0, switch_lookdev_setup_node)
@@ -189,10 +216,17 @@ def create_component_builder(selected_directory=None):
             stage_context.layoutChildren(items=karma_nodes, horizontal_spacing=0.25, vertical_spacing=1)
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -5))
             comp_out.setSelected(True, clear_all_selected=True)
+            progress.step("Done")
+            progress.mark_finished("Done")
 
+    except KeyboardInterrupt as e:
+        progress.log(str(e))
+        progress.mark_finished("Cancelled.")
     except Exception as e:
         # Use print instead of UI message to allow non-interactive operation
         print(f"Error: An error happened in create component builder: {str(e)}")
+        progress.log(f"Error: {str(e)}")
+        progress.mark_finished("Error.")
 
 def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Create nodes for the component builder setup
@@ -474,7 +508,7 @@ def _create_mtlx_templates(parent, material_lib):
         )
     material_lib.layoutChildren()
 
-def _create_materials(parent, folder_textures, material_lib, expected_names=None):
+def _create_materials(parent, folder_textures, material_lib, expected_names=None, progress: ProgressReporter | None = None):
     ''' Create the material using the tex_to_mtlx script
     Args:
         parent: Parent node
@@ -487,10 +521,17 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
     try:
         # Normalize path for existence check
         folder_textures_check = os.path.normpath(folder_textures)
+        if progress:
+            progress.log(f"Scanning texture folder: {folder_textures_check}")
         if not os.path.exists(folder_textures_check):
-            print(f"Warning: Texture folder does not exist: {folder_textures_check}")
-            # Print warning but continue with template materials
-            print(f"Warning: Texture folder not found: {folder_textures}. Creating template materials instead.")
+            warn1 = f"Warning: Texture folder does not exist: {folder_textures_check}"
+            warn2 = f"Warning: Texture folder not found: {folder_textures}. Creating template materials instead."
+            if progress:
+                progress.log(warn1)
+                progress.log(warn2)
+            else:
+                print(warn1)
+                print(warn2)
             _create_mtlx_templates(parent, material_lib)
             return True
 
@@ -503,6 +544,8 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
 
         # Recursively search for textures in the folder and all subfolders
         for root, dirs, files in os.walk(folder_textures_check):
+            if progress and progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
             # Convert Windows path to Houdini-friendly format
             current_folder = root.replace(os.sep, "/")
 
@@ -516,6 +559,7 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                     combined_texture_list.update(folder_texture_list)
 
         if valid_folders_found and combined_texture_list:
+            start_time = time.perf_counter()
             # Common data
             common_data = {
                 'mtlTX': False, # If you want to create TX files set to True
@@ -523,7 +567,14 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                 'node': material_lib,
             }
 
+            total_to_create = sum(1 for material_name in combined_texture_list if not expected_names or material_name in expected_names)
+            created_so_far = 0
+            if progress:
+                progress.log(f"Creating up to {total_to_create} materials in {material_lib.path()}")
+
             for material_name in combined_texture_list:
+                if progress and progress.is_cancelled():
+                    raise KeyboardInterrupt("Cancelled by user")
                 # Skip materials not in expected_names list if provided
                 if expected_names and material_name not in expected_names:
                     continue
@@ -534,6 +585,9 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                     combined_texture_list[material_name]['FOLDER_PATH'] = path + "/"
 
                 materials_created_length += 1
+                created_so_far += 1
+                if progress and (created_so_far % 5 == 0 or created_so_far == total_to_create):
+                    progress.log(f"Created {created_so_far}/{total_to_create} materials...")
                 create_material = tex_to_mtlx.MtlxMaterial(
                     material_name,
                     **common_data,
@@ -542,17 +596,28 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                 )
                 create_material.create_materialx()
 
-            # Use print instead of UI message to allow non-interactive operation
-            print(f"Created {materials_created_length} materials in {material_lib.path()}")
+            elapsed = time.perf_counter() - start_time
+            msg = f"Created {materials_created_length} materials in {material_lib.path()} in {elapsed:.2f}s"
+            if progress:
+                progress.log(msg)
+            else:
+                print(msg)
             return True
         else:
             _create_mtlx_templates(parent, material_lib)
-            # Use print instead of UI message to allow non-interactive operation
-            print("No valid textures sets found in folder or subfolders")
+            msg = "No valid textures sets found in folder or subfolders"
+            if progress:
+                progress.log(msg)
+            else:
+                print(msg)
             return True
     except Exception as e:
         # Use print instead of UI message to allow non-interactive operation
-        print(f"Error creating materials: {str(e)}")
+        err = f"Error creating materials: {str(e)}"
+        if progress:
+            progress.log(err)
+        else:
+            print(err)
         return False
 
 def _extract_material_names(asset_paths):
@@ -610,7 +675,7 @@ def _extract_material_names(asset_paths):
 def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_path: str,
                                asset_variants: list, asset_vset_name: str,
                                mtl_variants: list, folder_textures: str,
-                               mtl_vset_name: str):
+                               mtl_vset_name: str, progress: ProgressReporter | None = None):
     """
     Build the geometry variants, material variants, and materials, returning
     key nodes for further wiring.
@@ -630,6 +695,8 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
 
     # Geometry variants population
     for index, asset in enumerate(assets):
+        if progress and progress.is_cancelled():
+            raise KeyboardInterrupt("Cancelled by user")
         path, filename = os.path.split(asset.split(";")[0])
         # Get asset name and extension
         asset_name = filename.split(".")[0]
@@ -637,6 +704,8 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
         if filename.endswith("bgeo.sc"):
             asset_name = filename.split(".")[0]
             asset_extension = "bgeo.sc"
+        if progress:
+            progress.log(f"Creating geometry variant {index+1}/{len(assets)}: {asset_name}")
         comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
         geometry_variants_node.setInput(index, comp_geo)
         _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out)
@@ -649,7 +718,11 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
 
     comp_material_last = None
     for index, mtl_folder in enumerate(mtl_folders):
+        if progress and progress.is_cancelled():
+            raise KeyboardInterrupt("Cancelled by user")
         mtl_folder_name = os.path.basename(mtl_folder)
+        if progress:
+            progress.log(f"Creating material variant {index+1}/{len(mtl_folders)} from folder: {mtl_folder_name}")
         material_lib = stage_context.createNode("materiallibrary", _sanitize(f"{node_name}_mtl_{mtl_folder_name}"))
         comp_material = build_component_material_custom(node_name=_sanitize(f"{node_name}_material_variant_{mtl_folder_name}"))
         if mtl_vset_name:
@@ -664,9 +737,14 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
         # Extract material names from the main asset path only (as before)
         asset_paths = main_asset_file_path.split(";")
         material_names = _extract_material_names(asset_paths)
-        print(f"Found {len(material_names)} materials in assets: {material_names}")
+        msg = f"Processing {count} materials:\n{readable_list}"
+        readable_list = "\n".join(f"- {m}" for m in material_names)
+        if progress:
+            progress.log(f"Found {len(material_names)} Materials in Asset:\n{readable_list}")
+        else:
+            print(f"Found {len(material_names)} materials in assets: {material_names}")
         # Create the materials using the text_to_mtlx script with targeted material creation
-        _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names)
+        _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names, progress=progress)
         nodes_to_layout.append(material_lib)
         nodes_to_layout.append(comp_material)
 

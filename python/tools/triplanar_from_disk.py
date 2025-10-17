@@ -8,7 +8,6 @@ def run_triplanar_from_disk():
 
     # select folder
     scan_dir = hou.ui.selectFile(file_type=hou.fileType.Directory)
-    print(scan_dir)
 
     ###SET DEFAULT VALUES, NO SPACES ALLOWED####
     default_matlib_name = "Triplanar_Material_Library"

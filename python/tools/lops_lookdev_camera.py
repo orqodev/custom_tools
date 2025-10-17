@@ -176,7 +176,6 @@ def _author_single_matrix_xform(camera_prim, matrix, timecode=None):
 def _create_parameters(node,asset_name):
     ''' Function to create parameters needed for the LookDev Camera '''
     ptg = node.parmTemplateGroup()
-    print(asset_name)
     find_parm = ptg.find('target')
 
     if not find_parm:

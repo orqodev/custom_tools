@@ -134,16 +134,14 @@ class SaveToolWindow(QtWidgets.QWidget):
         get_user = hou.getenv("USER")
         get_licence = hou.licenseCategory().name()
         extension = self.LICENCE_TYPES[get_licence]
-        print(extension)
 
         base_path = f"{project_path}/seq/{self.scene_name}/hip/{stage.lower()}_{dept.lower()}_{file_name.lower()}_{get_user.lower()}"
 
         next_version = self.get_next_version(base_path)
 
-        print(next_version)
 
         save_path = f"{base_path}_v{next_version:03d}.{extension}"
-        print(save_path)
+
         self.line_preview.setText(save_path)
 
     def get_next_version(self, base_path):
@@ -187,7 +185,7 @@ class SaveToolWindow(QtWidgets.QWidget):
         try:
             # Create the directory if its dosent exists
             save_dir = os.path.dirname(save_path)
-            print(save_dir)
+
             if not os.path.isdir(save_dir):
                 os.makedirs(save_dir)
             hou.hipFile.save(file_name=self.line_preview.text())

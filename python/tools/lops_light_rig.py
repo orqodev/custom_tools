@@ -5,26 +5,15 @@ import numpy as np
 
 
 
-def create_three_point_light():
+def create_three_point_light(selected_node=None):
     '''
         Create a 3 point light setup around a selected object in solaris
     Returns:
         nodes_to_layout (list): A list of nodes to layout
     '''
 
-    # Get the selected node and check if we are in solaris
-    selected_node = hou.selectedNodes()
 
-    is_solaris = misc_utils._is_in_solaris()
-
-    if not selected_node or not is_solaris:
-        hou.ui.displayMessage(
-            "No valid node selected. Please select a node in Solaris",
-            severity= hou.severityType.Error
-        )
-        return False
-
-    target_node = selected_node[0]
+    target_node = selected_node if selected_node is not None else hou.selectedNodes()[0]
 
     # Get the bounding box for the asset
     bounds = misc_utils.calculate_prim_bounds(target_node)

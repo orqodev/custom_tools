@@ -256,3 +256,170 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
             "create_light_rig": bool(self.cb_create_light_rig.isChecked()),
             "env_light_paths": [s for s in self.env_lights_list.items() if s],
         }
+
+
+class SimpleProgressDialog(QtWidgets.QDialog):
+    def __init__(self, title="LOPs Asset Builder v3", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(False)
+        self.setMinimumWidth(600)
+        layout = QtWidgets.QVBoxLayout(self)
+        self.title_label = QtWidgets.QLabel(title)
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.message_label = QtWidgets.QLabel("")
+        self.log_edit = QtWidgets.QTextEdit()
+        self.log_edit.setReadOnly(True)
+        # Buttons
+        self.button_box = QtWidgets.QHBoxLayout()
+        self.kill_btn = QtWidgets.QPushButton("Kill Process")
+        self.close_btn = QtWidgets.QPushButton("Close")
+        self.close_btn.setEnabled(False)  # enabled when finished
+        self.button_box.addStretch(1)
+        self.button_box.addWidget(self.kill_btn)
+        self.button_box.addWidget(self.close_btn)
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.message_label)
+        layout.addWidget(self.log_edit)
+        layout.addLayout(self.button_box)
+        self._max = 100
+        self.progress_bar.setRange(0, self._max)
+        # Internal flags
+        self.cancelled = False
+        self.finished = False
+        # Wire buttons
+        self.kill_btn.clicked.connect(self._on_kill)
+        self.close_btn.clicked.connect(self._on_close)
+
+    def _on_kill(self):
+        self.cancelled = True
+        self.log_edit.append("User requested to kill the process...")
+        QtWidgets.QApplication.processEvents()
+
+    def _on_close(self):
+        self.hide()
+
+    def set_total(self, total: int):
+        self._max = max(1, int(total))
+        self.progress_bar.setRange(0, self._max)
+
+    def set_value(self, value: int):
+        self.progress_bar.setValue(max(0, min(int(value), self._max)))
+        QtWidgets.QApplication.processEvents()
+
+    def set_message(self, msg: str):
+        self.message_label.setText(msg)
+        QtWidgets.QApplication.processEvents()
+
+    def log(self, msg: str):
+        self.log_edit.append(msg)
+        QtWidgets.QApplication.processEvents()
+
+    def mark_finished(self):
+        self.finished = True
+        self.close_btn.setEnabled(True)
+        self.message_label.setText("Finished. You can close this window when ready.")
+        QtWidgets.QApplication.processEvents()
+
+
+class ProgressReporter:
+    def __init__(self, title="LOPs Asset Builder v3"):
+        self._use_qt = False
+        self._step = 0
+        self._total = 100
+        self._dialog = None
+        self._cancelled = False
+        try:
+            app = QtWidgets.QApplication.instance()
+            if app is not None:
+                self._dialog = SimpleProgressDialog(title)
+                self._dialog.show()
+                self._use_qt = True
+        except Exception:
+            self._use_qt = False
+
+    def set_total(self, total: int):
+        self._total = max(1, int(total))
+        if self._use_qt:
+            self._dialog.set_total(self._total)
+
+    def step(self, message: str = None):
+        self._step += 1
+        if self.is_cancelled():
+            raise KeyboardInterrupt("Cancelled by user")
+        if self._use_qt:
+            if message:
+                self._dialog.set_message(message)
+                self._dialog.log(message)
+            self._dialog.set_value(self._step)
+        else:
+            if message:
+                print(f"[Progress] {self._step}/{self._total}: {message}")
+
+    def log(self, message: str):
+        if self._use_qt:
+            self._dialog.log(message)
+        else:
+            print(message)
+
+    def request_cancel(self):
+        self._cancelled = True
+
+    def is_cancelled(self) -> bool:
+        if self._use_qt and self._dialog is not None:
+            # sync from dialog
+            if getattr(self._dialog, 'cancelled', False):
+                self._cancelled = True
+        return self._cancelled
+
+    def mark_finished(self, message: str | None = None):
+        if message:
+            self.log(message)
+        if self._use_qt and self._dialog is not None:
+            try:
+                self._dialog.mark_finished()
+            except Exception:
+                pass
+
+    def close(self):
+        # Keep the dialog open to allow log review; user can close manually.
+        if self._use_qt and self._dialog is not None:
+            # Do not close here; just enable close if not already
+            try:
+                self._dialog.mark_finished()
+            except Exception:
+                pass
+
+# Override accept to validate inputs before closing the dialog
+def _validate_path_exists(path: str) -> bool:
+    return bool(path and os.path.exists(path))
+
+
+def _is_file(path: str) -> bool:
+    return os.path.isfile(path) if path else False
+
+
+def _is_dir(path: str) -> bool:
+    return os.path.isdir(path) if path else False
+
+
+# Patch the dialog class with an accept override adding validation
+orig_accept = AssetMaterialVariantsDialog.accept
+
+def _validated_accept(self: AssetMaterialVariantsDialog):
+    data = self.data()
+    main_asset = data.get("main_asset_file_path") or ""
+    maps_folder = data.get("main_textures") or ""
+    # Validate required entries
+    if not _is_file(main_asset):
+        QtWidgets.QMessageBox.critical(self, "Invalid input", "Main asset file is invalid or not selected.")
+        return
+    if not _is_dir(maps_folder):
+        QtWidgets.QMessageBox.critical(self, "Invalid input", "Main texture folder is invalid or not selected.")
+        return
+    # If OK
+    return orig_accept(self)
+
+# Monkey-patch the method so callers don't need to change usage
+AssetMaterialVariantsDialog.accept = _validated_accept
