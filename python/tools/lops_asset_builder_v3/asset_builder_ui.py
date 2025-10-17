@@ -22,6 +22,10 @@ import os
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
+# Keep strong references to active progress reporters to prevent dialogs
+# from being garbage-collected (and auto-closing) when build functions return.
+_LIVE_REPORTERS: list["ProgressReporter"] = []
+
 
 def _basename_variant(name: str) -> str:
     base = os.path.basename(name.rstrip("/\\"))
@@ -180,7 +184,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
 
         # Environment Lights enable and HDRI paths (optional)
         self.cb_enable_env_lights = QtWidgets.QCheckBox("Enable Environment Lights")
-        self.cb_enable_env_lights.setChecked(False)
+        self.cb_enable_env_lights.setChecked(True)
         form.addRow("Environment Lights", self.cb_enable_env_lights)
         image_filter = "Images (*.exr *.hdr *.rat *.jpg *.jpeg *.png *.tif *.tiff);;All Files (*)"
         self.env_lights_list = _ListEditor(self, mode="file", file_filter=image_filter)
@@ -276,6 +280,18 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         self.setWindowTitle(title)
         self.setModal(False)
         self.setMinimumWidth(600)
+        # Remove all title bar control buttons (Close, Minimize, Maximize) reliably across platforms.
+        # Use a clean flag set with only a plain title bar — no system menu and no control buttons.
+        try:
+            clean_flags = QtCore.Qt.Window | QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowTitleHint
+            # Avoid system menu which can re-introduce close/min/max on some WMs
+            try:
+                clean_flags &= ~QtCore.Qt.WindowSystemMenuHint
+            except Exception:
+                pass
+            self.setWindowFlags(clean_flags)
+        except Exception:
+            pass
         layout = QtWidgets.QVBoxLayout(self)
         self.title_label = QtWidgets.QLabel(title)
         self.progress_bar = QtWidgets.QProgressBar()
@@ -293,36 +309,47 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         self.log_edit.setStyleSheet(
             "background-color: #111; color: #eee; font-family: Consolas, 'Courier New', monospace; font-size: 12px;"
         )
-        # Buttons
-        self.button_box = QtWidgets.QHBoxLayout()
-        self.kill_btn = QtWidgets.QPushButton("Kill Process")
-        self.kill_btn.setEnabled(True)  # Enabled during processing per requirement
-        self.close_btn = QtWidgets.QPushButton("Close")
-        self.close_btn.setEnabled(False)  # Close remains disabled
-        self.button_box.addStretch(1)
-        self.button_box.addWidget(self.kill_btn)
-        self.button_box.addWidget(self.close_btn)
         layout.addWidget(self.title_label)
         layout.addWidget(self.progress_bar)
         layout.addWidget(self.message_label)
         layout.addWidget(self.log_edit)
-        layout.addLayout(self.button_box)
+        # Bottom help text: inform user about ESC
+        self.help_label = QtWidgets.QLabel("*Press ESC to cancel the running process. The Close button will be enabled after completion.")
+        try:
+            self.help_label.setStyleSheet("color: #bbb; font-size: 11px; font-style: italic; margin-top: 6px;")
+            self.help_label.setWordWrap(True)
+        except Exception:
+            pass
+        layout.addWidget(self.help_label)
+        # Bottom button row with Close button (disabled until finished)
+        btn_row = QtWidgets.QHBoxLayout()
+        btn_row.addStretch(1)
+        self.close_btn = QtWidgets.QPushButton("Close")
+        self.close_btn.setEnabled(False)
+        try:
+            self.close_btn.clicked.connect(self.close)
+        except Exception:
+            pass
+        btn_row.addWidget(self.close_btn)
+        layout.addLayout(btn_row)
         self._max = 100
         self.progress_bar.setRange(0, self._max)
         # Internal flags
         self.cancelled = False
         self.finished = False
-        # Wire buttons (kill remains connected but disabled)
-        self.kill_btn.clicked.connect(self._on_kill)
-        self.close_btn.clicked.connect(self._on_close)
 
     def _on_kill(self):
         self.cancelled = True
         self.log_edit.append("User requested to kill the process...")
         QtWidgets.QApplication.processEvents()
 
-    def _on_close(self):
-        self.hide()
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        # Use ESC to kill the process instead of buttons
+        if event.key() == QtCore.Qt.Key_Escape:
+            self._on_kill()
+            # Do not pass to base to avoid default QDialog reject/close
+            return
+        return super().keyPressEvent(event)
 
     def set_total(self, total: int):
         self._max = max(1, int(total))
@@ -348,9 +375,12 @@ class SimpleProgressDialog(QtWidgets.QDialog):
 
     def mark_finished(self):
         self.finished = True
-        # On completion: disable Kill button and keep Close disabled per requirement
-        self.kill_btn.setEnabled(False)
-        self.close_btn.setEnabled(False)
+        # Enable Close button so the user can dismiss after reading logs
+        try:
+            self.close_btn.setEnabled(True)
+            self.close_btn.setFocus()
+        except Exception:
+            pass
         self.message_label.setText("Finished.")
         QtWidgets.QApplication.processEvents()
 
@@ -366,8 +396,20 @@ class ProgressReporter:
             app = QtWidgets.QApplication.instance()
             if app is not None:
                 self._dialog = SimpleProgressDialog(title)
+                # Ensure the dialog stays alive until user closes it
+                try:
+                    self._dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+                except Exception:
+                    pass
                 self._dialog.show()
                 self._use_qt = True
+                # Register this reporter to keep a strong reference
+                self._register_self()
+                # Cleanup when dialog is destroyed/closed
+                try:
+                    self._dialog.destroyed.connect(lambda _obj=None: self._on_dialog_destroyed())
+                except Exception:
+                    pass
         except Exception:
             self._use_qt = False
 
@@ -399,15 +441,31 @@ class ProgressReporter:
         self._cancelled = True
 
     def is_cancelled(self) -> bool:
-        if self._use_qt and self._dialog is not None:
-            # sync from dialog
-            if getattr(self._dialog, 'cancelled', False):
-                self._cancelled = True
+        if self._use_qt:
+            # Pump the Qt event loop so button clicks (Kill Process) are handled while heavy work runs
+            try:
+                QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
+            except Exception:
+                pass
+            if self._dialog is not None:
+                # sync from dialog
+                if getattr(self._dialog, 'cancelled', False):
+                    self._cancelled = True
         return self._cancelled
 
     def mark_finished(self, message: str | None = None):
+        # Ensure final logs and force the progress bar to 100%
         if message:
+            # Log the completion message exactly once
             self.log(message)
+        # Force progress bar to 100%
+        try:
+            if self._use_qt and self._dialog is not None:
+                # Set value to total to ensure full bar, regardless of step mismatches
+                self._dialog.set_total(self._total)
+                self._dialog.set_value(self._total)
+        except Exception:
+            pass
         if self._use_qt and self._dialog is not None:
             try:
                 self._dialog.mark_finished()
@@ -422,6 +480,27 @@ class ProgressReporter:
                 self._dialog.mark_finished()
             except Exception:
                 pass
+
+    def _register_self(self):
+        # Keep a strong reference to this reporter so its dialog does not get GC'd
+        try:
+            if self not in _LIVE_REPORTERS:
+                _LIVE_REPORTERS.append(self)
+        except Exception:
+            pass
+
+    def _on_dialog_destroyed(self):
+        # Qt dialog has been destroyed by the user; cleanup references
+        self._cleanup()
+
+    def _cleanup(self):
+        try:
+            if self in _LIVE_REPORTERS:
+                _LIVE_REPORTERS.remove(self)
+        except Exception:
+            pass
+        self._dialog = None
+        self._use_qt = False
 
 # Override accept to validate inputs before closing the dialog
 def _validate_path_exists(path: str) -> bool:

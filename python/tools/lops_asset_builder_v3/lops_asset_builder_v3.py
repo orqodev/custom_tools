@@ -69,6 +69,9 @@ def create_component_builder(selected_directory=None):
 
             # Define context
             stage_context = hou.node("/stage")
+            # Yield to UI and allow cancel after obtaining stage context
+            if progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
             # Determine stage node name from UI or fallback logic
             node_name = asset_name_input
 
@@ -85,9 +88,16 @@ def create_component_builder(selected_directory=None):
                 progress=progress,
             )
 
+            # Yield to UI between heavy build phases
+            if progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
+            
             progress.step("Organizing network layout")
             #Nodes to layout
             stage_context.layoutChildren(nodes_to_layout)
+            # Allow user interaction after layout
+            if progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
 
             #Sticky note creation
             create_organized_net_note(f"Asset {node_name.upper()}", nodes_to_layout,hou.Vector2(-4, 18))
@@ -118,6 +128,9 @@ def create_component_builder(selected_directory=None):
             current_stream = graftstage_asset_node
             if create_light_rig:
                 progress.step("Building light rig")
+                # Give UI a chance before heavy light rig creation
+                if progress.is_cancelled():
+                    raise KeyboardInterrupt("Cancelled by user")
                 # Create grafstages node lights
                 graftstage_lights_node = stage_context.createNode("graftstages", "graftstage_lights_rig")
                 graftstage_lights_node.parm("primpath").set("/turntable/")
@@ -126,6 +139,9 @@ def create_component_builder(selected_directory=None):
 
                 # Create light rig
                 light_rig_nodes_to_layout,light_mixer = lops_light_rig.create_three_point_light(selected_node=comp_out)
+                # Allow user interaction after light rig creation
+                if progress.is_cancelled():
+                    raise KeyboardInterrupt("Cancelled by user")
 
                 # Light Rig Nodes to layout
                 create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
@@ -171,6 +187,9 @@ def create_component_builder(selected_directory=None):
                 envlights_nodes_to_layout = domes + [switch_envlights_selection_node]
 
                 stage_context.layoutChildren(items=envlights_nodes_to_layout)
+                # Yield after laying out env lights
+                if progress.is_cancelled():
+                    raise KeyboardInterrupt("Cancelled by user")
                 create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6))
 
                 graftstage_envlights_node.setInput(1, switch_envlights_selection_node)
@@ -180,21 +199,21 @@ def create_component_builder(selected_directory=None):
 
                 # Enable the Env Lights branch by default when Lookdev is active
                 switch_env_lights.parm("input").set(1)
-            else:
-                # Bypass env lights branch entirely
-                switch_env_lights = current_stream
+                current_stream = switch_env_lights
+                lookdev_setup_layout.extend([switch_env_lights,graftstage_envlights_node])
+
 
             progress.step("Creating lookdev subnetwork")
             # Create Subnetwork lookdev setup
             subnetwork_lookdevsetup_node = create_subnet_lookdev_setup(node_name="lookdev_setup")
-            subnetwork_lookdevsetup_node.setInput(0, switch_env_lights)
+            subnetwork_lookdevsetup_node.setInput(0, current_stream)
 
             # Create switch to activate lookdev
             switch_lookdev_setup_node = stage_context.createNode("switch", "switch_lookdev_setup")
-            switch_lookdev_setup_node.setInput(0, switch_env_lights)
+            switch_lookdev_setup_node.setInput(0, current_stream)
             switch_lookdev_setup_node.setInput(1, subnetwork_lookdevsetup_node)
             switch_lookdev_setup_node.parm("input").set(1)
-            lookdev_setup_layout = lookdev_setup_layout + [graftstage_envlights_node,switch_env_lights, switch_lookdev_setup_node,subnetwork_lookdevsetup_node,graftstage_asset_node,primitive_node]
+            lookdev_setup_layout = lookdev_setup_layout + [ switch_lookdev_setup_node,subnetwork_lookdevsetup_node,graftstage_asset_node,primitive_node]
             stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
             create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
 
@@ -219,9 +238,12 @@ def create_component_builder(selected_directory=None):
             # Karma Nodes to layout
             karma_nodes = [switch_transform_camera_and_scene_node, transform_camera_and_scene_node, switch_animate_lights, transform_envlights_node, karma_settings, usdrender_rop]
             stage_context.layoutChildren(items=karma_nodes, horizontal_spacing=0.25, vertical_spacing=1)
+            # Yield after laying out camera/render nodes
+            if progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
             create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -5))
             comp_out.setSelected(True, clear_all_selected=True)
-            progress.step("Done")
+            # Log completion only once via mark_finished
             progress.mark_finished("Done")
 
     except KeyboardInterrupt as e:
