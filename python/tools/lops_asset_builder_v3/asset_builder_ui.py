@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import List, Dict
 import os
 
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 
 
 def _basename_variant(name: str) -> str:
@@ -178,13 +178,17 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         self.cb_create_light_rig.setChecked(True)
         form.addRow("Light Rig", self.cb_create_light_rig)
 
-        # Env Light HDRI paths (optional)
+        # Environment Lights enable and HDRI paths (optional)
+        self.cb_enable_env_lights = QtWidgets.QCheckBox("Enable Environment Lights")
+        self.cb_enable_env_lights.setChecked(False)
+        form.addRow("Environment Lights", self.cb_enable_env_lights)
         image_filter = "Images (*.exr *.hdr *.rat *.jpg *.jpeg *.png *.tif *.tiff);;All Files (*)"
         self.env_lights_list = _ListEditor(self, mode="file", file_filter=image_filter)
         form.addRow("Env Light HDRI Paths", self.env_lights_list)
 
         # React to lookdev toggle to enable/disable dependent controls (use boolean signal)
         self.cb_create_lookdev.toggled.connect(self._on_lookdev_toggled)
+        self.cb_enable_env_lights.toggled.connect(self._update_env_lights_enabled)
         # Initialize state
         self._on_lookdev_toggled(self.cb_create_lookdev.isChecked())
 
@@ -240,8 +244,15 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
 
     def _on_lookdev_toggled(self, enabled: bool) -> None:
         # Enable/disable dependent widgets when Lookdev is toggled
-        self.env_lights_list.setEnabled(bool(enabled))
         self.cb_create_light_rig.setEnabled(bool(enabled))
+        # The env lights list is enabled only if lookdev is on AND the env lights checkbox is checked
+        self.cb_enable_env_lights.setEnabled(bool(enabled))
+        self._update_env_lights_enabled()
+
+    def _update_env_lights_enabled(self) -> None:
+        # Called when either lookdev toggle or env checkbox changes
+        enabled = bool(self.cb_create_lookdev.isChecked()) and bool(self.cb_enable_env_lights.isChecked())
+        self.env_lights_list.setEnabled(enabled)
 
     def data(self) -> Dict[str, object]:
         return {
@@ -254,6 +265,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
             "material_variants": [s for s in self.maps_list.items() if s],
             "create_lookdev_setup": bool(self.cb_create_lookdev.isChecked()),
             "create_light_rig": bool(self.cb_create_light_rig.isChecked()),
+            "enable_env_lights": bool(self.cb_enable_env_lights.isChecked()),
             "env_light_paths": [s for s in self.env_lights_list.items() if s],
         }
 
@@ -270,11 +282,23 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         self.message_label = QtWidgets.QLabel("")
         self.log_edit = QtWidgets.QTextEdit()
         self.log_edit.setReadOnly(True)
+        # Configure log appearance and behavior
+        # Wrap long lines to the widget width to avoid horizontal growth and x-scroll during processing
+        self.log_edit.setLineWrapMode(QtWidgets.QTextEdit.LineWrapMode.WidgetWidth)
+        # Break even very long "words" (paths, code) so x-scrollbar never appears
+        self.log_edit.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
+        # Keep horizontal scrollbar hidden to prevent accidental horizontal scrolling
+        self.log_edit.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.log_edit.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.log_edit.setStyleSheet(
+            "background-color: #111; color: #eee; font-family: Consolas, 'Courier New', monospace; font-size: 12px;"
+        )
         # Buttons
         self.button_box = QtWidgets.QHBoxLayout()
         self.kill_btn = QtWidgets.QPushButton("Kill Process")
+        self.kill_btn.setEnabled(True)  # Enabled during processing per requirement
         self.close_btn = QtWidgets.QPushButton("Close")
-        self.close_btn.setEnabled(False)  # enabled when finished
+        self.close_btn.setEnabled(False)  # Close remains disabled
         self.button_box.addStretch(1)
         self.button_box.addWidget(self.kill_btn)
         self.button_box.addWidget(self.close_btn)
@@ -288,7 +312,7 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         # Internal flags
         self.cancelled = False
         self.finished = False
-        # Wire buttons
+        # Wire buttons (kill remains connected but disabled)
         self.kill_btn.clicked.connect(self._on_kill)
         self.close_btn.clicked.connect(self._on_close)
 
@@ -314,12 +338,20 @@ class SimpleProgressDialog(QtWidgets.QDialog):
 
     def log(self, msg: str):
         self.log_edit.append(msg)
+        # Auto-scroll to bottom to keep the latest log visible
+        try:
+            self.log_edit.moveCursor(QtGui.QTextCursor.End)
+        except Exception:
+            # Fallback: ensure cursor visible without hard dependency
+            self.log_edit.ensureCursorVisible()
         QtWidgets.QApplication.processEvents()
 
     def mark_finished(self):
         self.finished = True
-        self.close_btn.setEnabled(True)
-        self.message_label.setText("Finished. You can close this window when ready.")
+        # On completion: disable Kill button and keep Close disabled per requirement
+        self.kill_btn.setEnabled(False)
+        self.close_btn.setEnabled(False)
+        self.message_label.setText("Finished.")
         QtWidgets.QApplication.processEvents()
 
 

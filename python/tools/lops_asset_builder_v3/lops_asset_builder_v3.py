@@ -49,6 +49,7 @@ def create_component_builder(selected_directory=None):
     mtl_variants = ui.get("material_variants") or []
     create_lookdev = bool(ui.get("create_lookdev_setup", True))
     create_light_rig = bool(ui.get("create_light_rig", True))
+    enable_env_lights = bool(ui.get("enable_env_lights", False))
     env_light_paths = ui.get("env_light_paths") or []
 
     # 3) Now start progress and logging UI, after OK
@@ -142,42 +143,46 @@ def create_component_builder(selected_directory=None):
                 current_stream = switch_lights_rig_node
 
 
-            # Create grafstages node for env lights
-            progress.step("Creating environment lights")
-            graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
-            graftstage_envlights_node.parm("primpath").set("/turntable/lights")
-            graftstage_envlights_node.parm("destpath").set("/")
-            graftstage_envlights_node.setInput(0, current_stream)
+            # Environment lights branch (optional)
+            if enable_env_lights:
+                progress.step("Creating environment lights")
+                graftstage_envlights_node = stage_context.createNode("graftstages", "graftstage_envlights")
+                graftstage_envlights_node.parm("primpath").set("/turntable/lights")
+                graftstage_envlights_node.parm("destpath").set("/")
+                graftstage_envlights_node.setInput(0, current_stream)
 
-            # Create Env Lights (dynamic count based on env_light_paths)
-            domes = []
-            if env_light_paths:
-                for idx, path in enumerate(env_light_paths):
-                    base = os.path.splitext(os.path.basename(path))[0]
-                    dome = stage_context.createNode("domelight::3.0", _sanitize(f"{base or 'env_light'}_{idx+1}"))
+                # Create Env Lights (dynamic count based on env_light_paths)
+                domes = []
+                if env_light_paths:
+                    for idx, path in enumerate(env_light_paths):
+                        base = os.path.splitext(os.path.basename(path))[0]
+                        dome = stage_context.createNode("domelight::3.0", _sanitize(f"{base or 'env_light'}_{idx+1}"))
+                        dome.parm("primpath").set("/$OS")
+                        dome.parm("xn__inputstexturefile_r3ah").set(path)
+                        domes.append(dome)
+                else:
+                    dome = stage_context.createNode("domelight::3.0", "env_light")
                     dome.parm("primpath").set("/$OS")
-                    dome.parm("xn__inputstexturefile_r3ah").set(path)
                     domes.append(dome)
+
+                switch_envlights_selection_node = stage_context.createNode("switch", "switch_envlights_selection")
+                for i, dome in enumerate(domes):
+                    switch_envlights_selection_node.setInput(i, dome)
+                envlights_nodes_to_layout = domes + [switch_envlights_selection_node]
+
+                stage_context.layoutChildren(items=envlights_nodes_to_layout)
+                create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6))
+
+                graftstage_envlights_node.setInput(1, switch_envlights_selection_node)
+                switch_env_lights = stage_context.createNode("switch", "switch_env_lights")
+                switch_env_lights.setInput(0, current_stream)
+                switch_env_lights.setInput(1, graftstage_envlights_node)
+
+                # Enable the Env Lights branch by default when Lookdev is active
+                switch_env_lights.parm("input").set(1)
             else:
-                dome = stage_context.createNode("domelight::3.0", "env_light")
-                dome.parm("primpath").set("/$OS")
-                domes.append(dome)
-
-            switch_envlights_selection_node = stage_context.createNode("switch", "switch_envlights_selection")
-            for i, dome in enumerate(domes):
-                switch_envlights_selection_node.setInput(i, dome)
-            envlights_nodes_to_layout = domes + [switch_envlights_selection_node]
-
-            stage_context.layoutChildren(items=envlights_nodes_to_layout)
-            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6))
-
-            graftstage_envlights_node.setInput(1, switch_envlights_selection_node)
-            switch_env_lights = stage_context.createNode("switch", "switch_env_lights")
-            switch_env_lights.setInput(0, current_stream)
-            switch_env_lights.setInput(1, graftstage_envlights_node)
-
-            # Enable the Env Lights branch by default when Lookdev is active
-            switch_env_lights.parm("input").set(1)
+                # Bypass env lights branch entirely
+                switch_env_lights = current_stream
 
             progress.step("Creating lookdev subnetwork")
             # Create Subnetwork lookdev setup
@@ -737,7 +742,6 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
         # Extract material names from the main asset path only (as before)
         asset_paths = main_asset_file_path.split(";")
         material_names = _extract_material_names(asset_paths)
-        msg = f"Processing {count} materials:\n{readable_list}"
         readable_list = "\n".join(f"- {m}" for m in material_names)
         if progress:
             progress.log(f"Found {len(material_names)} Materials in Asset:\n{readable_list}")
