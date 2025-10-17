@@ -1,0 +1,33 @@
+// Primitive Wrangle — clean FBX-style names for material assignment
+// Keeps only the last token after the last "/" in the name/path.
+//
+// Usage: drop this after your FBX import, Run Over = Primitives
+
+// initialize output
+s@asset = "";
+
+// Read safely: use the "name" attribute or FBX intrinsic path
+string nm = "";
+
+if (hasprimattrib(0, "name"))
+    {
+        nm = prim(0, "name", @primnum);
+}
+else
+{
+// fallback to intrinsic (common in FBX)
+nm = primintrinsic(0, "path", @primnum);
+}
+
+// Skip if empty
+if (nm == "") return;
+
+// --- Split and take only the last piece after "/" ---
+string parts[] = split(nm, "/");
+string clean = parts[-1];  // last element
+
+// Save cleaned value back
+s@asset = clean;
+
+// Optionally overwrite the original name (uncomment next line if you want)
+// setprimattrib(0, "name", @primnum, clean, "set");

@@ -1,5 +1,5 @@
 import hou
-from modules.misc_utils import _sanitize
+from modules.misc_utils import safe_node_name
 def split_geo():
     selected_node = hou.selectedNodes()
     obj = hou.node("obj")
@@ -52,8 +52,6 @@ def split_geo():
         title="Sanitize Attributes"
     )
 
-    snippet_code = ""
-
     if sanitize_choice == 0:  # User chose "Yes"
         # Ask for comma-separated attribute names
         button_pressed, attributes_input = hou.ui.readInput(
@@ -90,17 +88,17 @@ def split_geo():
     for index, value in enumerate(unique_values):
         blast_node = None
         null_node = None
-        value = _sanitize(value)
+        value = safe_node_name(value)
         if is_primitives:
-            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"{value}_{index}"))
-            blast_node.parm('group').set(f"@name={_sanitize(value)}")
+            blast_node = parent_node.createNode('blast', node_name=safe_node_name(f"{value}_{index}"))
+            blast_node.parm('group').set(f"@name={safe_node_name(value)}")
             blast_node.parm('grouptype').set(4)
-            null_node = parent_node.createNode("null", _sanitize(f"{value}_OUT"))
+            null_node = parent_node.createNode("null", safe_node_name(f"{value}_OUT"))
         else:
-            blast_node = parent_node.createNode('blast', node_name=_sanitize(f"POINT_{value}"))
+            blast_node = parent_node.createNode('blast', node_name=safe_node_name(f"POINT_{value}"))
             blast_node.parm('group').set(str(value))
             blast_node.parm('grouptype').set(3)
-            null_node = parent_node.createNode("null", _sanitize(f"POINT_{value}_OUT"))
+            null_node = parent_node.createNode("null", safe_node_name(f"POINT_{value}_OUT"))
         blast_node.parm('negate').set(True)
         blast_node.setInput(0, primitive_wrangle)
         null_node.setInput(0, blast_node)

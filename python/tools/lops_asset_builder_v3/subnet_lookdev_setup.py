@@ -1,13 +1,11 @@
 import hou
 
 def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
-    # Auto-generated from Houdini node: /stage/lookdev_setup
-
     # Initialize parent node variable.
     if locals().get("hou_parent") is None:
-        hou_parent = hou.node("/stage")
+        hou_parent = hou.node(parent_path)
 
-    # Code for /stage/lookdev_setup
+        # Code for /stage/lookdev_setup
     hou_node = hou_parent.createNode("subnet", node_name, run_init_scripts=False, load_contents=True, exact_type_name=True)
     hou_node.move(hou.Vector2(-14.8262, 10.9669))
     hou_node.hide(False)
@@ -75,8 +73,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python)
     hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"})
     hou_parm_template_group.append(hou_parm_template)
+    # Code for parameter template
+    hou_parm_template = hou.LabelParmTemplate("lookdev_refs", "LookDev Refs", column_labels=(["LookDev Refs"]))
+    hou_parm_template.setTags({"sidefx::look": "heading"})
+    hou_parm_template_group.append(hou_parm_template)
+    # Code for parameter template
+    hou_parm_template = hou.ToggleParmTemplate("color_chart", "Color Chart", default_value=False, default_expression='off', default_expression_language=hou.scriptLanguage.Hscript)
+    hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python)
+    hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"})
+    hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/target parm 
+    # Code for /stage/lookdev_setup/target parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("target")
@@ -86,7 +93,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/camera_path parm 
+    # Code for /stage/lookdev_setup/camera_path parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("camera_path")
@@ -96,7 +103,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/use_existing_camera parm 
+    # Code for /stage/lookdev_setup/use_existing_camera parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("use_existing_camera")
@@ -106,7 +113,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/existing_camera_path parm 
+    # Code for /stage/lookdev_setup/existing_camera_path parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("existing_camera_path")
@@ -116,7 +123,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/spin parm 
+    # Code for /stage/lookdev_setup/spin parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("spin")
@@ -126,7 +133,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/pitch parm 
+    # Code for /stage/lookdev_setup/pitch parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("pitch")
@@ -136,7 +143,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/distance parm 
+    # Code for /stage/lookdev_setup/distance parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("distance")
@@ -146,7 +153,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/animate parm 
+    # Code for /stage/lookdev_setup/animate parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("animate")
@@ -156,7 +163,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/frames parm 
+    # Code for /stage/lookdev_setup/frames parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("frames")
@@ -166,7 +173,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/start_frame parm 
+    # Code for /stage/lookdev_setup/start_frame parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}")
     hou_parm = hou_node.parm("start_frame")
@@ -176,12 +183,22 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
+    # Code for /stage/lookdev_setup/color_chart parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}")
+    hou_parm = hou_node.parm("color_chart")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
     hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
 
     # Code to establish connections for /stage/lookdev_setup
     hou_node = hou_parent.node("lookdev_setup")
-    if hou_parent.node("switch_lights_rig") is not None:
-        hou_node.setInput(0, hou_parent.node("switch_lights_rig"), 0)
+    if hou_parent.node("switch_env_lights") is not None:
+        hou_node.setInput(0, hou_parent.node("switch_env_lights"), 0)
     hou_node.setUserData("___toolid___", "lops_asset_builder")
     hou_node.setUserData("___Version___", "21.0.440")
     hou_node.setUserData("___toolcount___", "3")
@@ -192,11 +209,11 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/output0
     hou_node = hou_parent.createNode("output", "output0", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, -5.01704))
+    hou_node.move(hou.Vector2(0.00241252, -6.87764))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/output0/outputidx parm 
+    # Code for /stage/lookdev_setup/output0/outputidx parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/output0")
     hou_parm = hou_node.parm("outputidx")
@@ -206,7 +223,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/output0/modifiedprims parm 
+    # Code for /stage/lookdev_setup/output0/modifiedprims parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/output0")
     hou_parm = hou_node.parm("modifiedprims")
@@ -233,11 +250,11 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/assignmaterial1
     hou_node = hou_parent.createNode("assignmaterial", "assignmaterial1", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, -2.75804))
+    hou_node.move(hou.Vector2(0.00241252, -4.61864))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/assignmaterial1/nummaterials parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/nummaterials parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("nummaterials")
@@ -247,7 +264,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/enable1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/enable1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("enable1")
@@ -257,17 +274,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/primpattern1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/primpattern1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("primpattern1")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set("/turntable/lookdev/ldevCam0/ref_grp/chrome_ball /turntable/lookdev/ldevCam0/ref_grp/grey_ball")
+    hou_parm.set("/turntable/lookdev/ldevCam0/ref_grp/chrome_ball /turntable/lookdev/ldevCam0/ref_grp/color_chart /turntable/lookdev/ldevCam0/ref_grp/grey_ball")
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/ispathexpression1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/ispathexpression1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("ispathexpression1")
@@ -277,7 +294,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matspecmethod1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matspecmethod1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matspecmethod1")
@@ -287,7 +304,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matspecpath1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matspecpath1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matspecpath1")
@@ -297,7 +314,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matspeccvex1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matspeccvex1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matspeccvex1")
@@ -307,7 +324,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matspecvexpr1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matspecvexpr1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matspecvexpr1")
@@ -317,7 +334,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/parmsovermethod1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/parmsovermethod1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("parmsovermethod1")
@@ -327,7 +344,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/parmsovercvex1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/parmsovercvex1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("parmsovercvex1")
@@ -337,7 +354,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/parmsovervexpr1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/parmsovervexpr1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("parmsovervexpr1")
@@ -347,7 +364,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/parmsoverexports1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/parmsoverexports1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("parmsoverexports1")
@@ -357,7 +374,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matparentpath1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matparentpath1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matparentpath1")
@@ -367,7 +384,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matparenttype1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matparenttype1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matparenttype1")
@@ -377,7 +394,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/cvexbindingsfolder1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/cvexbindingsfolder1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("cvexbindingsfolder1")
@@ -387,7 +404,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/cvexautobind1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/cvexautobind1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("cvexautobind1")
@@ -397,7 +414,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/cvexbindings1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/cvexbindings1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("cvexbindings1")
@@ -407,17 +424,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/matbindingfolder1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/matbindingfolder1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("matbindingfolder1")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
+    hou_parm.set(1)
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/geosubset1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/geosubset1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("geosubset1")
@@ -427,7 +444,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindpurpose1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindpurpose1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindpurpose1")
@@ -437,7 +454,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindstrength1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindstrength1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindstrength1")
@@ -447,7 +464,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindmethod1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindmethod1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindmethod1")
@@ -457,7 +474,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindcollectionexpand1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindcollectionexpand1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindcollectionexpand1")
@@ -467,7 +484,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindpath1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindpath1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindpath1")
@@ -477,7 +494,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/assignmaterial1/bindname1 parm 
+    # Code for /stage/lookdev_setup/assignmaterial1/bindname1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/assignmaterial1")
     hou_parm = hou_node.parm("bindname1")
@@ -504,7 +521,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/lookdev_camera
     hou_node = hou_parent.createNode("pythonscript", "lookdev_camera", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, -3.88754))
+    hou_node.move(hou.Vector2(0.00241252, -5.74814))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
@@ -557,7 +574,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.addParmTemplate(hou_parm_template2)
     hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/lookdev_camera/python parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/python parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("python")
@@ -567,7 +584,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/maintainstate parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/maintainstate parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("maintainstate")
@@ -577,7 +594,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/camera_folder parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/camera_folder parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("camera_folder")
@@ -587,14 +604,14 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/target parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/target parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("target")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
     hou_parm.set("/turntable/asset")
-    hou_parm.setAutoscope(False)
+    hou_parm.setAutoscope(True)
 
     # Code for first keyframe.
     # Code for keyframe.
@@ -623,14 +640,14 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/camera_path parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/camera_path parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("camera_path")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
     hou_parm.set("/turntable/lookdev/__ThumbnailCamera__")
-    hou_parm.setAutoscope(False)
+    hou_parm.setAutoscope(True)
 
     # Code for first keyframe.
     # Code for keyframe.
@@ -659,13 +676,13 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/use_existing_camera parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/use_existing_camera parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("use_existing_camera")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
     # Code for first keyframe.
@@ -719,14 +736,14 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/existing_camera_path parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/existing_camera_path parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("existing_camera_path")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
     hou_parm.set("/turntable/lookdev/ldevCam0")
-    hou_parm.setAutoscope(False)
+    hou_parm.setAutoscope(True)
 
     # Code for first keyframe.
     # Code for keyframe.
@@ -755,7 +772,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/spin parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/spin parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("spin")
@@ -815,7 +832,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/pitch parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/pitch parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("pitch")
@@ -875,7 +892,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/distance parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/distance parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("distance")
@@ -935,7 +952,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/animated_cam_folder parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/animated_cam_folder parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("animated_cam_folder")
@@ -945,13 +962,13 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/animate parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/animate parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("animate")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
     # Code for first keyframe.
@@ -1005,7 +1022,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/frames parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/frames parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("frames")
@@ -1065,7 +1082,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/lookdev_camera/start_frame parm 
+    # Code for /stage/lookdev_setup/lookdev_camera/start_frame parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/lookdev_camera")
     hou_parm = hou_node.parm("start_frame")
@@ -1142,7 +1159,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/ldevCam0
     hou_node = hou_parent.createNode("camera", "ldevCam0", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, 1.75996))
+    hou_node.move(hou.Vector2(0.0291344, 2.01896))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
@@ -1604,7 +1621,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.addParmTemplate(hou_parm_template2)
     hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/ldevCam0/sample_group parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_group parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_group")
@@ -1614,7 +1631,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_behavior parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_behavior parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_behavior")
@@ -1748,7 +1765,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple[2].setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_subframeenable parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_subframeenable parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_subframeenable")
@@ -1758,7 +1775,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_subframegroup")
@@ -1768,7 +1785,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_shuttermode parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_shuttermode parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_shuttermode")
@@ -1788,7 +1805,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_cameraprim parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_cameraprim parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_cameraprim")
@@ -1798,7 +1815,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_count parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_count parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_count")
@@ -1808,7 +1825,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_includeframe parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_includeframe parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_includeframe")
@@ -1818,7 +1835,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_group2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_group2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_group2")
@@ -1828,7 +1845,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_subframegroup2")
@@ -1838,7 +1855,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/primpattern parm 
+    # Code for /stage/lookdev_setup/ldevCam0/primpattern parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("primpattern")
@@ -1848,7 +1865,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/primpath parm 
+    # Code for /stage/lookdev_setup/ldevCam0/primpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("primpath")
@@ -1858,7 +1875,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/createprims parm 
+    # Code for /stage/lookdev_setup/ldevCam0/createprims parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("createprims")
@@ -1868,7 +1885,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/initforedit parm 
+    # Code for /stage/lookdev_setup/ldevCam0/initforedit parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("initforedit")
@@ -1878,7 +1895,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/primcount parm 
+    # Code for /stage/lookdev_setup/ldevCam0/primcount parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("primcount")
@@ -1888,7 +1905,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/primtype parm 
+    # Code for /stage/lookdev_setup/ldevCam0/primtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("primtype")
@@ -1898,7 +1915,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/primkind parm 
+    # Code for /stage/lookdev_setup/ldevCam0/primkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("primkind")
@@ -1908,7 +1925,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/specifier parm 
+    # Code for /stage/lookdev_setup/ldevCam0/specifier parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("specifier")
@@ -1918,7 +1935,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/classancestor parm 
+    # Code for /stage/lookdev_setup/ldevCam0/classancestor parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("classancestor")
@@ -1928,7 +1945,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/parentprimtype parm 
+    # Code for /stage/lookdev_setup/ldevCam0/parentprimtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("parentprimtype")
@@ -1938,7 +1955,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/folder11 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/folder11 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("folder11")
@@ -1948,7 +1965,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__xformOptransform_control_6fb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__xformOptransform_control_6fb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__xformOptransform_control_6fb")
@@ -1958,7 +1975,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__xformOptransform_51a parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__xformOptransform_51a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__xformOptransform_51a")
@@ -1968,7 +1985,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xOrd parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xOrd")
@@ -1978,7 +1995,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/rOrd parm 
+    # Code for /stage/lookdev_setup/ldevCam0/rOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("rOrd")
@@ -1994,7 +2011,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple = hou_node.parmTuple("t")
     hou_parm_tuple.lock((False, False, False))
     hou_parm_tuple.deleteAllKeyframes()
-    hou_parm_tuple.set((-105.38656714378048, 43.662736506697755, -99.822935957009705))
+    hou_parm_tuple.set((-21.195911927649732, 5.4369067737199392, -7.2024401426095759))
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
@@ -2004,7 +2021,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple = hou_node.parmTuple("r")
     hou_parm_tuple.lock((False, False, False))
     hou_parm_tuple.deleteAllKeyframes()
-    hou_parm_tuple.set((-15.292860842266165, -132.94641729770356, 1.2737365272245107e-05))
+    hou_parm_tuple.set((-12.757650787986544, -98.721063950312754, 1.8241065744627468e-05))
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
@@ -2028,7 +2045,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/scale parm 
+    # Code for /stage/lookdev_setup/ldevCam0/scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("scale")
@@ -2038,7 +2055,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/parmgroup_pivotxform parm 
+    # Code for /stage/lookdev_setup/ldevCam0/parmgroup_pivotxform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("parmgroup_pivotxform")
@@ -2068,7 +2085,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/folder0 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/folder0 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("folder0")
@@ -2078,7 +2095,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/lookatenable parm 
+    # Code for /stage/lookdev_setup/ldevCam0/lookatenable parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("lookatenable")
@@ -2088,7 +2105,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/keepposition parm 
+    # Code for /stage/lookdev_setup/ldevCam0/keepposition parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("keepposition")
@@ -2108,7 +2125,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/lookatprim parm 
+    # Code for /stage/lookdev_setup/ldevCam0/lookatprim parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("lookatprim")
@@ -2366,7 +2383,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple[2].setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/upvecmethod parm 
+    # Code for /stage/lookdev_setup/ldevCam0/upvecmethod parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("upvecmethod")
@@ -2386,7 +2403,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/twist parm 
+    # Code for /stage/lookdev_setup/ldevCam0/twist parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("twist")
@@ -2396,7 +2413,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/projection_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/projection_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("projection_control")
@@ -2406,7 +2423,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/projection parm 
+    # Code for /stage/lookdev_setup/ldevCam0/projection parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("projection")
@@ -2416,7 +2433,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/clippingRange_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/clippingRange_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("clippingRange_control")
@@ -2436,7 +2453,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/focalLength_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/focalLength_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("focalLength_control")
@@ -2446,7 +2463,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/focalLength parm 
+    # Code for /stage/lookdev_setup/ldevCam0/focalLength parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("focalLength")
@@ -2456,7 +2473,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/focalLengthConverted parm 
+    # Code for /stage/lookdev_setup/ldevCam0/focalLengthConverted parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("focalLengthConverted")
@@ -2516,7 +2533,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/aperture_folder parm 
+    # Code for /stage/lookdev_setup/ldevCam0/aperture_folder parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("aperture_folder")
@@ -2526,7 +2543,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/aperture parm 
+    # Code for /stage/lookdev_setup/ldevCam0/aperture parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("aperture")
@@ -2536,7 +2553,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalAperture_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalAperture_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalAperture_control")
@@ -2572,7 +2589,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalAperture parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalAperture parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalAperture")
@@ -2582,7 +2599,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureConverted parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureConverted parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalApertureConverted")
@@ -2642,7 +2659,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalAperture_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalAperture_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalAperture_control")
@@ -2678,7 +2695,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalAperture parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalAperture parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalAperture")
@@ -2688,7 +2705,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureSwitch parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureSwitch parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalApertureSwitch")
@@ -2748,7 +2765,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureConverted parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureConverted parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalApertureConverted")
@@ -2818,7 +2835,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/resMenu parm 
+    # Code for /stage/lookdev_setup/ldevCam0/resMenu parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("resMenu")
@@ -2828,7 +2845,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/aperture_offset_folder parm 
+    # Code for /stage/lookdev_setup/ldevCam0/aperture_offset_folder parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("aperture_offset_folder")
@@ -2838,7 +2855,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffset_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffset_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalApertureOffset_control")
@@ -2848,7 +2865,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffset parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffset parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalApertureOffset")
@@ -2858,7 +2875,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffsetConverted parm 
+    # Code for /stage/lookdev_setup/ldevCam0/horizontalApertureOffsetConverted parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("horizontalApertureOffsetConverted")
@@ -2918,7 +2935,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffset_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffset_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalApertureOffset_control")
@@ -2928,7 +2945,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffset parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffset parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalApertureOffset")
@@ -2938,7 +2955,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffsetConverted parm 
+    # Code for /stage/lookdev_setup/ldevCam0/verticalApertureOffsetConverted parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("verticalApertureOffsetConverted")
@@ -2998,7 +3015,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/viewport_folder parm 
+    # Code for /stage/lookdev_setup/ldevCam0/viewport_folder parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("viewport_folder")
@@ -3008,7 +3025,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniguidescale_control_thb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniguidescale_control_thb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniguidescale_control_thb")
@@ -3018,7 +3035,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniguidescale_s3a parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniguidescale_s3a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniguidescale_s3a")
@@ -3078,7 +3095,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniinviewermenu_control_2kb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniinviewermenu_control_2kb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniinviewermenu_control_2kb")
@@ -3088,7 +3105,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniinviewermenu_16a parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniinviewermenu_16a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniinviewermenu_16a")
@@ -3098,7 +3115,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdinibackgroundimage_control_ypb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdinibackgroundimage_control_ypb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdinibackgroundimage_control_ypb")
@@ -3108,7 +3125,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdinibackgroundimage_xcb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdinibackgroundimage_xcb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdinibackgroundimage_xcb")
@@ -3118,7 +3135,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniforegroundimage_control_ypb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniforegroundimage_control_ypb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniforegroundimage_control_ypb")
@@ -3128,7 +3145,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniforegroundimage_xcb parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__houdiniforegroundimage_xcb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__houdiniforegroundimage_xcb")
@@ -3138,7 +3155,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__shutteropen_control_16a parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__shutteropen_control_16a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__shutteropen_control_16a")
@@ -3148,7 +3165,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__shutteropen_0ta parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__shutteropen_0ta parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__shutteropen_0ta")
@@ -3158,7 +3175,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__shutterclose_control_o8a parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__shutterclose_control_o8a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__shutterclose_control_o8a")
@@ -3168,7 +3185,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__shutterclose_nva parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__shutterclose_nva parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__shutterclose_nva")
@@ -3178,7 +3195,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/focusDistance_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/focusDistance_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("focusDistance_control")
@@ -3188,7 +3205,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/focusDistance parm 
+    # Code for /stage/lookdev_setup/ldevCam0/focusDistance parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("focusDistance")
@@ -3198,7 +3215,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/fStop_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/fStop_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("fStop_control")
@@ -3208,7 +3225,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/fStop parm 
+    # Code for /stage/lookdev_setup/ldevCam0/fStop parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("fStop")
@@ -3218,7 +3235,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/exposure_control parm 
+    # Code for /stage/lookdev_setup/ldevCam0/exposure_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("exposure_control")
@@ -3228,7 +3245,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/exposure parm 
+    # Code for /stage/lookdev_setup/ldevCam0/exposure parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("exposure")
@@ -3238,7 +3255,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_group3 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_group3 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_group3")
@@ -3248,7 +3265,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup3 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/sample_subframegroup3 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("sample_subframegroup3")
@@ -3258,7 +3275,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/folder21 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/folder21 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("folder21")
@@ -3268,7 +3285,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/parmgroup_pivotxform2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/parmgroup_pivotxform2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("parmgroup_pivotxform2")
@@ -3278,7 +3295,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/folder3 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/folder3 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("folder3")
@@ -3288,7 +3305,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/aperture_folder2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/aperture_folder2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("aperture_folder2")
@@ -3298,7 +3315,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/aperture_offset_folder2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/aperture_offset_folder2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("aperture_offset_folder2")
@@ -3308,7 +3325,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/viewport_folder2 parm 
+    # Code for /stage/lookdev_setup/ldevCam0/viewport_folder2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("viewport_folder2")
@@ -3318,7 +3335,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerause_lensshader_control_subg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerause_lensshader_control_subg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacamerause_lensshader_control_subg")
@@ -3328,7 +3345,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerause_lensshader_rhbg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerause_lensshader_rhbg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacamerause_lensshader_rhbg")
@@ -3338,7 +3355,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameramaterialbinding_control_fwbgi parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameramaterialbinding_control_fwbgi parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameramaterialbinding_control_fwbgi")
@@ -3348,7 +3365,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameramaterialbinding_ejbgi parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameramaterialbinding_ejbgi parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameramaterialbinding_ejbgi")
@@ -3358,7 +3375,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshadervop_control_5sbg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshadervop_control_5sbg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameralensshadervop_control_5sbg")
@@ -3368,7 +3385,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshadervop_4fbg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshadervop_4fbg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameralensshadervop_4fbg")
@@ -3378,7 +3395,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshader_89ag parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameralensshader_89ag parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameralensshader_89ag")
@@ -3414,7 +3431,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerawindow_control_rhbg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacamerawindow_control_rhbg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacamerawindow_control_rhbg")
@@ -3434,7 +3451,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameratint_control_iebg parm 
+    # Code for /stage/lookdev_setup/ldevCam0/xn__karmacameratint_control_iebg parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/ldevCam0")
     hou_parm = hou_node.parm("xn__karmacameratint_control_iebg")
@@ -3472,11 +3489,11 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/grey_ball
     hou_node = hou_parent.createNode("sphere", "grey_ball", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, 0.630464))
+    hou_node.move(hou.Vector2(0.0291344, 0.889464))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_group parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_group parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_group")
@@ -3486,7 +3503,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_behavior parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_behavior parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_behavior")
@@ -3620,7 +3637,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple[2].setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_subframeenable parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_subframeenable parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_subframeenable")
@@ -3630,7 +3647,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_subframegroup parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_subframegroup parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_subframegroup")
@@ -3640,7 +3657,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_shuttermode parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_shuttermode parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_shuttermode")
@@ -3660,7 +3677,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False))
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_cameraprim parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_cameraprim parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_cameraprim")
@@ -3670,7 +3687,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_count parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_count parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_count")
@@ -3680,7 +3697,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/sample_includeframe parm 
+    # Code for /stage/lookdev_setup/grey_ball/sample_includeframe parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("sample_includeframe")
@@ -3690,7 +3707,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/primpattern parm 
+    # Code for /stage/lookdev_setup/grey_ball/primpattern parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("primpattern")
@@ -3700,7 +3717,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/primpath parm 
+    # Code for /stage/lookdev_setup/grey_ball/primpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("primpath")
@@ -3710,7 +3727,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/createprims parm 
+    # Code for /stage/lookdev_setup/grey_ball/createprims parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("createprims")
@@ -3720,7 +3737,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/initforedit parm 
+    # Code for /stage/lookdev_setup/grey_ball/initforedit parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("initforedit")
@@ -3730,7 +3747,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/createprimsgroup2 parm 
+    # Code for /stage/lookdev_setup/grey_ball/createprimsgroup2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("createprimsgroup2")
@@ -3740,7 +3757,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/primcount parm 
+    # Code for /stage/lookdev_setup/grey_ball/primcount parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("primcount")
@@ -3750,7 +3767,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/primtype parm 
+    # Code for /stage/lookdev_setup/grey_ball/primtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("primtype")
@@ -3760,7 +3777,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/primkind parm 
+    # Code for /stage/lookdev_setup/grey_ball/primkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("primkind")
@@ -3770,7 +3787,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/specifier parm 
+    # Code for /stage/lookdev_setup/grey_ball/specifier parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("specifier")
@@ -3780,7 +3797,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/classancestor parm 
+    # Code for /stage/lookdev_setup/grey_ball/classancestor parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("classancestor")
@@ -3790,7 +3807,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/parentprimtype parm 
+    # Code for /stage/lookdev_setup/grey_ball/parentprimtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("parentprimtype")
@@ -3800,7 +3817,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/computeextents parm 
+    # Code for /stage/lookdev_setup/grey_ball/computeextents parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("computeextents")
@@ -3860,7 +3877,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/radius_control parm 
+    # Code for /stage/lookdev_setup/grey_ball/radius_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("radius_control")
@@ -3870,17 +3887,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/radius parm 
+    # Code for /stage/lookdev_setup/grey_ball/radius parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("radius")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0.29999999999999999)
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayColor_control_qmb parm 
+    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayColor_control_qmb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayColor_control_qmb")
@@ -3900,7 +3917,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayOpacity_control_zpb parm 
+    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayOpacity_control_zpb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_control_zpb")
@@ -3910,7 +3927,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayOpacity_ycb parm 
+    # Code for /stage/lookdev_setup/grey_ball/xn__primvarsdisplayOpacity_ycb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_ycb")
@@ -3920,7 +3937,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/doubleSided_control parm 
+    # Code for /stage/lookdev_setup/grey_ball/doubleSided_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("doubleSided_control")
@@ -3930,7 +3947,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/doubleSided parm 
+    # Code for /stage/lookdev_setup/grey_ball/doubleSided parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("doubleSided")
@@ -3940,7 +3957,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xn__xformOptransform_control_6fb parm 
+    # Code for /stage/lookdev_setup/grey_ball/xn__xformOptransform_control_6fb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xn__xformOptransform_control_6fb")
@@ -3950,7 +3967,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xn__xformOptransform_51a parm 
+    # Code for /stage/lookdev_setup/grey_ball/xn__xformOptransform_51a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xn__xformOptransform_51a")
@@ -3960,7 +3977,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/xOrd parm 
+    # Code for /stage/lookdev_setup/grey_ball/xOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("xOrd")
@@ -3970,7 +3987,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/rOrd parm 
+    # Code for /stage/lookdev_setup/grey_ball/rOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("rOrd")
@@ -3986,7 +4003,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple = hou_node.parmTuple("t")
     hou_parm_tuple.lock((False, False, False))
     hou_parm_tuple.deleteAllKeyframes()
-    hou_parm_tuple.set((-12.756613602802162, -6.4613657614283895, -68.652451973016383))
+    hou_parm_tuple.set((-3.3100000000000001, -1.6899999999999999, -17.989999999999998))
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
@@ -4020,7 +4037,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/grey_ball/scale parm 
+    # Code for /stage/lookdev_setup/grey_ball/scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("scale")
@@ -4030,7 +4047,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/grey_ball/pivotxform parm 
+    # Code for /stage/lookdev_setup/grey_ball/pivotxform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/grey_ball")
     hou_parm = hou_node.parm("pivotxform")
@@ -4077,11 +4094,11 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/chrome_ball
     hou_node = hou_parent.createNode("sphere", "chrome_ball", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, -0.499036))
+    hou_node.move(hou.Vector2(0.0291344, -0.240036))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_group parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_group parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_group")
@@ -4091,7 +4108,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_behavior parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_behavior parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_behavior")
@@ -4225,7 +4242,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple[2].setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_subframeenable parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_subframeenable parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_subframeenable")
@@ -4235,7 +4252,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_subframegroup parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_subframegroup parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_subframegroup")
@@ -4245,7 +4262,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_shuttermode parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_shuttermode parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_shuttermode")
@@ -4265,7 +4282,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False))
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_cameraprim parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_cameraprim parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_cameraprim")
@@ -4275,7 +4292,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_count parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_count parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_count")
@@ -4285,7 +4302,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/sample_includeframe parm 
+    # Code for /stage/lookdev_setup/chrome_ball/sample_includeframe parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("sample_includeframe")
@@ -4295,7 +4312,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/primpattern parm 
+    # Code for /stage/lookdev_setup/chrome_ball/primpattern parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("primpattern")
@@ -4305,7 +4322,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/primpath parm 
+    # Code for /stage/lookdev_setup/chrome_ball/primpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("primpath")
@@ -4315,7 +4332,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/createprims parm 
+    # Code for /stage/lookdev_setup/chrome_ball/createprims parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("createprims")
@@ -4325,7 +4342,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/initforedit parm 
+    # Code for /stage/lookdev_setup/chrome_ball/initforedit parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("initforedit")
@@ -4335,17 +4352,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/createprimsgroup2 parm 
+    # Code for /stage/lookdev_setup/chrome_ball/createprimsgroup2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("createprimsgroup2")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
+    hou_parm.set(1)
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/primcount parm 
+    # Code for /stage/lookdev_setup/chrome_ball/primcount parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("primcount")
@@ -4355,7 +4372,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/primtype parm 
+    # Code for /stage/lookdev_setup/chrome_ball/primtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("primtype")
@@ -4365,7 +4382,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/primkind parm 
+    # Code for /stage/lookdev_setup/chrome_ball/primkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("primkind")
@@ -4375,7 +4392,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/specifier parm 
+    # Code for /stage/lookdev_setup/chrome_ball/specifier parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("specifier")
@@ -4385,7 +4402,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/classancestor parm 
+    # Code for /stage/lookdev_setup/chrome_ball/classancestor parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("classancestor")
@@ -4395,7 +4412,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/parentprimtype parm 
+    # Code for /stage/lookdev_setup/chrome_ball/parentprimtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("parentprimtype")
@@ -4405,7 +4422,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/computeextents parm 
+    # Code for /stage/lookdev_setup/chrome_ball/computeextents parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("computeextents")
@@ -4465,7 +4482,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/radius_control parm 
+    # Code for /stage/lookdev_setup/chrome_ball/radius_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("radius_control")
@@ -4475,17 +4492,17 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/radius parm 
+    # Code for /stage/lookdev_setup/chrome_ball/radius parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("radius")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
-    hou_parm.set(1)
+    hou_parm.set(0.29999999999999999)
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayColor_control_qmb parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayColor_control_qmb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayColor_control_qmb")
@@ -4505,7 +4522,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayOpacity_control_zpb parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayOpacity_control_zpb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_control_zpb")
@@ -4515,7 +4532,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayOpacity_ycb parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xn__primvarsdisplayOpacity_ycb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_ycb")
@@ -4525,7 +4542,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/doubleSided_control parm 
+    # Code for /stage/lookdev_setup/chrome_ball/doubleSided_control parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("doubleSided_control")
@@ -4535,7 +4552,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/doubleSided parm 
+    # Code for /stage/lookdev_setup/chrome_ball/doubleSided parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("doubleSided")
@@ -4545,7 +4562,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xn__xformOptransform_control_6fb parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xn__xformOptransform_control_6fb parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xn__xformOptransform_control_6fb")
@@ -4555,7 +4572,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xn__xformOptransform_51a parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xn__xformOptransform_51a parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xn__xformOptransform_51a")
@@ -4565,7 +4582,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/xOrd parm 
+    # Code for /stage/lookdev_setup/chrome_ball/xOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("xOrd")
@@ -4575,7 +4592,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/rOrd parm 
+    # Code for /stage/lookdev_setup/chrome_ball/rOrd parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("rOrd")
@@ -4591,7 +4608,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple = hou_node.parmTuple("t")
     hou_parm_tuple.lock((False, False, False))
     hou_parm_tuple.deleteAllKeyframes()
-    hou_parm_tuple.set((-10.27937195529492, -6.4280183767324477, -68.298319219237214))
+    hou_parm_tuple.set((-2.4900000000000002, -1.6899999999999999, -17.989999999999998))
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
@@ -4625,7 +4642,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/scale parm 
+    # Code for /stage/lookdev_setup/chrome_ball/scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("scale")
@@ -4635,7 +4652,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/chrome_ball/pivotxform parm 
+    # Code for /stage/lookdev_setup/chrome_ball/pivotxform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/chrome_ball")
     hou_parm = hou_node.parm("pivotxform")
@@ -4682,7 +4699,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
 
     # Code for /stage/lookdev_setup/materiallibrary2
     hou_node = hou_parent.createNode("materiallibrary", "materiallibrary2", run_init_scripts=False, load_contents=True, exact_type_name=True)
-    hou_node.move(hou.Vector2(0.0291344, -1.62854))
+    hou_node.move(hou.Vector2(0.00241252, -3.48914))
     hou_node.hide(False)
     hou_node.setSelected(False)
 
@@ -4734,8 +4751,6 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.setTags({"multistartoffset": "1"})
     # Code for parameter template
     hou_parm_template2 = hou.ToggleParmTemplate("enable#", "Enable", default_value=True)
-    hou_parm_template2.hideLabel(True)
-    hou_parm_template2.setJoinWithNext(True)
     hou_parm_template.addParmTemplate(hou_parm_template2)
     # Code for parameter template
     hou_parm_template2 = hou.ToggleParmTemplate("matflag#", "Include Only VOPs with Material Flag Set", default_value=False)
@@ -4762,7 +4777,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.addParmTemplate(hou_parm_template2)
     hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/materiallibrary2/genpreviewshaders parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/genpreviewshaders parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("genpreviewshaders")
@@ -4772,7 +4787,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/allowparmanim parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/allowparmanim parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("allowparmanim")
@@ -4782,7 +4797,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/referencerendervars parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/referencerendervars parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("referencerendervars")
@@ -4792,7 +4807,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/parentprimtype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/parentprimtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("parentprimtype")
@@ -4802,7 +4817,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/matpathprefix parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/matpathprefix parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("matpathprefix")
@@ -4812,7 +4827,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/fillgroup parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/fillgroup parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("fillgroup")
@@ -4822,7 +4837,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/matnet parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/matnet parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("matnet")
@@ -4832,7 +4847,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/containerpath parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/containerpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("containerpath")
@@ -4842,7 +4857,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/fillmaterials parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/fillmaterials parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("fillmaterials")
@@ -4852,7 +4867,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/materials parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/materials parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("materials")
@@ -4862,37 +4877,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/tabmenufolder parm 
-    if locals().get("hou_node") is None:
-        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
-    hou_parm = hou_node.parm("tabmenufolder")
-    hou_parm.lock(False)
-    hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
-    hou_parm.setAutoscope(False)
-
-
-    # Code for /stage/lookdev_setup/materiallibrary2/tabmenumask parm 
-    if locals().get("hou_node") is None:
-        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
-    hou_parm = hou_node.parm("tabmenumask")
-    hou_parm.lock(False)
-    hou_parm.deleteAllKeyframes()
-    hou_parm.set("*builder parameter constant rampparm collect null subnet subnetconnector suboutput subinput genericshader")
-    hou_parm.setAutoscope(False)
-
-
-    # Code for /stage/lookdev_setup/materiallibrary2/fillgroup2 parm 
-    if locals().get("hou_node") is None:
-        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
-    hou_parm = hou_node.parm("fillgroup2")
-    hou_parm.lock(False)
-    hou_parm.deleteAllKeyframes()
-    hou_parm.set(0)
-    hou_parm.setAutoscope(False)
-
-
-    # Code for /stage/lookdev_setup/materiallibrary2/enable1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/enable1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("enable1")
@@ -4902,7 +4887,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/matflag1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/matflag1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("matflag1")
@@ -4912,7 +4897,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/matnode1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/matnode1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("matnode1")
@@ -4922,7 +4907,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/matpath1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/matpath1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("matpath1")
@@ -4932,7 +4917,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/assign1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/assign1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("assign1")
@@ -4942,13 +4927,43 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/geopath1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/geopath1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
     hou_parm = hou_node.parm("geopath1")
     hou_parm.lock(False)
     hou_parm.deleteAllKeyframes()
     hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/tabmenufolder parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
+    hou_parm = hou_node.parm("tabmenufolder")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/tabmenumask parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
+    hou_parm = hou_node.parm("tabmenumask")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("*builder parameter constant rampparm collect null subnet subnetconnector suboutput subinput genericshader")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/fillgroup2 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2")
+    hou_parm = hou_node.parm("fillgroup2")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
     hou_parm.setAutoscope(False)
 
 
@@ -5006,7 +5021,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.addParmTemplate(hou_parm_template2)
     hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/folder1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/folder1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("folder1")
@@ -5016,7 +5031,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/inherit_ctrl parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/inherit_ctrl parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("inherit_ctrl")
@@ -5026,7 +5041,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_referencetype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_referencetype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("shader_referencetype")
@@ -5062,7 +5077,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_baseprimpath parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_baseprimpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("shader_baseprimpath")
@@ -5072,7 +5087,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/tabmenumask parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/tabmenumask parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("tabmenumask")
@@ -5082,7 +5097,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_rendercontextname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_rendercontextname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("shader_rendercontextname")
@@ -5092,7 +5107,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_forcechildren parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/shader_forcechildren parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball")
     hou_parm = hou_node.parm("shader_forcechildren")
@@ -5150,7 +5165,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/signature parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/signature parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("signature")
@@ -5160,7 +5175,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0")
@@ -5170,7 +5185,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/base parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/base parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("base")
@@ -5190,7 +5205,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/diffuse_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/diffuse_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("diffuse_roughness")
@@ -5200,7 +5215,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/metalness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/metalness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("metalness")
@@ -5210,7 +5225,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_1")
@@ -5220,7 +5235,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular")
@@ -5240,7 +5255,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_roughness")
@@ -5250,7 +5265,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_IOR")
@@ -5260,7 +5275,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_anisotropy")
@@ -5270,7 +5285,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_rotation parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/specular_rotation parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_rotation")
@@ -5280,7 +5295,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_5 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_5 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_5")
@@ -5290,7 +5305,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat")
@@ -5310,7 +5325,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_roughness")
@@ -5320,7 +5335,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_anisotropy")
@@ -5330,7 +5345,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_rotation parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_rotation parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_rotation")
@@ -5340,7 +5355,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_IOR")
@@ -5360,7 +5375,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_affect_color parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_affect_color parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_affect_color")
@@ -5370,7 +5385,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_affect_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/coat_affect_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_affect_roughness")
@@ -5380,7 +5395,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_2 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_2")
@@ -5390,7 +5405,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission")
@@ -5410,7 +5425,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_depth parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_depth parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_depth")
@@ -5430,7 +5445,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_scatter_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_scatter_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_scatter_anisotropy")
@@ -5440,7 +5455,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_dispersion parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_dispersion parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_dispersion")
@@ -5450,7 +5465,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_extra_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/transmission_extra_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_extra_roughness")
@@ -5460,7 +5475,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_4 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_4 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_4")
@@ -5470,7 +5485,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/sheen parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/sheen parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("sheen")
@@ -5490,7 +5505,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/sheen_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/sheen_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("sheen_roughness")
@@ -5500,7 +5515,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_3 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_3 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_3")
@@ -5510,7 +5525,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface")
@@ -5540,7 +5555,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface_scale parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface_scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface_scale")
@@ -5550,7 +5565,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/subsurface_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface_anisotropy")
@@ -5560,7 +5575,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_7 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_7 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_7")
@@ -5570,7 +5585,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/emission parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/emission parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("emission")
@@ -5590,7 +5605,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_6 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_6 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_6")
@@ -5600,7 +5615,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_film_thickness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_film_thickness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_film_thickness")
@@ -5610,7 +5625,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_film_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_film_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_film_IOR")
@@ -5620,7 +5635,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_8 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/folder0_8 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_8")
@@ -5640,7 +5655,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_walled parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxstandard_surface/thin_walled parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_walled")
@@ -5707,7 +5722,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/signature parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/signature parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("signature")
@@ -5717,7 +5732,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/displacement parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/displacement parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("displacement")
@@ -5737,7 +5752,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/scale parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/mtlxdisplacement/scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("scale")
@@ -5774,7 +5789,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/connectorkind parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/connectorkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("connectorkind")
@@ -5784,7 +5799,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmaccess parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmaccess parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmaccess")
@@ -5794,7 +5809,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmname")
@@ -5804,7 +5819,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmlabel parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmlabel parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmlabel")
@@ -5814,7 +5829,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmtype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmtype")
@@ -5824,7 +5839,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmtypename parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmtypename parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmtypename")
@@ -5834,7 +5849,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/floatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/floatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("floatdef")
@@ -5844,7 +5859,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/intdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/intdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("intdef")
@@ -5854,7 +5869,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/toggledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/toggledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("toggledef")
@@ -5864,7 +5879,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/angledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/angledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("angledef")
@@ -5874,7 +5889,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/logfloatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/logfloatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("logfloatdef")
@@ -5984,7 +5999,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/stringdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/stringdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("stringdef")
@@ -5994,7 +6009,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/filedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/filedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("filedef")
@@ -6004,7 +6019,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/imagedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/imagedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("imagedef")
@@ -6014,7 +6029,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/geometrydef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/geometrydef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("geometrydef")
@@ -6044,7 +6059,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/dictdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/dictdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("dictdef")
@@ -6054,7 +6069,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/coshaderdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/coshaderdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("coshaderdef")
@@ -6064,7 +6079,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/coshaderadef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/coshaderadef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("coshaderadef")
@@ -6074,7 +6089,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/useasparmdefiner parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/useasparmdefiner parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("useasparmdefiner")
@@ -6084,7 +6099,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmuniform parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/surface_output/parmuniform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/surface_output")
     hou_parm = hou_node.parm("parmuniform")
@@ -6122,7 +6137,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/connectorkind parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/connectorkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("connectorkind")
@@ -6132,7 +6147,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmaccess parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmaccess parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmaccess")
@@ -6142,7 +6157,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmname")
@@ -6152,7 +6167,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmlabel parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmlabel parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmlabel")
@@ -6162,7 +6177,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmtype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmtype")
@@ -6172,7 +6187,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmtypename parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmtypename parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmtypename")
@@ -6182,7 +6197,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/floatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/floatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("floatdef")
@@ -6192,7 +6207,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/intdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/intdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("intdef")
@@ -6202,7 +6217,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/toggledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/toggledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("toggledef")
@@ -6212,7 +6227,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/angledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/angledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("angledef")
@@ -6222,7 +6237,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/logfloatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/logfloatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("logfloatdef")
@@ -6332,7 +6347,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/stringdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/stringdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("stringdef")
@@ -6342,7 +6357,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/filedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/filedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("filedef")
@@ -6352,7 +6367,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/imagedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/imagedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("imagedef")
@@ -6362,7 +6377,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/geometrydef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/geometrydef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("geometrydef")
@@ -6392,7 +6407,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/dictdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/dictdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("dictdef")
@@ -6402,7 +6417,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/coshaderdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/coshaderdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("coshaderdef")
@@ -6412,7 +6427,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/coshaderadef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/coshaderadef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("coshaderadef")
@@ -6422,7 +6437,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/useasparmdefiner parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/useasparmdefiner parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("useasparmdefiner")
@@ -6432,7 +6447,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmuniform parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/chrome_ball/displacement_output/parmuniform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/chrome_ball/displacement_output")
     hou_parm = hou_node.parm("parmuniform")
@@ -6515,7 +6530,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_template.addParmTemplate(hou_parm_template2)
     hou_parm_template_group.append(hou_parm_template)
     hou_node.setParmTemplateGroup(hou_parm_template_group)
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/folder1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/folder1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("folder1")
@@ -6525,7 +6540,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/inherit_ctrl parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/inherit_ctrl parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("inherit_ctrl")
@@ -6535,7 +6550,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_referencetype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_referencetype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("shader_referencetype")
@@ -6571,7 +6586,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setKeyframe(hou_keyframe)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_baseprimpath parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_baseprimpath parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("shader_baseprimpath")
@@ -6581,7 +6596,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/tabmenumask parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/tabmenumask parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("tabmenumask")
@@ -6591,7 +6606,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_rendercontextname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_rendercontextname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("shader_rendercontextname")
@@ -6601,7 +6616,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_forcechildren parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/shader_forcechildren parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball")
     hou_parm = hou_node.parm("shader_forcechildren")
@@ -6659,7 +6674,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/signature parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/signature parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("signature")
@@ -6669,7 +6684,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0")
@@ -6679,7 +6694,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/base parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/base parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("base")
@@ -6699,7 +6714,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/diffuse_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/diffuse_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("diffuse_roughness")
@@ -6709,7 +6724,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/metalness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/metalness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("metalness")
@@ -6719,7 +6734,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_1 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_1 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_1")
@@ -6729,7 +6744,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular")
@@ -6749,7 +6764,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_roughness")
@@ -6759,7 +6774,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_IOR")
@@ -6769,7 +6784,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_anisotropy")
@@ -6779,7 +6794,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_rotation parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/specular_rotation parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("specular_rotation")
@@ -6789,7 +6804,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_5 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_5 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_5")
@@ -6799,7 +6814,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat")
@@ -6819,7 +6834,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_roughness")
@@ -6829,7 +6844,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_anisotropy")
@@ -6839,7 +6854,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_rotation parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_rotation parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_rotation")
@@ -6849,7 +6864,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_IOR")
@@ -6869,7 +6884,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_affect_color parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_affect_color parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_affect_color")
@@ -6879,7 +6894,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_affect_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/coat_affect_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("coat_affect_roughness")
@@ -6889,7 +6904,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_2 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_2 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_2")
@@ -6899,7 +6914,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission")
@@ -6919,7 +6934,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_depth parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_depth parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_depth")
@@ -6939,7 +6954,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_scatter_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_scatter_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_scatter_anisotropy")
@@ -6949,7 +6964,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_dispersion parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_dispersion parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_dispersion")
@@ -6959,7 +6974,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_extra_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/transmission_extra_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("transmission_extra_roughness")
@@ -6969,7 +6984,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_4 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_4 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_4")
@@ -6979,7 +6994,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/sheen parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/sheen parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("sheen")
@@ -6999,7 +7014,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/sheen_roughness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/sheen_roughness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("sheen_roughness")
@@ -7009,7 +7024,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_3 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_3 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_3")
@@ -7019,7 +7034,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface")
@@ -7049,7 +7064,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface_scale parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface_scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface_scale")
@@ -7059,7 +7074,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface_anisotropy parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/subsurface_anisotropy parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("subsurface_anisotropy")
@@ -7069,7 +7084,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_7 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_7 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_7")
@@ -7079,7 +7094,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/emission parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/emission parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("emission")
@@ -7099,7 +7114,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_6 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_6 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_6")
@@ -7109,7 +7124,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_film_thickness parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_film_thickness parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_film_thickness")
@@ -7119,7 +7134,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_film_IOR parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_film_IOR parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_film_IOR")
@@ -7129,7 +7144,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_8 parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/folder0_8 parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("folder0_8")
@@ -7149,7 +7164,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_walled parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxstandard_surface/thin_walled parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxstandard_surface")
     hou_parm = hou_node.parm("thin_walled")
@@ -7216,7 +7231,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/signature parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/signature parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("signature")
@@ -7226,7 +7241,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/displacement parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/displacement parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("displacement")
@@ -7246,7 +7261,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/scale parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/mtlxdisplacement/scale parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/mtlxdisplacement")
     hou_parm = hou_node.parm("scale")
@@ -7283,7 +7298,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/connectorkind parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/connectorkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("connectorkind")
@@ -7293,7 +7308,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmaccess parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmaccess parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmaccess")
@@ -7303,7 +7318,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmname")
@@ -7313,7 +7328,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmlabel parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmlabel parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmlabel")
@@ -7323,7 +7338,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmtype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmtype")
@@ -7333,7 +7348,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmtypename parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmtypename parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmtypename")
@@ -7343,7 +7358,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/floatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/floatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("floatdef")
@@ -7353,7 +7368,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/intdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/intdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("intdef")
@@ -7363,7 +7378,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/toggledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/toggledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("toggledef")
@@ -7373,7 +7388,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/angledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/angledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("angledef")
@@ -7383,7 +7398,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/logfloatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/logfloatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("logfloatdef")
@@ -7493,7 +7508,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/stringdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/stringdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("stringdef")
@@ -7503,7 +7518,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/filedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/filedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("filedef")
@@ -7513,7 +7528,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/imagedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/imagedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("imagedef")
@@ -7523,7 +7538,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/geometrydef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/geometrydef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("geometrydef")
@@ -7553,7 +7568,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/dictdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/dictdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("dictdef")
@@ -7563,7 +7578,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/coshaderdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/coshaderdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("coshaderdef")
@@ -7573,7 +7588,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/coshaderadef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/coshaderadef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("coshaderadef")
@@ -7583,7 +7598,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/useasparmdefiner parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/useasparmdefiner parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("useasparmdefiner")
@@ -7593,7 +7608,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmuniform parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/surface_output/parmuniform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/surface_output")
     hou_parm = hou_node.parm("parmuniform")
@@ -7631,7 +7646,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_node.hide(False)
     hou_node.setSelected(False)
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/connectorkind parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/connectorkind parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("connectorkind")
@@ -7641,7 +7656,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmaccess parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmaccess parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmaccess")
@@ -7651,7 +7666,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmname parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmname parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmname")
@@ -7661,7 +7676,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmlabel parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmlabel parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmlabel")
@@ -7671,7 +7686,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmtype parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmtype parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmtype")
@@ -7681,7 +7696,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmtypename parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmtypename parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmtypename")
@@ -7691,7 +7706,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/floatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/floatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("floatdef")
@@ -7701,7 +7716,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/intdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/intdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("intdef")
@@ -7711,7 +7726,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/toggledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/toggledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("toggledef")
@@ -7721,7 +7736,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/angledef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/angledef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("angledef")
@@ -7731,7 +7746,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/logfloatdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/logfloatdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("logfloatdef")
@@ -7841,7 +7856,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/stringdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/stringdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("stringdef")
@@ -7851,7 +7866,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/filedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/filedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("filedef")
@@ -7861,7 +7876,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/imagedef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/imagedef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("imagedef")
@@ -7871,7 +7886,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/geometrydef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/geometrydef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("geometrydef")
@@ -7901,7 +7916,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm_tuple.setAutoscope((False, False, False, False))
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/dictdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/dictdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("dictdef")
@@ -7911,7 +7926,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/coshaderdef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/coshaderdef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("coshaderdef")
@@ -7921,7 +7936,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/coshaderadef parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/coshaderadef parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("coshaderadef")
@@ -7931,7 +7946,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/useasparmdefiner parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/useasparmdefiner parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("useasparmdefiner")
@@ -7941,7 +7956,7 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parm.setAutoscope(False)
 
 
-    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmuniform parm 
+    # Code for /stage/lookdev_setup/materiallibrary2/grey_ball/displacement_output/parmuniform parm
     if locals().get("hou_node") is None:
         hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/grey_ball/displacement_output")
     hou_parm = hou_node.parm("parmuniform")
@@ -7980,6 +7995,2453 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
     hou_parent = hou_parent.parent()
     hou_node = hou_node.parent()
 
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart
+    hou_node = hou_parent.createNode("subnet", "color_chart", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(-1.45251, 23.5505))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    hou_parm_template_group = hou.ParmTemplateGroup()
+    # Code for parameter template
+    hou_parm_template = hou.FolderParmTemplate("folder1", "MaterialX Builder", folder_type=hou.folderType.Collapsible, default_value=0, ends_tab_group=False)
+    hou_parm_template.setTags({"group_type": "collapsible", "sidefx::shader_isparm": "0"})
+    # Code for parameter template
+    hou_parm_template2 = hou.IntParmTemplate("inherit_ctrl", "Inherit from Class", 1, default_value=([2]), min=0, max=10, min_is_strict=False, max_is_strict=False, look=hou.parmLook.Regular, naming_scheme=hou.parmNamingScheme.Base1, menu_items=(["0","1","2"]), menu_labels=(["Never","Always","Material Flag"]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal, menu_use_token=False)
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.StringParmTemplate("shader_referencetype", "Class Arc", 1, default_value=(["n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r"]), default_expression=(["n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r"]), default_expression_language=([hou.scriptLanguage.Python]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=(["none","reference","inherit","specialize","represent"]), menu_labels=(["None","Reference","Inherit","Specialize","Represent"]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+    hou_parm_template2.setTags({"sidefx::shader_isparm": "0", "spare_category": "Shader"})
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.StringParmTemplate("shader_baseprimpath", "Class Prim Path", 1, default_value=(["/__class_mtl__/`$OS`"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+    hou_parm_template2.setTags({"script_action": "import lopshaderutils\nlopshaderutils.selectPrimFromInputOrFile(kwargs)", "script_action_help": "Select a primitive in the Scene Viewer or Scene Graph Tree pane.\nCtrl-click to select using the primitive picker dialog.", "script_action_icon": "BUTTONS_reselect", "sidefx::shader_isparm": "0", "sidefx::usdpathtype": "prim", "spare_category": "Shader"})
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.SeparatorParmTemplate("separator1")
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.StringParmTemplate("tabmenumask", "Tab Menu Mask", 1, default_value=(["MaterialX parameter constant collect null genericshader subnet subnetconnector suboutput subinput"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+    hou_parm_template2.setTags({"spare_category": "Tab Menu"})
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.StringParmTemplate("shader_rendercontextname", "Render Context Name", 1, default_value=(["mtlx"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+    hou_parm_template2.setTags({"sidefx::shader_isparm": "0", "spare_category": "Shader"})
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    # Code for parameter template
+    hou_parm_template2 = hou.ToggleParmTemplate("shader_forcechildren", "Force Translation of Children", default_value=True)
+    hou_parm_template2.setTags({"sidefx::shader_isparm": "0", "spare_category": "Shader"})
+    hou_parm_template.addParmTemplate(hou_parm_template2)
+    hou_parm_template_group.append(hou_parm_template)
+    hou_node.setParmTemplateGroup(hou_parm_template_group)
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/folder1 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("folder1")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/inherit_ctrl parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("inherit_ctrl")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(2)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/shader_referencetype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("shader_referencetype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("inherit")
+    hou_parm.setAutoscope(False)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.StringKeyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setExpression("n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r", hou.exprLanguage.Python)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.StringKeyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setExpression("n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r", hou.exprLanguage.Python)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.StringKeyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setExpression("n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r", hou.exprLanguage.Python)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.StringKeyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setExpression("n = hou.pwd()\nn_hasFlag = n.isMaterialFlagSet()\ni = n.evalParm('inherit_ctrl')\nr = 'none'\nif i == 1 or (n_hasFlag and i == 2):\n    r = 'inherit'\nreturn r", hou.exprLanguage.Python)
+    hou_parm.setKeyframe(hou_keyframe)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/shader_baseprimpath parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("shader_baseprimpath")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("/__class_mtl__/`$OS`")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/tabmenumask parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("tabmenumask")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("MaterialX parameter constant collect null genericshader subnet subnetconnector suboutput subinput")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/shader_rendercontextname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("shader_rendercontextname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("mtlx")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/shader_forcechildren parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart")
+    hou_parm = hou_node.parm("shader_forcechildren")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "21.0.440")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("21.0.440")
+    # Update the parent node.
+    hou_parent = hou_node
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/inputs
+    hou_node = hou_parent.createNode("subinput", "inputs", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(-4.53993, 0.0376))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "21.0.440")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("21.0.440")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface
+    hou_node = hou_parent.createNode("mtlxstandard_surface", "mtlxstandard_surface", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(8.917, 0.6466))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/signature parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("signature")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("default")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/base parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("base")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/base_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("base_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0.80000000000000004, 0.80000000000000004, 0.80000000000000004))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/diffuse_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("diffuse_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/metalness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("metalness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_1 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_1")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("specular")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("specular_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("specular_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0.20000000000000001)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular_IOR parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("specular_IOR")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1.5)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular_anisotropy parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("specular_anisotropy")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/specular_rotation parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("specular_rotation")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_5 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_5")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("coat_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0.10000000000000001)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_anisotropy parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_anisotropy")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_rotation parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_rotation")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_IOR parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_IOR")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1.5)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_normal parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("coat_normal")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_affect_color parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_affect_color")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/coat_affect_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("coat_affect_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_2 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_2")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("transmission")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("transmission_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_depth parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("transmission_depth")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_scatter parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("transmission_scatter")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_scatter_anisotropy parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("transmission_scatter_anisotropy")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_dispersion parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("transmission_dispersion")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/transmission_extra_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("transmission_extra_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_4 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_4")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/sheen parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("sheen")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/sheen_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("sheen_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/sheen_roughness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("sheen_roughness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0.29999999999999999)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_3 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_3")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/subsurface parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("subsurface")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/subsurface_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("subsurface_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/subsurface_radius parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("subsurface_radius")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/subsurface_scale parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("subsurface_scale")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/subsurface_anisotropy parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("subsurface_anisotropy")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_7 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_7")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/emission parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("emission")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/emission_color parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("emission_color")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_6 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_6")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/thin_film_thickness parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("thin_film_thickness")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/thin_film_IOR parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("thin_film_IOR")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1.5)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/folder0_8 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("folder0_8")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/opacity parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("opacity")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/thin_walled parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm = hou_node.parm("thin_walled")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/normal parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("normal")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface/tangent parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxstandard_surface")
+    hou_parm_tuple = hou_node.parmTuple("tangent")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("__inputgroup_Coat", "collapsed")
+    hou_node.setUserData("__inputgroup_Subsurface", "collapsed")
+    hou_node.setUserData("__inputgroup_Geometry", "collapsed")
+    hou_node.setUserData("__inputgroup_Transmission", "collapsed")
+    hou_node.setUserData("___Version___", "")
+    hou_node.setUserData("__inputgroup_Sheen", "collapsed")
+    hou_node.setUserData("__inputgroup_Emission", "collapsed")
+    hou_node.setUserData("__inputgroup_Specular", "collapsed")
+    hou_node.setUserData("__inputgroup_Base", "collapsed")
+    hou_node.setUserData("__inputgroup_Thin Film", "collapsed")
+    hou_node.setUserData("__inputgroup_", "collapsed")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxdisplacement
+    hou_node = hou_parent.createNode("mtlxdisplacement", "mtlxdisplacement", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(-0.2883, -2.4334))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxdisplacement/signature parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxdisplacement")
+    hou_parm = hou_node.parm("signature")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("default")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxdisplacement/displacement parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxdisplacement")
+    hou_parm = hou_node.parm("displacement")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxdisplacement/displacement_vector3 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxdisplacement")
+    hou_parm_tuple = hou_node.parmTuple("displacement_vector3")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxdisplacement/scale parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlxdisplacement")
+    hou_parm = hou_node.parm("scale")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output
+    hou_node = hou_parent.createNode("subnetconnector", "surface_output", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(12.0348, 0.0376))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/connectorkind parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("connectorkind")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("output")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmaccess parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmaccess")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("surface")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmlabel parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmlabel")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("Surface")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmtype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmtype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("surface")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmtypename parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmtypename")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/floatdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("floatdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/intdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("intdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/toggledef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("toggledef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/angledef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("angledef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/logfloatdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("logfloatdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/float2def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("float2def")
+    hou_parm_tuple.lock((False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0))
+    hou_parm_tuple.setAutoscope((False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/float3def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("float3def")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/vectordef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("vectordef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/normaldef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("normaldef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/pointdef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("pointdef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/directiondef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("directiondef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/float4def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("float4def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/floatm2def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("floatm2def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/float9def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("float9def")
+    hou_parm_tuple.lock((False, False, False, False, False, False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 0, 1, 0, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/float16def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("float16def")
+    hou_parm_tuple.lock((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/stringdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("stringdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/filedef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("filedef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/imagedef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("imagedef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/geometrydef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("geometrydef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/colordef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("colordef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/color4def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm_tuple = hou_node.parmTuple("color4def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/dictdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("dictdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/coshaderdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("coshaderdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/coshaderadef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("coshaderadef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/useasparmdefiner parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("useasparmdefiner")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output/parmuniform parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/surface_output")
+    hou_parm = hou_node.parm("parmuniform")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setColor(hou.Color([0.89, 0.69, 0.6]))
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "21.0.440")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("21.0.440")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output
+    hou_node = hou_parent.createNode("subnetconnector", "displacement_output", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(2.5236, -2.4334))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/connectorkind parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("connectorkind")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("output")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmaccess parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmaccess")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("displacement")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmlabel parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmlabel")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("Displacement")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmtype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmtype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("displacement")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmtypename parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmtypename")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/floatdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("floatdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/intdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("intdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/toggledef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("toggledef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/angledef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("angledef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/logfloatdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("logfloatdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/float2def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("float2def")
+    hou_parm_tuple.lock((False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0))
+    hou_parm_tuple.setAutoscope((False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/float3def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("float3def")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/vectordef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("vectordef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/normaldef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("normaldef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/pointdef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("pointdef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/directiondef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("directiondef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/float4def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("float4def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/floatm2def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("floatm2def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/float9def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("float9def")
+    hou_parm_tuple.lock((False, False, False, False, False, False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 0, 1, 0, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/float16def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("float16def")
+    hou_parm_tuple.lock((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+    hou_parm_tuple.setAutoscope((False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/stringdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("stringdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/filedef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("filedef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/imagedef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("imagedef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/geometrydef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("geometrydef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/colordef parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("colordef")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/color4def parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm_tuple = hou_node.parmTuple("color4def")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/dictdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("dictdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/coshaderdef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("coshaderdef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/coshaderadef parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("coshaderadef")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/useasparmdefiner parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("useasparmdefiner")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output/parmuniform parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/displacement_output")
+    hou_parm = hou_node.parm("parmuniform")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setColor(hou.Color([0.6, 0.69, 0.89]))
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "21.0.440")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("21.0.440")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1
+    hou_node = hou_parent.createNode("mtlximage", "mtlximage1", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(-3.083, -1.2334))
+    hou_node.setDebugFlag(False)
+    hou_node.setDetailLowFlag(False)
+    hou_node.setDetailMediumFlag(False)
+    hou_node.setDetailHighFlag(True)
+    hou_node.bypass(False)
+    hou_node.setCompressFlag(True)
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/signature parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("signature")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("color3")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/file parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("file")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("$HOUDINI_USER_PREF_DIR/custom_tools/misc/ACEScg_ColorChecker2005.exr")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/filecolorspace parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("filecolorspace")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/layer parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("layer")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("default")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default_color3 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("default_color3")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default_color4 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("default_color4")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default_vector2 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("default_vector2")
+    hou_parm_tuple.lock((False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0))
+    hou_parm_tuple.setAutoscope((False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default_vector3 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("default_vector3")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/default_vector4 parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("default_vector4")
+    hou_parm_tuple.lock((False, False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/texcoord parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm_tuple = hou_node.parmTuple("texcoord")
+    hou_parm_tuple.lock((False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((90, 150))
+    hou_parm_tuple.setAutoscope((False, False))
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/uaddressmode parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("uaddressmode")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("periodic")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/vaddressmode parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("vaddressmode")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("periodic")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/filtertype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("filtertype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("linear")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/framerange parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("framerange")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/frameoffset parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("frameoffset")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/materiallibrary2/color_chart/mtlximage1/frameendaction parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/materiallibrary2/color_chart/mtlximage1")
+    hou_parm = hou_node.parm("frameendaction")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("constant")
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code to establish connections for /stage/lookdev_setup/materiallibrary2/color_chart/mtlxstandard_surface
+    hou_node = hou_parent.node("mtlxstandard_surface")
+    if hou_parent.node("mtlximage1") is not None:
+        hou_node.setInput(1, hou_parent.node("mtlximage1"), 0)
+    # Code to establish connections for /stage/lookdev_setup/materiallibrary2/color_chart/surface_output
+    hou_node = hou_parent.node("surface_output")
+    if hou_parent.node("mtlxstandard_surface") is not None:
+        hou_node.setInput(0, hou_parent.node("mtlxstandard_surface"), 0)
+    # Code to establish connections for /stage/lookdev_setup/materiallibrary2/color_chart/displacement_output
+    hou_node = hou_parent.node("displacement_output")
+    if hou_parent.node("mtlxdisplacement") is not None:
+        hou_node.setInput(0, hou_parent.node("mtlxdisplacement"), 0)
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/color_chart
+    hou_node = hou_parent.createNode("cube", "color_chart", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(0.92401, -1.40486))
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/color_chart/sample_group parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_group")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_behavior parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_behavior")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("single")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_f parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("sample_f")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 240, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fstart", hou.exprLanguage.Hscript)
+    hou_parm_tuple[0].setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fstart", hou.exprLanguage.Hscript)
+    hou_parm_tuple[0].setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fstart", hou.exprLanguage.Hscript)
+    hou_parm_tuple[0].setKeyframe(hou_keyframe)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(240)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fend", hou.exprLanguage.Hscript)
+    hou_parm_tuple[1].setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(240)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fend", hou.exprLanguage.Hscript)
+    hou_parm_tuple[1].setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(240)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@fend", hou.exprLanguage.Hscript)
+    hou_parm_tuple[1].setKeyframe(hou_keyframe)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@finc", hou.exprLanguage.Hscript)
+    hou_parm_tuple[2].setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@finc", hou.exprLanguage.Hscript)
+    hou_parm_tuple[2].setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("@finc", hou.exprLanguage.Hscript)
+    hou_parm_tuple[2].setKeyframe(hou_keyframe)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_subframeenable parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_subframeenable")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_subframegroup parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_subframegroup")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_shuttermode parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_shuttermode")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("manual")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_shutterrange parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("sample_shutterrange")
+    hou_parm_tuple.lock((False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((-0.25, 0.25))
+    hou_parm_tuple.setAutoscope((False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_cameraprim parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_cameraprim")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("/cameras/camera1")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_count parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_count")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(2)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/sample_includeframe parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("sample_includeframe")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/primpattern parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("primpattern")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("`lopinputprims('.', 0)`")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/primpath parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("primpath")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("`chs(\"../ldevCam0/primpath\")`/ref_grp/$OS")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/createprims parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("createprims")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("on")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/initforedit parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("initforedit")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("setdonothing")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/createprimsgroup2 parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("createprimsgroup2")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/primcount parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("primcount")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/primtype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("primtype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("UsdGeomCube")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/primkind parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("primkind")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/specifier parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("specifier")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("def")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/classancestor parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("classancestor")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/parentprimtype parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("parentprimtype")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("UsdGeomXform")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/computeextents parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("computeextents")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("if(!strcmp(chs(\"size_control\"), \"none\"), 0, 1)", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("if(!strcmp(chs(\"size_control\"), \"none\"), 0, 1)", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("if(!strcmp(chs(\"size_control\"), \"none\"), 0, 1)", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(0)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("if(!strcmp(chs(\"size_control\"), \"none\"), 0, 1)", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+
+    # Code for /stage/lookdev_setup/color_chart/size_control parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("size_control")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("set")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/size parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("size")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__primvarsdisplayColor_control_qmb parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xn__primvarsdisplayColor_control_qmb")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("none")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__primvarsdisplayColor_p8a parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("xn__primvarsdisplayColor_p8a")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 1, 1))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__primvarsdisplayOpacity_control_zpb parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_control_zpb")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("none")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__primvarsdisplayOpacity_ycb parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xn__primvarsdisplayOpacity_ycb")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/doubleSided_control parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("doubleSided_control")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("set")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/doubleSided parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("doubleSided")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__xformOptransform_control_6fb parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xn__xformOptransform_control_6fb")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("set")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xn__xformOptransform_51a parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xn__xformOptransform_51a")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("append")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/xOrd parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("xOrd")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("srt")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/rOrd parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("rOrd")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("xyz")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/t parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("t")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((3.1679039655687493, -1.5486793607945299, -17.989999999999998))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/r parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("r")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 180))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/s parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("s")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((1, 0.80000000000000004, 0.001))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/shear parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("shear")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/scale parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("scale")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/pivotxform parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm = hou_node.parm("pivotxform")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/color_chart/p parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("p")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    # Code for /stage/lookdev_setup/color_chart/pr parm tuple
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/color_chart")
+    hou_parm_tuple = hou_node.parmTuple("pr")
+    hou_parm_tuple.lock((False, False, False))
+    hou_parm_tuple.deleteAllKeyframes()
+    hou_parm_tuple.set((0, 0, 0))
+    hou_parm_tuple.setAutoscope((False, False, False))
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    hou_node.setUserData("___Version___", "1.0")
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("1.0")
+    # Update the parent node.
+    hou_parent = hou_node
+
+
+    # Restore the parent and current nodes.
+    hou_parent = hou_parent.parent()
+    hou_node = hou_node.parent()
+
+    # Code for /stage/lookdev_setup/switch1
+    hou_node = hou_parent.createNode("switch", "switch1", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    hou_node.move(hou.Vector2(0.00241251, -2.46486))
+    hou_node.hide(False)
+    hou_node.setSelected(False)
+
+    # Code for /stage/lookdev_setup/switch1/chooseinputbyname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("chooseinputbyname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("off")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/input parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("input")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(1)
+    hou_parm.setAutoscope(False)
+
+    # Code for first keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../color_chart\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for last keyframe.
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../color_chart\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../color_chart\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+    # Code for keyframe.
+    hou_keyframe = hou.Keyframe()
+    hou_keyframe.setTime(0)
+    hou_keyframe.setValue(1)
+    hou_keyframe.useValue(False)
+    hou_keyframe.setSlope(0)
+    hou_keyframe.useSlope(False)
+    hou_keyframe.setAccel(0)
+    hou_keyframe.useAccel(False)
+    hou_keyframe.setExpression("ch(\"../color_chart\")", hou.exprLanguage.Hscript)
+    hou_parm.setKeyframe(hou_keyframe)
+
+
+    # Code for /stage/lookdev_setup/switch1/selectinputname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("selectinputname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/selectinputvalue parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("selectinputvalue")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/badinput parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("badinput")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("ignore")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/fallback parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("fallback")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set(0)
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/selectfallbackname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("selectfallbackname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("")
+    hou_parm.setAutoscope(False)
+
+
+    # Code for /stage/lookdev_setup/switch1/inputname parm
+    if locals().get("hou_node") is None:
+        hou_node = hou.node(f"/stage/{node_name}/switch1")
+    hou_parm = hou_node.parm("inputname")
+    hou_parm.lock(False)
+    hou_parm.deleteAllKeyframes()
+    hou_parm.set("`opinput(\".\", @input)`")
+    hou_parm.setAutoscope(False)
+
+
+    hou_node.setExpressionLanguage(hou.exprLanguage.Hscript)
+
+    if hasattr(hou_node, "syncNodeVersionIfNeeded"):
+        hou_node.syncNodeVersionIfNeeded("21.0.440")
+    # Update the parent node.
+    hou_parent = hou_node
+
 
     # Restore the parent and current nodes.
     hou_parent = hou_parent.parent()
@@ -8011,8 +10473,18 @@ def create_subnet_lookdev_setup(node_name="lookdev_setup",parent_path="/stage"):
         hou_node.setInput(0, hou_parent.node("grey_ball"), 0)
     # Code to establish connections for /stage/lookdev_setup/materiallibrary2
     hou_node = hou_parent.node("materiallibrary2")
+    if hou_parent.node("switch1") is not None:
+        hou_node.setInput(0, hou_parent.node("switch1"), 0)
+    # Code to establish connections for /stage/lookdev_setup/color_chart
+    hou_node = hou_parent.node("color_chart")
     if hou_parent.node("chrome_ball") is not None:
         hou_node.setInput(0, hou_parent.node("chrome_ball"), 0)
+    # Code to establish connections for /stage/lookdev_setup/switch1
+    hou_node = hou_parent.node("switch1")
+    if hou_parent.node("chrome_ball") is not None:
+        hou_node.setInput(0, hou_parent.node("chrome_ball"), 0)
+    if hou_parent.node("color_chart") is not None:
+        hou_node.setInput(1, hou_parent.node("color_chart"), 0)
 
     # Restore the parent and current nodes.
     hou_parent = hou_parent.parent()
