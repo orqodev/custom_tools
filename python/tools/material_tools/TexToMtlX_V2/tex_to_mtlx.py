@@ -575,6 +575,9 @@ class MtlxMaterial:
             # Bump/Normal
             self._setup_bump_normal(subnet_context, mtlx_standard_surf, material_lib_info, place2d)
 
+            # Apply glass defaults if applicable
+            self._apply_glass_defaults(mtlx_standard_surf, material_lib_info)
+
             # Layout
             self._layout_nodes(subnet_context)
 
@@ -1075,6 +1078,32 @@ class MtlxMaterial:
         elif bump_normal_data["normal"]:
             normal_node = _create_normal()
             mtlx_standard_surf.setInput(input_names.index("normal"), normal_node)
+
+    def _apply_glass_defaults(self, mtlx_standard_surf, material_lib_info):
+        """Apply sensible defaults for glass materials if detected.
+        Detection: material name contains 'glass' or a transmission map exists.
+        Effects:
+          - transmission = 1.0 if not texture-driven
+          - specular_IOR = 1.5
+        """
+        material_name = (self.material_to_create or "").lower()
+
+        is_glass = False
+
+        match = re.search(r"glass", material_name, re.IGNORECASE)
+        if match:
+            print(f"Found '{match.group()}' in {material_name}")
+            is_glass = True
+
+        if not is_glass:
+            return
+
+        mtlx_standard_surf.parm("transmission").set(1.0)
+
+        # IOR typical for glass
+        mtlx_standard_surf.parm("specular_IOR").set(1.5)
+
+        return
 
     def _find_bump_normal_textures(self, material_lib_info):
         ''' Find bump and normal textures

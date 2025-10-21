@@ -761,14 +761,14 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
             comp_material.setInput(0, comp_material_last)
         comp_material.setInput(1, material_lib)
         comp_material_last = comp_material
-        # Extract material names from the main asset path only (as before)
-        asset_paths = main_asset_file_path.split(";")
-        material_names = _extract_material_names(asset_paths)
+        # Extract material names from ALL geometry variant assets (main + variants)
+        # Ensure asset paths are unique (order-preserving) to avoid repeated processing
+        all_asset_paths = []
+        for a in assets:
+            all_asset_paths.append(a)
+        material_names = _extract_material_names(all_asset_paths)
         readable_list = "\n".join(f"- {m}" for m in material_names)
-        if progress:
-            progress.log(f"Found {len(material_names)} Materials in Asset:\n{readable_list}")
-        else:
-            print(f"Found {len(material_names)} materials in assets: {material_names}")
+        progress.log(f"Found {len(material_names)} Materials across all geometry variants (from {len(all_asset_paths)} unique assets):\n{readable_list}")
         # Create the materials using the text_to_mtlx script with targeted material creation
         _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names, progress=progress)
         nodes_to_layout.append(material_lib)
