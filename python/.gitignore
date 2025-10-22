@@ -2,8 +2,56 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.idea/*
-.idea/
 
-# Ignore Houdini MCP tools directory
-houdini_mcp/
+# Virtual environments
+.venv/
+venv/
+ENV/
+.python-version
+
+# Environment files
+.env
+.env.*
+.envrc
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build and distribution artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+
+# IDE/editor settings
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Temp/cache (generic)
+cache/
+tmp/
+
+# Node modules (if any)
+node_modules/
+
+# HMCP
+/HMCP
+.claudeignore
+CLAUDE.md
