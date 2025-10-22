@@ -224,7 +224,7 @@ Potential future improvements:
 
 - Houdini 20.5+
 - Python 3.11+
-- PySide2 (included with Houdini)
+- PySide6 (included with Houdini)
 - USD/Pixar libraries (included with Houdini)
 
 ## Version History

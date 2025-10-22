@@ -1,0 +1,8 @@
+{
+  "reload_exclude_dirs": [
+    "houdini_mcp",
+    ".venv",
+    "venv",
+    "site-packages"
+  ]
+}

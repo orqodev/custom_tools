@@ -8,8 +8,8 @@ from PySide6 import QtCore, QtUiTools, QtWidgets, QtGui
 
 class CreateProject(QtWidgets.QMainWindow):
     # CLASS CONSTANTS
-    UI_FILE = "$RBW/ui/project_creator.ui"
-    CONFIG_DIR = "$RBW/config"
+    UI_FILE = "$CUSTOM_TOOLS/ui/project_creator.ui"
+    CONFIG_DIR = "$CUSTOM_TOOLS/config"
     CONFIG_FILE = "projects_config.json"
     
     # Default folders that should be created for every project

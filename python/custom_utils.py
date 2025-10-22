@@ -11,6 +11,7 @@ def reload_packages(kwargs):
     import importlib
     import os
     import sys
+    import json
 
 
     # reload the package
@@ -18,18 +19,91 @@ def reload_packages(kwargs):
     hou.ui.reloadPackage(package_path)
 
     # reload the python modules
-    folder_path = hou.text.expandString("$RBW/scripts/python")
+    folder_path = hou.text.expandString("$CUSTOM_TOOLS/scripts/python")
+
+    # Load optional settings to exclude folders during reload
+    settings = {}
+    settings_file_used = None
+    candidate_paths = [
+        os.path.join(folder_path, "reload_settings.json"),
+        hou.text.expandString("$HOUDINI_USER_PREF_DIR/custom_tools_reload.json"),
+        os.environ.get("CUSTOM_TOOLS_RELOAD_SETTINGS") or os.environ.get("RBW_RELOAD_SETTINGS") or ""
+    ]
+    for p in candidate_paths:
+        if not p:
+            continue
+        try:
+            if os.path.isfile(p):
+                with open(p, "r") as f:
+                    settings = json.load(f) or {}
+                settings_file_used = p
+                print(f"reload_packages: using settings from {p}")
+                break
+        except Exception as e:
+            print(f"reload_packages: failed to read settings file {p}: {e}")
+
+    exclude_list = settings.get("reload_exclude_dirs", settings.get("exclude_folders", []))
+    # Normalize exclusion criteria
+    exclude_names = set()
+    exclude_paths = []
+    if isinstance(exclude_list, list):
+        for item in exclude_list:
+            if not isinstance(item, str):
+                continue
+            item = item.strip()
+            if not item:
+                continue
+            # If looks like a name (no slash), treat as folder name
+            if ("/" not in item) and ("\\" not in item):
+                exclude_names.add(item)
+            # Otherwise treat as path (relative to folder_path if not abs)
+            else:
+                p = item
+                if not os.path.isabs(p):
+                    p = os.path.normpath(os.path.join(folder_path, p))
+                else:
+                    p = os.path.normpath(p)
+                exclude_paths.append(p)
+
+    # Always exclude common virtualenv and package cache folders by default
+    default_exclude_names = {".venv", "venv", "env", "site-packages", "dist-packages", "__pycache__"}
+    exclude_names |= default_exclude_names
+
+    if exclude_names or exclude_paths:
+        print(f"reload_packages: excluding folders by name {sorted(list(exclude_names))} and paths {exclude_paths}")
+
+    # Prepare quick path segment checks (using forward slashes later)
+    excluded_segments = {"/site-packages/", "/dist-packages/", "/.venv/", "/venv/", "/env/"}
+
+    altclick = bool(kwargs.get("altclick"))
 
     # reload the python modules
     for root, dirs, files in os.walk(folder_path):
+        # prune excluded directories
+        pruned = []
+        for d in list(dirs):
+            full_d = os.path.normpath(os.path.join(root, d))
+            rel_d = os.path.relpath(full_d, folder_path)
+            if d in exclude_names:
+                continue
+            if any(full_d.startswith(p) for p in exclude_paths):
+                continue
+            pruned.append(d)
+        dirs[:] = pruned
+
         for file in files:
             if file.endswith(".py") and file != "__init__.py":
                 module_path = os.path.join(root, file).replace(os.sep, "/")
+                # Quick path-based skip for virtualenv and package directories
+                if any(seg in module_path for seg in excluded_segments):
+                    continue
                 module_name = os.path.relpath(module_path, folder_path).replace(os.sep, ".").replace(".py", "")
-
+                # Skip invalid module names that start with a leading dot (e.g., from .venv)
+                if module_name.startswith('.'):
+                    continue
                 try:
                     if module_name in sys.modules:
-                        if kwargs["altclick"] == True:
+                        if altclick:
                             sys.modules[module_name] = importlib.import_module(module_name)
                             importlib.reload(sys.modules[module_name])
                             print(f"Reloaded Module: {module_name}")
@@ -44,7 +118,7 @@ def reload_packages(kwargs):
     
 # reload the shelves
     shelves = hou.shelves.shelves()
-    path_shelves = hou.text.expandString("$RBW/toolbar")
+    path_shelves = hou.text.expandString("$CUSTOM_TOOLS/toolbar")
 
     for root, dir, files in os.walk(path_shelves):
         for file in files:
@@ -63,7 +137,7 @@ def check_path_valid(path):
     import hou
     import os
 
-    ## FIX the path if is using a env variable - $HIP, $HOME, $RBW
+    ## FIX the path if is using a env variable - $HIP, $HOME, $CUSTOM_TOOLS
     path = os.path.dirname(hou.text.expandString(path))
 
     ## Check if the path exists

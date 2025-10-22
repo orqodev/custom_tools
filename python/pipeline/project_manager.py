@@ -10,9 +10,9 @@ from pipeline.save_tool import SaveToolWindow
 
 class ProjectManager(QtWidgets.QMainWindow):
     # CLASS CONSTANST
-    CONFIG_DIR = "$RBW/config"
+    CONFIG_DIR = "$CUSTOM_TOOLS/config"
     CONFIG_FILE = "projects_config.json"
-    UI_FILE = "$RBW/ui/project_manager.ui"
+    UI_FILE = "$CUSTOM_TOOLS/ui/project_manager.ui"
     DEFAULT_FOLDERS = [
         "geo",
         "hda",

@@ -4,3 +4,6 @@ __pycache__/
 *$py.class
 .idea/*
 .idea/
+
+# Ignore Houdini MCP tools directory
+houdini_mcp/

@@ -22,7 +22,7 @@ class SceneCacheManagerUI(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        script_path = hou.text.expandString("$RBW/ui/scene_cache_manager.ui")
+        script_path = hou.text.expandString("$CUSTOM_TOOLS/ui/scene_cache_manager.ui")
         self.ui = QtUiTools.QUiLoader().load(script_path, parentWidget=self)
         self.setParent(hou.qt.mainWindow(), QtCore.Qt.Window)
         self.setWindowTitle("Scene Cache Manager")
@@ -73,9 +73,9 @@ class SceneCacheManagerUI(QtWidgets.QMainWindow):
                         cache_nodes = node_type_sop.instances()
                         for node in cache_nodes:
                             cache_path = node.parm(parm_name).eval()
-                            env_var = hou.text.expandString("$RBW")
+                            env_var = hou.text.expandString("$CUSTOM_TOOLS")
                             if cache_path.startswith(env_var):
-                                cache_path = cache_path.replace(env_var,"$RBW")
+                                cache_path = cache_path.replace(env_var,"$CUSTOM_TOOLS")
 
                             #Check if the path is valid
                             if not cache_path:
