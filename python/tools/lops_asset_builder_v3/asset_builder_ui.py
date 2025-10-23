@@ -171,6 +171,15 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         self.maps_list = _ListEditor(self, mode="dir")
         form.addRow("Material Variant Folders", self.maps_list)
 
+        # Replace the default 'Add' button with 'Add Folders…' using the same button (size/position)
+        try:
+            self.maps_list.btn_add.clicked.disconnect()
+        except Exception:
+            pass
+        self.maps_list.btn_add.setText("Add")
+        self.maps_list.btn_add.setToolTip("Add multiple material variant folders at once")
+        self.maps_list.btn_add.clicked.connect(self._on_add_multiple_material_folders)
+
         # Lookdev setup toggle
         self.cb_create_lookdev = QtWidgets.QCheckBox("Create Lookdev Setup")
         # Disabled by default per request
@@ -208,6 +217,46 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
 
         # Small size policy
         self.resize(560, 640)
+
+    def _pick_multiple_directories(self) -> List[str]:
+        """Open a non-native QFileDialog that allows selecting multiple directories.
+        Returns a list of absolute folder paths, or an empty list if cancelled.
+        """
+        dlg = QtWidgets.QFileDialog(self, "Select folders")
+        dlg.setFileMode(QtWidgets.QFileDialog.Directory)
+        dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+        dlg.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+        # Enable multi-selection in the views inside the non-native dialog
+        try:
+            # PySide does not support passing a tuple to findChildren, query each type separately
+            for cls in (QtWidgets.QListView, QtWidgets.QTreeView):
+                for view in dlg.findChildren(cls):
+                    view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        except Exception:
+            # Fallback: try all child widgets and set where applicable
+            for view in dlg.findChildren(QtWidgets.QWidget):
+                if isinstance(view, (QtWidgets.QListView, QtWidgets.QTreeView)):
+                    view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        # Support both Qt5/PySide2 (exec_) and Qt6/PySide6 (exec)
+        exec_fn = getattr(dlg, "exec", None) or getattr(dlg, "exec_", None)
+        if exec_fn and exec_fn():
+            # selectedFiles returns directories when in Directory mode
+            return [os.path.normpath(p) for p in dlg.selectedFiles() if p]
+        return []
+
+    def _on_add_multiple_material_folders(self) -> None:
+        """Handler for the 'Add Folders…' button under Material Variant Folders."""
+        folders = self._pick_multiple_directories()
+        if not folders:
+            return
+        # Avoid duplicates by checking existing items
+        existing = set(self.maps_list.items())
+        for d in folders:
+            if not d or d in existing:
+                continue
+            item = QtWidgets.QListWidgetItem(d)
+            item.setToolTip(d)
+            self.maps_list.listw.addItem(item)
 
     def _pick_asset(self) -> None:
         val, _ = QtWidgets.QFileDialog.getOpenFileName(

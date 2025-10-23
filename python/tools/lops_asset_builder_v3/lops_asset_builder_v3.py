@@ -444,6 +444,11 @@ def create_karma_nodes(parent):
     karma_settings = parent.createNode('karmarenderproperties', 'karmarendersettings')
     usdrender_rop = parent.createNode('usdrender_rop', 'usdrender_rop')
     karma_settings.parm('picture').set('$JOB/render/$HIPNAME.$OS.$F4.exr')
+    # Ensure the Karma Render Settings use the Lookdev camera
+    _ldev_cam_path = '/turntable/lookdev/ldevCam0'
+    cam_parm = karma_settings.parm('camera') or karma_settings.parm('camerapath')
+    if cam_parm is not None:
+        cam_parm.set(_ldev_cam_path)
     usdrender_rop.parm('rendersettings').set('`chs("../karmarendersettings/primpath")`')
     return karma_settings, usdrender_rop
 
