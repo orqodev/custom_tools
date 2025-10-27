@@ -880,20 +880,39 @@ class MtlxMaterial:
 
     def _configure_texture_node(self, node, texture_type):
         '''
-        Configure a texture node based on its type
+        Configure a texture node based on its type to match MaterialX standard
         Args:
             node - the image node we want to change
-            texture_type - value that defines if we are working with a colour or raw data
+            texture_type - value that defines texture purpose (color, metal, rough, etc.)
         Returns:
         '''
 
-        # Default config
-        signature = "float"
-        colorspace = "raw"
-
-        if texture_type in ["texturesColor", 'texturesSSS']:
+        # Configure signature and colorspace based on texture type
+        # Following MaterialX standard format
+        if texture_type in ["texturesColor", "texturesSSS"]:
+            # Base color, SSS: color3, srgb_texture
             signature = "color3"
             colorspace = "srgb_texture"
+        elif texture_type == "texturesEmm":
+            # Emissive: color3, srgb_texture
+            signature = "color3"
+            colorspace = "srgb_texture"
+        elif texture_type in ["texturesMetal", "texturesRough", "texturesGloss", "texturesSpec", "texturesTrans"]:
+            # Metalness, roughness, etc.: float, lin_rec709
+            signature = "float"
+            colorspace = "lin_rec709"
+        elif texture_type == "texturesAlpha":
+            # Opacity: color3, lin_rec709
+            signature = "color3"
+            colorspace = "lin_rec709"
+        elif texture_type == "texturesNormal":
+            # Normal maps: vector3, lin_rec709
+            signature = "vector3"
+            colorspace = "lin_rec709"
+        else:
+            # Default fallback: float, lin_rec709
+            signature = "float"
+            colorspace = "lin_rec709"
 
         node.parm("signature").set(signature)
         node.parm("filecolorspace").set(colorspace)

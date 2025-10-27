@@ -363,7 +363,7 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         layout.addWidget(self.message_label)
         layout.addWidget(self.log_edit)
         # Bottom help text: inform user about ESC
-        self.help_label = QtWidgets.QLabel("*Press ESC to cancel the running process. The Close button will be enabled after completion.")
+        self.help_label = QtWidgets.QLabel("*Press ESC to cancel. Press ESC again to request FORCE KILL (third press will exit the app). The Close button is enabled after completion.")
         try:
             self.help_label.setStyleSheet("color: #bbb; font-size: 11px; font-style: italic; margin-top: 6px;")
             self.help_label.setWordWrap(True)
@@ -386,10 +386,31 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         # Internal flags
         self.cancelled = False
         self.finished = False
+        # Escalated kill support
+        self._esc_presses = 0
+        self.force_kill = False
 
     def _on_kill(self):
-        self.cancelled = True
-        self.log_edit.append("User requested to kill the process...")
+        # Increment ESC press count and escalate actions
+        self._esc_presses += 1
+        if self._esc_presses == 1:
+            # Soft cancel: let the builder stop gracefully
+            self.cancelled = True
+            self.log_edit.append("User requested cancel (ESC). Stopping after current step…")
+        elif self._esc_presses == 2:
+            # Force kill requested: try to abort ASAP
+            self.cancelled = True
+            self.force_kill = True
+            self.log_edit.append("User requested FORCE KILL (ESC x2). Attempting immediate abort… Press ESC again to exit application.")
+        else:
+            # Third time: exit the application event loop (last resort)
+            self.cancelled = True
+            self.force_kill = True
+            self.log_edit.append("ESC pressed 3 times — exiting application event loop now.")
+            try:
+                QtCore.QCoreApplication.exit(1)
+            except Exception:
+                pass
         QtWidgets.QApplication.processEvents()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
