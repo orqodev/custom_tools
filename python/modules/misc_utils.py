@@ -2,7 +2,82 @@ import hou
 import loputils
 import re
 import unicodedata
-from typing import Optional, Set,Iterable
+from typing import Optional, Set, Iterable
+from dataclasses import dataclass, field
+
+
+@dataclass
+class MaterialNamingConfig:
+    """
+    Unified configuration for material name processing across the entire pipeline.
+
+    This ensures consistent material naming between:
+    - Geometry material extraction
+    - Texture scanning
+    - Material validation
+    - Material creation
+
+    Attributes:
+        lowercase: If True, convert material names to lowercase (default: False)
+        drop_tokens: Set of tokens to remove from material names (default: {"base", "bake", "baked", "bake1", "pbr"})
+        enabled: If True, apply sanitization; if False, use raw material names (default: True)
+    """
+    lowercase: bool = False
+    drop_tokens: Optional[Set[str]] = None
+    enabled: bool = True
+
+    def __post_init__(self):
+        """Set default drop_tokens if not provided."""
+        if self.drop_tokens is None:
+            self.drop_tokens = {"base", "bake", "baked", "bake1", "pbr"}
+
+    def to_sanitize_options(self) -> dict:
+        """
+        Convert to legacy sanitize_options dict format for backward compatibility.
+
+        Returns:
+            dict: Legacy format {'enabled': bool, 'lowercase': bool, 'drop_tokens': set}
+        """
+        return {
+            'enabled': self.enabled,
+            'lowercase': self.lowercase,
+            'drop_tokens': self.drop_tokens
+        }
+
+    @classmethod
+    def from_sanitize_options(cls, sanitize_options: dict) -> 'MaterialNamingConfig':
+        """
+        Create MaterialNamingConfig from legacy sanitize_options dict.
+
+        Args:
+            sanitize_options: Legacy dict format
+
+        Returns:
+            MaterialNamingConfig instance
+        """
+        return cls(
+            enabled=sanitize_options.get('enabled', True),
+            lowercase=sanitize_options.get('lowercase', False),
+            drop_tokens=sanitize_options.get('drop_tokens', None)
+        )
+
+    @classmethod
+    def from_ui(cls, lowercase: bool = False) -> 'MaterialNamingConfig':
+        """
+        Create MaterialNamingConfig from UI checkbox state.
+
+        Args:
+            lowercase: Checkbox state for lowercase material names
+
+        Returns:
+            MaterialNamingConfig instance with UI settings
+        """
+        return cls(
+            enabled=True,
+            lowercase=lowercase,
+            drop_tokens=None  # Will use defaults from __post_init__
+        )
+
 
 def _is_in_solaris():
     ''' Checks if the current context is Stage'''
@@ -95,13 +170,14 @@ def sanitize_all_prim_string_attribs(geo: hou.Geometry):
                 prim.setAttribValue(attrib, cleaned)
 
 
-def slugify(text: str, drop_tokens: Optional[Set[str]] = None) -> str:
+def slugify(text: str, drop_tokens: Optional[Set[str]] = None, lowercase: bool = False) -> str:
     """
     Normalize material names so that Geometry prims and MaterialX subnets align automatically.
 
     Args:
         text: The input text to slugify
         drop_tokens: Set of tokens to drop. If None, uses default set.
+        lowercase: If True, convert to lowercase. If False, preserve original case (default: False).
 
     Returns:
         Normalized string with tokens joined by underscores
@@ -109,24 +185,42 @@ def slugify(text: str, drop_tokens: Optional[Set[str]] = None) -> str:
     if drop_tokens is None:
         drop_tokens = {"base", "bake", "baked", "bake1", "pbr"}
 
-    # Lower-case and unicode-normalize
-    text = text.lower()
+    # Optionally convert to lowercase
+    if lowercase:
+        text = text.lower()
+        drop_tokens_normalized = drop_tokens
+    else:
+        # Case-insensitive drop_tokens matching when preserving case
+        drop_tokens_normalized = {token.lower() for token in drop_tokens}
+
+    # Unicode-normalize
     text = unicodedata.normalize('NFKD', text)
     # Remove diacritical marks after normalization
     text = ''.join(c for c in text if not unicodedata.combining(c))
 
     # Replace any non-alphanumeric run with "_" (underscore)
-    text = re.sub(r'[^a-z0-9]+', '_', text)
+    # Preserve uppercase letters if lowercase=False
+    if lowercase:
+        text = re.sub(r'[^a-z0-9]+', '_', text)
+    else:
+        text = re.sub(r'[^a-zA-Z0-9]+', '_', text)
 
-    # Split into tokens and drop unwanted ones
-    tokens = [token for token in text.split('_') if token and token not in drop_tokens]
+    # Split into tokens and drop unwanted ones (case-insensitive matching)
+    if lowercase:
+        tokens = [token for token in text.split('_') if token and token not in drop_tokens_normalized]
+    else:
+        tokens = [token for token in text.split('_') if token and token.lower() not in drop_tokens_normalized]
 
     # Join the remaining tokens with "_"
     return '_'.join(tokens)
 
 
-def slugify_name_material(value: str, drop_tokens: Optional[Iterable[str]] = None) -> str:
-    v = (value or "").strip().lower()
+def slugify_name_material(value: str, drop_tokens: Optional[Iterable[str]] = None, lowercase: bool = False) -> str:
+    v = (value or "").strip()
+
+    # Optionally convert to lowercase
+    if lowercase:
+        v = v.lower()
 
     # Drop tokens literally, anywhere they appear
     if drop_tokens:
@@ -134,11 +228,20 @@ def slugify_name_material(value: str, drop_tokens: Optional[Iterable[str]] = Non
             v = re.sub(re.escape(tok.lower()), "", v, flags=re.IGNORECASE)
 
     # Replace non-alnum with underscore
-    v = re.sub(r"[^a-z0-9]+", "_", v)
+    # Preserve uppercase if lowercase=False
+    if lowercase:
+        v = re.sub(r"[^a-z0-9]+", "_", v)
+    else:
+        v = re.sub(r"[^a-zA-Z0-9]+", "_", v)
     v = re.sub(r"_+", "_", v).strip("_")
 
     if not v:
         return "material"
-    if not re.match(r"^[a-z]", v):
-        v = f"m_{v}"
+    # Check if starts with letter (case-insensitive if preserving case)
+    if lowercase:
+        if not re.match(r"^[a-z]", v):
+            v = f"m_{v}"
+    else:
+        if not re.match(r"^[a-zA-Z]", v):
+            v = f"m_{v}"
     return v

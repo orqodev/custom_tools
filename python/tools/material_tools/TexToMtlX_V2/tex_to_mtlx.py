@@ -11,7 +11,7 @@ import threading
 from PySide6 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import slugify, slugify_name_material,_sanitize
+from modules.misc_utils import slugify, slugify_name_material, _sanitize, MaterialNamingConfig
 
 from tools.material_tools.TexToMtlX_V2.txmtlx_config import (
     TEXT_TO_DISPLAY,
@@ -59,6 +59,10 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
         ## DATA
         self.mtlTX = False
+        # Material naming configuration (unified approach)
+        self.naming_config = MaterialNamingConfig(lowercase=False)  # Default to preserving case
+        # Legacy sanitize options for backward compatibility
+        self.sanitize_options = self.naming_config.to_sanitize_options()
 
         self._setup_help_section()
         self._setup_material_section()
@@ -110,15 +114,28 @@ class TxToMtlx(QtWidgets.QMainWindow):
         self.material_layout.addWidget(self.checkbox, 1, 1)
 
         self.main_layout.addLayout(self.material_layout)
-        # Sanitize material names
-        self.cb_sanitize = QtWidgets.QCheckBox("Sanitize Material Names")
-        self.cb_sanitize.setChecked(True)
+
+        # Material naming configuration
+        naming_group = QtWidgets.QGroupBox("Material Naming Options")
+        naming_layout = QtWidgets.QVBoxLayout()
+
+        # Lowercase checkbox
+        self.cb_lowercase = QtWidgets.QCheckBox("Convert material names to lowercase")
+        self.cb_lowercase.setChecked(False)  # Default to preserving case
+        self.cb_lowercase.setToolTip("When unchecked, preserves original case (e.g., KB3D_MTM_MetalPanelYellowTrimStrapsA)\nWhen checked, converts to lowercase (e.g., kb3d_mtm_metalpanelyellowtrimstrapsa)")
+        naming_layout.addWidget(self.cb_lowercase)
+
+        # Drop tokens input
+        tokens_row = QtWidgets.QHBoxLayout()
+        tokens_row.addWidget(QtWidgets.QLabel("Remove tokens from names:"))
         self.le_drop_tokens = QtWidgets.QLineEdit(",".join(DEFAULT_DROP_TOKENS[:5]))
-        san_row = QtWidgets.QHBoxLayout()
-        san_row.addWidget(self.cb_sanitize)
-        san_row.addWidget(QtWidgets.QLabel("Drop tokens (comma separated)"))
-        san_row.addWidget(self.le_drop_tokens)
-        self.main_layout.addLayout(san_row)
+        self.le_drop_tokens.setPlaceholderText("e.g., base, bake, baked")
+        self.le_drop_tokens.setToolTip("Comma-separated list of words to remove from material names")
+        tokens_row.addWidget(self.le_drop_tokens)
+        naming_layout.addLayout(tokens_row)
+
+        naming_group.setLayout(naming_layout)
+        self.main_layout.addWidget(naming_group)
 
         # --- EXISTING MATERIAL POLICY ---
         policy_row = QtWidgets.QHBoxLayout()
@@ -310,7 +327,12 @@ class TxToMtlx(QtWidgets.QMainWindow):
                 if not texture_type:
                     continue
                 # Get UDIM and Size
-                material_name = slugify(material_name)
+                # Apply material naming configuration from UI
+                lowercase = self.cb_lowercase.isChecked()
+                drop_tokens = None
+                if self.le_drop_tokens.text().strip():
+                    drop_tokens = {t.strip().lower() for t in self.le_drop_tokens.text().split(',') if t.strip()}
+                material_name = slugify(material_name, drop_tokens, lowercase=lowercase)
                 udim_match = self.UDIM_PATTERN.search(file)
                 size_match = self.SIZE_PATTERN.search(file)
                 # Update texture list
@@ -388,11 +410,18 @@ class TxToMtlx(QtWidgets.QMainWindow):
                           for idx in selected_indexes
                           if idx.data(QtCore.Qt.DisplayRole)]
 
-        # Sanitization options
-        drop_tokens = set()
-        if self.cb_sanitize.isChecked() and self.le_drop_tokens.text().strip():
+        # Create MaterialNamingConfig from UI settings
+        drop_tokens = None
+        if self.le_drop_tokens.text().strip():
             drop_tokens = {t.strip().lower() for t in self.le_drop_tokens.text().split(',') if t.strip()}
-        self.sanitize_options = {"enabled": self.cb_sanitize.isChecked(), "drop_tokens": drop_tokens}
+
+        self.naming_config = MaterialNamingConfig(
+            enabled=True,
+            lowercase=self.cb_lowercase.isChecked(),
+            drop_tokens=drop_tokens
+        )
+        # Update legacy sanitize_options for backward compatibility
+        self.sanitize_options = self.naming_config.to_sanitize_options()
 
         # Existence policy
         exist_policy = self.cb_exist_policy.currentText()  # "Skip" | "Override" | "Rename (_001)"
@@ -424,7 +453,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
                 **common_data,
                 folder_path=mat_info["FOLDER_PATH"],
                 texture_list=self.texture_list,
-                sanitize_options=self.sanitize_options,
+                naming_config=self.naming_config,
                 exist_policy=exist_policy,
             )
 
@@ -455,7 +484,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
 
 class MtlxMaterial:
-    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None, exist_policy="Skip"):
+    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None, naming_config: MaterialNamingConfig = None, exist_policy="Skip"):
         self.material_to_create = mat
         self.mtlTX = mtlTX
         self.node_path = path
@@ -463,7 +492,17 @@ class MtlxMaterial:
         self.texture_list = texture_list
         self.imaketx_path = DEFAULT_IMAKETX_PATH
         self.folder_path = folder_path
-        self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
+
+        # Support both legacy sanitize_options and new naming_config
+        if naming_config is not None:
+            self.naming_config = naming_config
+            self.sanitize_options = naming_config.to_sanitize_options()
+        elif sanitize_options is not None:
+            self.naming_config = MaterialNamingConfig.from_sanitize_options(sanitize_options)
+            self.sanitize_options = sanitize_options
+        else:
+            self.naming_config = MaterialNamingConfig(lowercase=False)
+            self.sanitize_options = self.naming_config.to_sanitize_options()
         self.exist_policy = exist_policy
 
         self.init_constants()
@@ -615,7 +654,8 @@ class MtlxMaterial:
         """
         # Canonical name
         if self.sanitize_options['enabled']:
-            canonical = slugify_name_material(self.material_to_create, self.sanitize_options['drop_tokens'])
+            lowercase = self.sanitize_options.get('lowercase', True)
+            canonical = slugify_name_material(self.material_to_create, self.sanitize_options['drop_tokens'], lowercase=lowercase)
         else:
             canonical = self.material_to_create
 
@@ -762,9 +802,9 @@ class MtlxMaterial:
         '''
 
         # Create main nodes
-
-        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify_name_material(self.material_to_create + "_mtlxSurface",self.sanitize_options['drop_tokens']))
-        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify_name_material(self.material_to_create + "_mtlxDisplacement",self.sanitize_options['drop_tokens']))
+        lowercase = self.sanitize_options.get('lowercase', True)
+        mtlx_standard_surf = subnet_context.createNode("mtlxstandard_surface", slugify_name_material(self.material_to_create + "_mtlxSurface", self.sanitize_options['drop_tokens'], lowercase=lowercase))
+        mtlx_displacement = subnet_context.createNode("mtlxdisplacement", slugify_name_material(self.material_to_create + "_mtlxDisplacement", self.sanitize_options['drop_tokens'], lowercase=lowercase))
 
         # Create output nodes
 

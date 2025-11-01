@@ -11,11 +11,11 @@ import threading
 from PySide6 import QtWidgets, QtGui, QtCore
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from modules.misc_utils import slugify,_sanitize
+from modules.misc_utils import slugify, _sanitize, MaterialNamingConfig
 
 class TxToMtlx(QtWidgets.QMainWindow):
 
-    def __init__(self):
+    def __init__(self, naming_config: MaterialNamingConfig = None):
         super().__init__()
 
         # SETUP CENTRAL WIDGET FOR UI
@@ -31,6 +31,10 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
         ## DATA
         self.mtlTX = False
+        # Material naming configuration
+        self.naming_config = naming_config or MaterialNamingConfig(lowercase=True)  # UI default to lowercase for backward compat
+        # Legacy sanitize options (maintain for backward compatibility)
+        self.sanitize_options = self.naming_config.to_sanitize_options()
 
         self._setup_help_section()
         self._setup_material_section()
@@ -261,7 +265,10 @@ class TxToMtlx(QtWidgets.QMainWindow):
                 if not texture_type:
                     continue
                 # Get UDIM and Size
-                material_name = slugify(material_name)
+                # Use sanitize options if enabled, otherwise keep original name
+                if self.sanitize_options['enabled']:
+                    lowercase = self.sanitize_options.get('lowercase', True)
+                    material_name = slugify(material_name, self.sanitize_options['drop_tokens'], lowercase=lowercase)
                 udim_match = self.UDIM_PATTERN.search(file)
                 size_match = self.SIZE_PATTERN.search(file)
                 # Update texture list
@@ -345,6 +352,9 @@ class TxToMtlx(QtWidgets.QMainWindow):
         if sanitize_options is None:  # User cancelled
             return
 
+        # Update instance sanitize_options for potential rescans
+        self.sanitize_options = sanitize_options
+
         self.progress_bar.setMaximum(len(selected_rows))
         progress_bar_default = 0
         # Common data
@@ -386,13 +396,20 @@ class TxToMtlx(QtWidgets.QMainWindow):
         sanitize_checkbox.setChecked(True)  # Default to enabled
         layout.addWidget(sanitize_checkbox)
 
+        # Lowercase checkbox
+        lowercase_checkbox = QtWidgets.QCheckBox("Convert material names to lowercase")
+        lowercase_checkbox.setChecked(True)  # Default to lowercase (legacy behavior)
+        lowercase_checkbox.setToolTip("When unchecked, preserves original case (e.g., KB3D_MTM_MetalPanelYellowTrimStrapsA)")
+        layout.addWidget(lowercase_checkbox)
+
         # Description label
         desc_label = QtWidgets.QLabel(
             "Sanitization will:\n"
-            "• Convert to lowercase and normalize unicode\n"
+            "• Normalize unicode characters\n"
             "• Remove trailing UDIM patterns (e.g., _1001)\n"
             "• Replace non-alphanumeric characters with underscores\n"
-            "• Remove specified drop tokens"
+            "• Remove specified drop tokens\n"
+            "• Optionally convert to lowercase (if checked above)"
         )
         desc_label.setStyleSheet("margin: 10px 0px; color: #666;")
         layout.addWidget(desc_label)
@@ -438,6 +455,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
             return {
                 'enabled': sanitize_checkbox.isChecked(),
+                'lowercase': lowercase_checkbox.isChecked(),
                 'drop_tokens': custom_tokens if custom_tokens else None
             }
         else:
@@ -445,7 +463,7 @@ class TxToMtlx(QtWidgets.QMainWindow):
 
 class MtlxMaterial:
 
-    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None):
+    def __init__(self, mat, mtlTX, path, node, folder_path, texture_list, sanitize_options=None, naming_config: MaterialNamingConfig = None):
         self.material_to_create = mat
         self.mtlTX = mtlTX
         self.node_path = path
@@ -453,7 +471,16 @@ class MtlxMaterial:
         self.texture_list = texture_list
         self.imaketx_path = None
         self.folder_path = folder_path
-        self.sanitize_options = sanitize_options or {'enabled': True, 'drop_tokens': None}
+        # Support both legacy sanitize_options and new naming_config
+        if naming_config is not None:
+            self.naming_config = naming_config
+            self.sanitize_options = naming_config.to_sanitize_options()
+        elif sanitize_options is not None:
+            self.naming_config = MaterialNamingConfig.from_sanitize_options(sanitize_options)
+            self.sanitize_options = sanitize_options
+        else:
+            self.naming_config = MaterialNamingConfig(lowercase=False)
+            self.sanitize_options = self.naming_config.to_sanitize_options()
 
         self.init_constants()
         self._setup_imaketx()
@@ -609,8 +636,9 @@ class MtlxMaterial:
 
         # Create canonical name using sanitization options
         if self.sanitize_options['enabled']:
-            # Use slugify with custom drop tokens if provided
-            canonical = slugify(self.material_to_create, self.sanitize_options['drop_tokens'])
+            # Use slugify with custom drop tokens and lowercase option
+            lowercase = self.sanitize_options.get('lowercase', True)  # Default to True for backward compatibility
+            canonical = slugify(self.material_to_create, self.sanitize_options['drop_tokens'], lowercase=lowercase)
         else:
             # Use original material name without sanitization
             canonical = self.material_to_create

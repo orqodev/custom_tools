@@ -153,6 +153,18 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
         self.asset_list = _ListEditor(self, mode="file")
         form.addRow("Asset Variant Files", self.asset_list)
 
+        # Create Geo Variants checkbox
+        self.cb_create_geo_variants = QtWidgets.QCheckBox("Create Geometry Variants")
+        self.cb_create_geo_variants.setChecked(True)
+        self.cb_create_geo_variants.setToolTip("Include geometry variants if provided (disable to use only main geometry file)")
+        form.addRow("Create Geo Variants", self.cb_create_geo_variants)
+
+        # Lowercase Material Names checkbox
+        self.cb_lowercase_material_names = QtWidgets.QCheckBox("Lowercase Material Names")
+        self.cb_lowercase_material_names.setChecked(False)
+        self.cb_lowercase_material_names.setToolTip("Convert material names to lowercase (enable for legacy compatibility, disable to preserve original casing)")
+        form.addRow("Lowercase Materials", self.cb_lowercase_material_names)
+
         # Main Texture Folder (moved up to replace Material Name)
         self.ed_main_maps = QtWidgets.QLineEdit(default_maps or "")
         btn_maps = QtWidgets.QPushButton("…")
@@ -169,7 +181,7 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
 
         # Material Variant Folders list
         self.maps_list = _ListEditor(self, mode="dir")
-        form.addRow("Material Variant Folders", self.maps_list)
+        form.addRow("Material Variant Folders (optional - auto-detected if empty)", self.maps_list)
 
         # Replace the default 'Add' button with 'Add Folders…' using the same button (size/position)
         try:
@@ -313,6 +325,8 @@ class AssetMaterialVariantsDialog(QtWidgets.QDialog):
             "asset_name_input": self.ed_asset_name.text().strip(),
             "asset_variant_set": (self.ed_asset_vset.text().strip() or "geo_variant"),
             "asset_variants": [s for s in self.asset_list.items() if s],
+            "create_geo_variants": bool(self.cb_create_geo_variants.isChecked()),
+            "lowercase_material_names": bool(self.cb_lowercase_material_names.isChecked()),
             "material_variant_set": (self.ed_look_vset.text().strip() or "mtl_variant"),
             "main_textures": self.ed_main_maps.text().strip(),
             "material_variants": [s for s in self.maps_list.items() if s],
@@ -328,7 +342,16 @@ class SimpleProgressDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(False)
-        self.setMinimumWidth(600)
+        # Make the dialog larger by default (about ~25% bigger) and easier to resize while working
+        try:
+            self.resize(800, 640)
+        except Exception:
+            pass
+        self.setMinimumWidth(700)
+        try:
+            self.setSizeGripEnabled(True)
+        except Exception:
+            pass
         # Remove all title bar control buttons (Close, Minimize, Maximize) reliably across platforms.
         # Use a clean flag set with only a plain title bar — no system menu and no control buttons.
         try:

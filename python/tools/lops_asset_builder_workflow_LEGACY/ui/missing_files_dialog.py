@@ -12,8 +12,8 @@ try:
     from .houdini_theme import HoudiniTheme
 except ImportError:
     # Fall back to absolute imports (when run directly)
-    from tools.lops_asset_builder_workflow.utils.file_operations import FileDialogHelper
-    from tools.lops_asset_builder_workflow.models.data_model import AssetGroup, AssetPath
+    from tools.lops_asset_builder_workflow_LEGACY.utils.file_operations import FileDialogHelper
+    from tools.lops_asset_builder_workflow_LEGACY.models.data_model import AssetGroup, AssetPath
     from houdini_theme import HoudiniTheme
 
 

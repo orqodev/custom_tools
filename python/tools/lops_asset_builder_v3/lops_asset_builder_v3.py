@@ -9,13 +9,14 @@ import colorsys
 import random
 from typing import List, Type
 from pxr import Usd,UsdGeom
-from modules.misc_utils import _sanitize, slugify
+from modules.misc_utils import _sanitize, slugify, MaterialNamingConfig
 from tools.lops_asset_builder_v3.component_material_custom import build_component_material_custom
 from tools.lops_asset_builder_v3.componentoutput_custom import componentoutput_custom_creation
 from tools.lops_asset_builder_v3.create_transform_nodes import build_transform_camera_and_scene_node, \
     build_lights_spin_xform
 from tools.lops_asset_builder_v3.subnet_lookdev_setup import create_subnet_lookdev_setup
 from tools.lops_asset_builder_v3.asset_builder_ui import AssetMaterialVariantsDialog, ProgressReporter
+from tools.lops_asset_builder_v3.material_validator import validate_and_warn_user
 from PySide6 import QtWidgets, QtCore
 
 
@@ -43,6 +44,8 @@ def create_component_builder(selected_directory=None):
     main_asset_file_path = ui.get("main_asset_file_path") or ""
     asset_name_input = (ui.get("asset_name_input") or "").strip() or "ASSET"
     asset_variants = ui.get("asset_variants") or []
+    create_geo_variants = bool(ui.get("create_geo_variants", True))
+    lowercase_material_names = bool(ui.get("lowercase_material_names", False))
     asset_vset_name = ui.get("asset_variant_set") or "geo_variant"
     mtl_vset_name = ui.get("material_variant_set") or "mtl_variant"
     folder_textures = ui.get("main_textures") or ""
@@ -67,6 +70,33 @@ def create_component_builder(selected_directory=None):
                 progress.mark_finished("Error: invalid texture folder.")
                 return
 
+            # Validate materials before building
+            progress.step("Validating materials")
+            # Create unified naming config for validation
+            naming_config = MaterialNamingConfig.from_ui(lowercase=lowercase_material_names)
+            all_asset_paths = [main_asset_file_path] + asset_variants
+            validation_result, user_continues = validate_and_warn_user(
+                asset_paths=all_asset_paths,
+                texture_folder=folder_textures,
+                texture_variants=[os.path.basename(v) for v in mtl_variants] if mtl_variants else None,
+                show_dialog=True,
+                naming_config=naming_config
+            )
+
+            # Log validation results
+            if validation_result.materials_missing:
+                progress.log(f"⚠️ Warning: {len(validation_result.materials_missing)} material(s) have no matching textures")
+                for mat in sorted(validation_result.materials_missing):
+                    progress.log(f"  Missing: {mat}")
+                progress.log("Missing materials will use fallback template shaders")
+            else:
+                progress.log(f"✓ All {len(validation_result.materials_expected)} material(s) validated successfully")
+
+            if not user_continues:
+                progress.log("Build cancelled by user")
+                progress.mark_finished("Cancelled by user")
+                return
+
             # Define context
             stage_context = hou.node("/stage")
             # Yield to UI and allow cancel after obtaining stage context
@@ -76,16 +106,19 @@ def create_component_builder(selected_directory=None):
             node_name = asset_name_input
 
             progress.step("Building geometry and material variants")
+            # Reuse the same naming_config from validation for consistency
             geometry_variants_node, comp_out, nodes_to_layout, comp_material_last = build_geo_and_mtl_variants(
                 stage_context=stage_context,
                 node_name=node_name,
                 main_asset_file_path=main_asset_file_path,
                 asset_variants=asset_variants,
+                create_geo_variants=create_geo_variants,
                 asset_vset_name=asset_vset_name,
                 mtl_variants=mtl_variants,
                 folder_textures=folder_textures,
                 mtl_vset_name=mtl_vset_name,
                 progress=progress,
+                lowercase_material_names=lowercase_material_names,
             )
 
             # Yield to UI between heavy build phases
@@ -274,7 +307,7 @@ def _create_inital_nodes(stage_context, node_name: str = "asset_builder"):
     # Nodes to layout
     return comp_geo, material_lib, comp_material, comp_out
 
-def _prepare_imported_asset(parent, name, extension, path, out_node):
+def _prepare_imported_asset(parent, name, extension, path, out_node, skip_matchsize=False, lowercase_material_names: bool = True):
     '''
 
     Creates the network layout for the default, proxy and sim outputs
@@ -283,6 +316,8 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
         name = asset's name
         extension = if we are working with FBX, ABC, OBJ, etc
         path = path where the asset is located
+        out_node = component output node for reference expressions
+        skip_matchsize = if True, skips matchsize node creation
     Return:
         None
     '''
@@ -307,23 +342,35 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
             return
 
         # Create the main nodes
-        match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{name}"))
         attrib_wrangler = parent.createNode("attribwrangle", "convert_mat_to_name")
         attrib_delete = parent.createNode("attribdelete", "keep_P_N_UV_NAME")
         remove_points = parent.createNode("add", _sanitize(f"remove_points"))
 
+        # Conditionally create matchsize node
+        if not skip_matchsize:
+            match_size = parent.createNode("matchsize", _sanitize(f"matchsize_{name}"))
+            match_size.setParms({
+                "justify_x": 0,
+                "justify_y": 1,
+                "justify_z": 0,
+            })
+
         # Set Parms for main nodes
         file_import.parm(parm_name).set(f"{path}/{name}.{extension}")
 
-        match_size.setParms({
-            "justify_x": 0,
-            "justify_y": 1,
-            "justify_z": 0,
-        })
-
+        # Build VEX snippet for material-to-name conversion with optional lowercasing
+        vex_lines = []
+        if lowercase_material_names:
+            vex_lines.append('s@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));')
+        else:
+            vex_lines.append('s@shop_materialpath = replace(s@shop_materialpath, " ", "_");')
+        vex_lines.append('string material_to_name[] = split(s@shop_materialpath, "/");')
+        vex_lines.append('s@name = material_to_name[-1];')
+        vex_lines.append('// Remove trailing underscores')
+        vex_lines.append('s@name = rstrip(s@name, "_");')
         attrib_wrangler.setParms({
             "class": 1,
-            "snippet": 's@shop_materialpath = tolower(replace(s@shop_materialpath, " ", "_"));\nstring material_to_name[] = split(s@shop_materialpath,"/");\ns@name=material_to_name[-1];'
+            "snippet": "\n".join(vex_lines)
         })
 
         attrib_delete.setParms({
@@ -335,9 +382,15 @@ def _prepare_imported_asset(parent, name, extension, path, out_node):
 
         remove_points.parm("remove").set(True)
 
-        # Connect Main nodes
-        match_size.setInput(0, file_import)
-        attrib_wrangler.setInput(0, match_size)
+        # Connect Main nodes (conditional connection based on skip_matchsize)
+        if skip_matchsize:
+            # Skip matchsize, connect directly to file import
+            attrib_wrangler.setInput(0, file_import)
+        else:
+            # Use matchsize in the chain
+            match_size.setInput(0, file_import)
+            attrib_wrangler.setInput(0, match_size)
+
         attrib_delete.setInput(0, attrib_wrangler)
         remove_points.setInput(0, attrib_delete)
         default_output.setInput(0, remove_points)
@@ -540,34 +593,50 @@ def _create_mtlx_templates(parent, material_lib):
         )
     material_lib.layoutChildren()
 
-def _create_materials(parent, folder_textures, material_lib, expected_names=None, progress: ProgressReporter | None = None):
+def _create_materials(parent, folder_textures, material_lib, expected_names=None, progress: ProgressReporter | None = None, naming_config: MaterialNamingConfig = None):
     ''' Create the material using the tex_to_mtlx script
     Args:
         parent: Parent node
         folder_textures: the folder where the textures are located
         material_lib: the material library where the materials will be saved
         expected_names: List of material names to create (from geometry files)
+        progress: Progress reporter instance
+        naming_config: Material naming configuration (if None, uses default)
     Return:
          True if successful, False otherwise
     '''
+    # Use provided config or create default
+    if naming_config is None:
+        naming_config = MaterialNamingConfig()
     try:
         # Normalize path for existence check
         folder_textures_check = os.path.normpath(folder_textures)
         if progress:
             progress.log(f"Scanning texture folder: {folder_textures_check}")
+            # Nudge progress so the bar reflects scanning work
+            try:
+                progress.step("Scanning texture folders…")
+            except Exception:
+                pass
         if not os.path.exists(folder_textures_check):
             warn1 = f"Warning: Texture folder does not exist: {folder_textures_check}"
             warn2 = f"Warning: Texture folder not found: {folder_textures}. Creating template materials instead."
             if progress:
                 progress.log(warn1)
                 progress.log(warn2)
+                # Step a bit so the user sees movement even when falling back
+                try:
+                    for _ in range(3):
+                        progress.step("Texture folder missing; creating template materials…")
+                except Exception:
+                    pass
             else:
                 print(warn1)
                 print(warn2)
             _create_mtlx_templates(parent, material_lib)
             return True
 
-        material_handler = tex_to_mtlx.TxToMtlx()
+        material_handler = tex_to_mtlx.TxToMtlx(naming_config=naming_config)
         materials_created_length = 0
 
         # Combined texture list from all subfolders
@@ -589,6 +658,12 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                 if folder_texture_list and isinstance(folder_texture_list, dict):
                     # Merge with combined list
                     combined_texture_list.update(folder_texture_list)
+                # Minor progress tick per valid subfolder discovered
+                if progress:
+                    try:
+                        progress.step(f"Found textures in: {os.path.basename(current_folder)}")
+                    except Exception:
+                        pass
 
         if valid_folders_found and combined_texture_list:
             start_time = time.perf_counter()
@@ -603,6 +678,19 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
             created_so_far = 0
             if progress:
                 progress.log(f"Creating up to {total_to_create} materials in {material_lib.path()}")
+                # Pre-creation bump so users see movement before the first material completes
+                try:
+                    for _ in range(min(5, max(1, total_to_create // 10))):
+                        progress.step("Preparing material creation…")
+                except Exception:
+                    pass
+
+            # Determine how many progress steps to allocate per material so the bar moves continuously.
+            # Aim to spend ~800 steps (out of the 1000 total set by the caller) within this phase.
+            target_phase_steps = 800
+            per_mat_steps = 1
+            if total_to_create > 0:
+                per_mat_steps = max(1, target_phase_steps // total_to_create)
 
             for material_name in combined_texture_list:
                 if progress and progress.is_cancelled():
@@ -616,22 +704,40 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
                 if not path.endswith("/"):
                     combined_texture_list[material_name]['FOLDER_PATH'] = path + "/"
 
-                materials_created_length += 1
-                created_so_far += 1
-                if progress and (created_so_far % 5 == 0 or created_so_far == total_to_create):
-                    progress.log(f"Created {created_so_far}/{total_to_create} materials...")
                 create_material = tex_to_mtlx.MtlxMaterial(
                     material_name,
                     **common_data,
                     folder_path=path,
-                    texture_list=combined_texture_list
+                    texture_list=combined_texture_list,
+                    naming_config=naming_config
                 )
                 create_material.create_materialx()
+
+                materials_created_length += 1
+                created_so_far += 1
+                # Advance progress multiple ticks per material to convey ongoing work
+                if progress:
+                    try:
+                        # First tick with a message, the rest silent to avoid log spam
+                        progress.step(f"Created material {created_so_far}/{total_to_create}: {material_name}")
+                        for _ in range(per_mat_steps - 1):
+                            progress.step()
+                    except Exception:
+                        pass
+
+                if progress and (created_so_far % 5 == 0 or created_so_far == total_to_create):
+                    progress.log(f"Created {created_so_far}/{total_to_create} materials…")
 
             elapsed = time.perf_counter() - start_time
             msg = f"Created {materials_created_length} materials in {material_lib.path()} in {elapsed:.2f}s"
             if progress:
                 progress.log(msg)
+                # Small tail steps to reach the phase target smoothly
+                try:
+                    for _ in range(5):
+                        progress.step()
+                except Exception:
+                    pass
             else:
                 print(msg)
             return True
@@ -640,6 +746,11 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
             msg = "No valid textures sets found in folder or subfolders"
             if progress:
                 progress.log(msg)
+                try:
+                    for _ in range(5):
+                        progress.step("No textures found; using template materials…")
+                except Exception:
+                    pass
             else:
                 print(msg)
             return True
@@ -652,13 +763,14 @@ def _create_materials(parent, folder_textures, material_lib, expected_names=None
             print(err)
         return False
 
-def _extract_material_names(asset_paths):
+def _extract_material_names(asset_paths, lowercase: bool = False):
     """
     Extract material names from geometry files by examining shop_materialpath
     and material:binding primitive attributes.
 
     Args:
         asset_paths (list): List of asset file paths to examine
+        lowercase (bool): If True, convert material names to lowercase
 
     Returns:
         list: Sorted list of unique material names (basenames only)
@@ -682,7 +794,7 @@ def _extract_material_names(asset_paths):
                     material_path = prim.stringAttribValue(shop_attrib)
                     if material_path:
                         # Extract basename from material path
-                        material_name = slugify(os.path.basename(material_path))
+                        material_name = slugify(os.path.basename(material_path), lowercase=lowercase)
                         if material_name:
                             material_names.add(material_name)
 
@@ -704,44 +816,126 @@ def _extract_material_names(asset_paths):
     return sorted(list(material_names))
 
 
+def extract_material_names_from_assets(asset_paths, lowercase: bool = False):
+    """Public helper to expose expected material names extracted from geometry files.
+
+    This wraps the internal _extract_material_names so UI/CLI code can
+    use the exact same logic as the builder when estimating materials.
+
+    Args:
+        asset_paths (list): List of asset file paths to examine
+        lowercase (bool): If True, convert material names to lowercase
+    """
+    return _extract_material_names(asset_paths, lowercase=lowercase)
+
+
+def estimate_materials_in_folder(folder_textures: str, expected_names=None) -> int:
+    """Estimate how many materials would be created for a given textures folder.
+
+    Mirrors the counting logic inside _create_materials: walks subfolders,
+    collects a combined texture list via TxToMtlx, and returns the number of
+    materials filtered by expected_names (if provided).
+    """
+    try:
+        folder_textures_check = os.path.normpath(folder_textures or "")
+        if not folder_textures_check or not os.path.exists(folder_textures_check):
+            return 0
+        material_handler = tex_to_mtlx.TxToMtlx()
+        combined_texture_list = {}
+        # Recursively search for textures in the folder and all subfolders
+        for root, dirs, files in os.walk(folder_textures_check):
+            current_folder = root.replace(os.sep, "/")
+            if material_handler.folder_with_textures(current_folder):
+                folder_texture_list = material_handler.get_texture_details(current_folder)
+                if folder_texture_list and isinstance(folder_texture_list, dict):
+                    combined_texture_list.update(folder_texture_list)
+        if not combined_texture_list:
+            return 0
+        if expected_names:
+            expected_set = set(expected_names)
+            total = sum(1 for n in combined_texture_list if n in expected_set)
+        else:
+            total = len(combined_texture_list)
+        return int(total)
+    except Exception:
+        return 0
+
+
 def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_path: str,
                                asset_variants: list, asset_vset_name: str,
                                mtl_variants: list, folder_textures: str,
-                               mtl_vset_name: str, progress: ProgressReporter | None = None):
+                               mtl_vset_name: str, skip_matchsize: bool = False,
+                               progress: ProgressReporter | None = None,
+                               lowercase_material_names: bool = False,
+                               use_custom_component_output: bool = True,
+                               create_geo_variants: bool = True):
     """
     Build the geometry variants, material variants, and materials, returning
     key nodes for further wiring.
 
     Returns:
-        tuple: (geometry_variants_node, comp_out, nodes_to_layout, comp_material_last)
+        tuple: (geometry_variants_node or comp_geo, comp_out, nodes_to_layout, comp_material_last)
     """
-    # Assemble assets list
-    assets = [main_asset_file_path] + (asset_variants or [])
+    # Create unified material naming configuration
+    naming_config = MaterialNamingConfig.from_ui(lowercase=lowercase_material_names)
 
-    # Create base nodes
-    geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
-    comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
-    if asset_vset_name:
-        geometry_variants_node.parm("variantset").set(asset_vset_name)
-    nodes_to_layout = [geometry_variants_node, comp_out]
+    # Assemble assets list - only include variants if create_geo_variants is True
+    if create_geo_variants:
+        assets = [main_asset_file_path] + (asset_variants or [])
+    else:
+        assets = [main_asset_file_path]
 
-    # Geometry variants population
-    for index, asset in enumerate(assets):
-        if progress and progress.is_cancelled():
-            raise KeyboardInterrupt("Cancelled by user")
-        path, filename = os.path.split(asset.split(";")[0])
-        # Get asset name and extension
+    has_geo_variants = len(assets) > 1  # More than just the main asset
+
+    # Create Component Output (custom or normal) based on flag
+    if use_custom_component_output:
+        comp_out = componentoutput_custom_creation(node_name=_sanitize(f"{node_name}"))
+    else:
+        comp_out = stage_context.createNode("componentoutput", _sanitize(f"{node_name}"))
+        comp_out.parm("rootprim").set("/ASSET")
+
+    # Only create componentgeometryvariants if we have actual variants
+    if has_geo_variants:
+        geometry_variants_node = stage_context.createNode("componentgeometryvariants", "geometry_variants")
+        if asset_vset_name:
+            geometry_variants_node.parm("variantset").set(asset_vset_name)
+        nodes_to_layout = [geometry_variants_node, comp_out]
+
+        # Geometry variants population
+        for index, asset in enumerate(assets):
+            if progress and progress.is_cancelled():
+                raise KeyboardInterrupt("Cancelled by user")
+            path, filename = os.path.split(asset.split(";")[0])
+            # Get asset name and extension
+            asset_name = filename.split(".")[0]
+            asset_extension = filename.split(".")[-1]
+            if filename.endswith("bgeo.sc"):
+                asset_name = filename.split(".")[0]
+                asset_extension = "bgeo.sc"
+            if progress:
+                progress.log(f"Creating geometry variant {index+1}/{len(assets)}: {asset_name}")
+            comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
+            geometry_variants_node.setInput(index, comp_geo)
+            _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out, skip_matchsize=skip_matchsize, lowercase_material_names=lowercase_material_names)
+            nodes_to_layout.append(comp_geo)
+
+        first_geo_node = geometry_variants_node
+    else:
+        # No variants - just create a single componentgeometry node
+        if progress:
+            progress.log(f"No geometry variants - creating single geometry node")
+        path, filename = os.path.split(main_asset_file_path.split(";")[0])
         asset_name = filename.split(".")[0]
         asset_extension = filename.split(".")[-1]
         if filename.endswith("bgeo.sc"):
             asset_name = filename.split(".")[0]
             asset_extension = "bgeo.sc"
-        if progress:
-            progress.log(f"Creating geometry variant {index+1}/{len(assets)}: {asset_name}")
+
         comp_geo = stage_context.createNode("componentgeometry", _sanitize(f"{asset_name}_geo"))
-        geometry_variants_node.setInput(index, comp_geo)
-        _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out)
-        nodes_to_layout.append(comp_geo)
+        _prepare_imported_asset(comp_geo, _sanitize(f"{asset_name}"), asset_extension, path, comp_out, skip_matchsize=skip_matchsize, lowercase_material_names=lowercase_material_names)
+        nodes_to_layout = [comp_geo, comp_out]
+        first_geo_node = comp_geo
+        geometry_variants_node = comp_geo  # Return comp_geo as the "geometry node" for consistency
 
     # Material variants list (mtl_variants + main textures at end)
     mtl_folders = list(mtl_variants or [])
@@ -761,7 +955,7 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
             comp_material.parm("variantset").set(mtl_vset_name)
         material_lib.parm("matpathprefix").set(f"/ASSET/mtl/")
         if index == 0:
-            comp_material.setInput(0, geometry_variants_node)
+            comp_material.setInput(0, first_geo_node)  # Use first_geo_node instead of geometry_variants_node
         else:
             comp_material.setInput(0, comp_material_last)
         comp_material.setInput(1, material_lib)
@@ -771,11 +965,11 @@ def build_geo_and_mtl_variants(stage_context, node_name: str, main_asset_file_pa
         all_asset_paths = []
         for a in assets:
             all_asset_paths.append(a)
-        material_names = _extract_material_names(all_asset_paths)
+        material_names = _extract_material_names(all_asset_paths, lowercase=naming_config.lowercase)
         readable_list = "\n".join(f"- {m}" for m in material_names)
-        progress.log(f"Found {len(material_names)} Materials across all geometry variants (from {len(all_asset_paths)} unique assets):\n{readable_list}")
+        progress.log(f"Found {len(material_names)} Materials across all geometry{'variants' if has_geo_variants else ''} (from {len(all_asset_paths)} unique asset{'s' if len(all_asset_paths) > 1 else ''}):\n{readable_list}")
         # Create the materials using the text_to_mtlx script with targeted material creation
-        _create_materials(geometry_variants_node, mtl_folder, material_lib, material_names, progress=progress)
+        _create_materials(first_geo_node, mtl_folder, material_lib, material_names, progress=progress, naming_config=naming_config)  # Use first_geo_node
         nodes_to_layout.append(material_lib)
         nodes_to_layout.append(comp_material)
 

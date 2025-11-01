@@ -53,5 +53,9 @@ node_modules/
 
 # HMCP
 /HMCP
+
+# Documentation (session notes and updates - not part of the codebase)
+docs/
+
+# Keep CLAUDE.md for AI code assistant
 .claudeignore
-CLAUDE.md

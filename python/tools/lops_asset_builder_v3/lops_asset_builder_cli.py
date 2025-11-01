@@ -65,6 +65,8 @@ class AssetBuilderConfig:
         create_light_rig: Enable light rig creation
         enable_env_lights: Enable environment lights
         env_light_paths: List of HDRI paths for environment lights
+        create_network_boxes: Create network boxes around node groups (default: False)
+        skip_matchsize: Skip matchsize node creation in component geometry (default: False)
         stage_context_path: Path to stage node (default: /stage)
         verbose: Print detailed progress logs
     """
@@ -72,18 +74,23 @@ class AssetBuilderConfig:
     main_asset_file_path: str
     folder_textures: str
 
-    # Optional with defaults
+    # Optional with defaults (all bool options default to False)
     asset_name: str = ""
     asset_variants: List[str] = field(default_factory=list)
+    create_geo_variants: bool = True
     asset_vset_name: str = "geo_variant"
     mtl_variants: List[str] = field(default_factory=list)
     mtl_vset_name: str = "mtl_variant"
     create_lookdev: bool = False
-    create_light_rig: bool = True
+    create_light_rig: bool = False
     enable_env_lights: bool = False
     env_light_paths: List[str] = field(default_factory=list)
+    create_network_boxes: bool = False
+    skip_matchsize: bool = False
     stage_context_path: str = "/stage"
     verbose: bool = True
+    lowercase_material_names: bool = False  # Default to False to preserve FBX naming
+    use_custom_component_output: bool = True
 
     def __post_init__(self):
         """Auto-derive asset name if not provided and validate paths."""
@@ -224,7 +231,8 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
         if progress is None:
             progress = ConsoleProgressReporter(verbose=cfg.verbose)
 
-        progress.set_total(12)
+        # Use a large internal total to allow fine-grained updates during long operations (e.g., material creation)
+        progress.set_total(1000)
 
         # Validate stage context
         progress.step("Validating stage context")
@@ -242,11 +250,15 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
             node_name=cfg.asset_name,
             main_asset_file_path=cfg.main_asset_file_path,
             asset_variants=cfg.asset_variants,
+            create_geo_variants=cfg.create_geo_variants,
             asset_vset_name=cfg.asset_vset_name,
             mtl_variants=cfg.mtl_variants,
             folder_textures=cfg.folder_textures,
             mtl_vset_name=cfg.mtl_vset_name,
+            skip_matchsize=cfg.skip_matchsize,
             progress=progress,
+            lowercase_material_names=cfg.lowercase_material_names,
+            use_custom_component_output=cfg.use_custom_component_output,
         )
 
         if progress.is_cancelled():
@@ -260,7 +272,7 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
             raise KeyboardInterrupt("Cancelled by user")
 
         # Create sticky note
-        create_organized_net_note(f"Asset {cfg.asset_name.upper()}", nodes_to_layout, hou.Vector2(-4, 18))
+        create_organized_net_note(f"Asset {cfg.asset_name.upper()}", nodes_to_layout, hou.Vector2(-4, 18), create_network_boxes=cfg.create_network_boxes)
 
         # Select the Component Output
         comp_out.setSelected(True, clear_all_selected=True)
@@ -311,7 +323,7 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
             if progress.is_cancelled():
                 raise KeyboardInterrupt("Cancelled by user")
 
-            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10))
+            create_organized_net_note("Light Rig", light_rig_nodes_to_layout, hou.Vector2(5, 10), create_network_boxes=cfg.create_network_boxes)
 
             graftstage_lights_node.setInput(1, light_mixer)
 
@@ -354,7 +366,7 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
             if progress.is_cancelled():
                 raise KeyboardInterrupt("Cancelled by user")
 
-            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6))
+            create_organized_net_note("Env Light", envlights_nodes_to_layout, hou.Vector2(5, 6), create_network_boxes=cfg.create_network_boxes)
 
             graftstage_envlights_node.setInput(1, switch_envlights_selection_node)
             switch_env_lights = stage_context.createNode("switch", "switch_env_lights")
@@ -378,7 +390,7 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
             graftstage_asset_node, primitive_node
         ]
         stage_context.layoutChildren(items=lookdev_setup_layout, horizontal_spacing=0.3, vertical_spacing=1.5)
-        create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5))
+        create_organized_net_note("LookDev Setup", lookdev_setup_layout, hou.Vector2(15, -5), create_network_boxes=cfg.create_network_boxes)
 
         # Camera, animations, and render nodes
         progress.step("Creating camera, animations, and render nodes")
@@ -408,7 +420,7 @@ def build_asset(config: Dict[str, Any] | AssetBuilderConfig,
         if progress.is_cancelled():
             raise KeyboardInterrupt("Cancelled by user")
 
-        create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -5))
+        create_organized_net_note("Camera Render", karma_nodes, hou.Vector2(0, -5), create_network_boxes=cfg.create_network_boxes)
         comp_out.setSelected(True, clear_all_selected=True)
 
         progress.mark_finished("Done")

@@ -31,7 +31,30 @@ import hou
 
 from tools.lops_asset_builder_v3 import lops_asset_builder_cli
 from tools.lops_asset_builder_v3.asset_builder_ui import SimpleProgressDialog
-from modules.misc_utils import slugify
+from tools.lops_asset_builder_v3.texture_variant_detector import TextureVariantDetector
+
+# Keep strong references to progress dialogs so they don't get garbage-collected
+# when the local function scope ends (we close the main dialog during build).
+_LIVE_PROGRESS_DIALOGS: list[SimpleProgressDialog] = []
+
+def _register_progress_dialog(dlg: SimpleProgressDialog):
+    try:
+        if dlg not in _LIVE_PROGRESS_DIALOGS:
+            _LIVE_PROGRESS_DIALOGS.append(dlg)
+        try:
+            # Remove reference when the dialog is destroyed by the user
+            dlg.destroyed.connect(lambda _o=None: _unregister_progress_dialog(dlg))
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+def _unregister_progress_dialog(dlg: SimpleProgressDialog):
+    try:
+        if dlg in _LIVE_PROGRESS_DIALOGS:
+            _LIVE_PROGRESS_DIALOGS.remove(dlg)
+    except Exception:
+        pass
 
 
 @dataclass
@@ -72,6 +95,88 @@ class AssetScanner:
         r'_\d+$',           # Pure numbered: _1, _2, _3
     ]
 
+    def _load_geo_variant_config(self):
+        """Load configurable geo variant suffixes and regex patterns.
+
+        Sources (in precedence order):
+        1) Environment variables:
+           - LOPS_GEO_SUFFIXES: comma/semicolon separated list of suffix literals
+           - LOPS_GEO_SUFFIX_PATTERNS: comma/semicolon separated list of regex patterns
+           - LOPS_GEO_SUFFIX_MODE: 'override' or 'extend' (default: extend)
+        2) JSON file next to this module: geo_variant_config.json
+           {
+             "mode": "extend" | "override",
+             "suffixes": ["_high", "_low", "_lod0"],
+             "patterns": [r"_[A-Z]$", r"_v\\d+$"]
+           }
+        """
+        try:
+            mode = "extend"
+            # JSON file (lower precedence than env for contents but may set default mode)
+            cfg_path = os.path.join(os.path.dirname(__file__), "geo_variant_config.json")
+            file_suffixes = []
+            file_patterns = []
+            if os.path.exists(cfg_path):
+                import json
+                with open(cfg_path, "r") as f:
+                    data = json.load(f) or {}
+                if isinstance(data, dict):
+                    m = str(data.get("mode", "extend")).strip().lower()
+                    if m in ("extend", "override"):
+                        mode = m
+                    if isinstance(data.get("suffixes"), list):
+                        file_suffixes = [str(s) for s in data.get("suffixes") if str(s)]
+                    if isinstance(data.get("patterns"), list):
+                        file_patterns = [str(p) for p in data.get("patterns") if str(p)]
+            # Env vars override JSON contents
+            env_mode = os.environ.get("LOPS_GEO_SUFFIX_MODE")
+            if env_mode:
+                env_mode_l = env_mode.strip().lower()
+                if env_mode_l in ("extend", "override"):
+                    mode = env_mode_l
+            env_suffixes = os.environ.get("LOPS_GEO_SUFFIXES")
+            env_patterns = os.environ.get("LOPS_GEO_SUFFIX_PATTERNS")
+            suffixes = list(file_suffixes)
+            patterns = list(file_patterns)
+            if env_suffixes:
+                parts = [p.strip() for p in re.split(r"[;,]", env_suffixes) if p.strip()]
+                if parts:
+                    suffixes = parts
+            if env_patterns:
+                parts = [p.strip() for p in re.split(r"[;,]", env_patterns) if p.strip()]
+                if parts:
+                    patterns = parts
+            # Apply mode
+            if mode == "override":
+                base_suffixes = []
+                base_patterns = []
+            else:
+                base_suffixes = list(self.VARIANT_SUFFIXES)
+                base_patterns = list(self.VARIANT_PATTERNS)
+            # Merge (preserve order, remove duplicates)
+            merged_suffixes = []
+            seen = set()
+            for s in base_suffixes + suffixes:
+                if not s:
+                    continue
+                if s not in seen:
+                    merged_suffixes.append(s)
+                    seen.add(s)
+            merged_patterns = []
+            seen_p = set()
+            for p in base_patterns + patterns:
+                if not p:
+                    continue
+                if p not in seen_p:
+                    # Validate regex lazily; keep even if invalid to skip later safely
+                    merged_patterns.append(p)
+                    seen_p.add(p)
+            self.variant_suffixes = merged_suffixes
+            self.variant_patterns = merged_patterns
+        except Exception:
+            # On any error, keep defaults already copied in __init__
+            pass
+
     # Material variant folder patterns
     MATERIAL_FOLDER_PATTERNS = [
         r'.*\d+k$',           # Resolution: 2k, 4k, 8k
@@ -84,6 +189,10 @@ class AssetScanner:
     def __init__(self):
         self.detected_assets: List[DetectedAsset] = []
         self.textures_root: Optional[str] = None
+        # Geo variant suffix/pattern config (instance-level, configurable)
+        self.variant_suffixes: List[str] = list(self.VARIANT_SUFFIXES)
+        self.variant_patterns: List[str] = list(self.VARIANT_PATTERNS)
+        self._load_geo_variant_config()
 
     def scan_folder(self, folder_path: str, recursive: bool = False) -> List[DetectedAsset]:
         """
@@ -176,21 +285,60 @@ class AssetScanner:
         for base_name, data in asset_groups.items():
             # Determine main file
             main_file = data['main']
-            if main_file is None and data['variants']:
-                # No clear main file, use first variant
-                main_file = data['variants'][0]
-                variants = data['variants'][1:]
-            else:
-                variants = data['variants']
+            variants = list(data['variants'])
+
+            # Sort variants deterministically so that, when no explicit main exists,
+            # the first variant after sorting is considered the main. This ensures
+            # patterns like _A, _B, _C choose _A as main.
+            def _variant_sort_key(filename: str):
+                # Extract suffix using the existing logic
+                _bn, suf = self._extract_base_and_suffix(filename)
+                s = suf or ""
+                s_low = s.lower()
+                # Single letter _A/_b
+                m = re.match(r'^_([A-Za-z])$', s)
+                if m:
+                    ch = m.group(1).upper()
+                    return (0, ord(ch) - ord('A'))
+                # Pure numbered _1
+                m = re.match(r'^_(\d+)$', s)
+                if m:
+                    return (1, int(m.group(1)))
+                # Versioned _v1
+                m = re.match(r'^_v(\d+)$', s_low)
+                if m:
+                    return (2, int(m.group(1)))
+                # Quality _high/_mid/_low → High < Mid < Low
+                if s_low in ['_high', '_mid', '_low']:
+                    order = {'_high': 0, '_mid': 1, '_low': 2}
+                    return (3, order[s_low])
+                # LOD _lodN
+                m = re.match(r'^_lod(\d+)$', s_low)
+                if m:
+                    return (4, int(m.group(1)))
+                # Other known words get moderate priority by name
+                known_suffixes = ['_proxy', '_render', '_sim', '_hero', '_background']
+                if s_low in known_suffixes:
+                    return (5, known_suffixes.index(s_low))
+                # Fallback: lexicographic on full filename
+                return (9, filename.lower())
+
+            variants.sort(key=_variant_sort_key)
+
+            if main_file is None and variants:
+                # No clear main file, pick the first sorted variant as main
+                main_file = variants[0]
+                variants = variants[1:]
 
             if main_file is None:
                 continue
 
-            # Detect texture folder
-            texture_path = self._find_texture_folder(folder_path)
+            # Detect material variants and choose main textures folder
+            main_textures, material_variants = self._find_material_variants(folder_path)
 
-            # Detect material variants
-            material_variants = self._find_material_variants(folder_path)
+            # If no variant structure detected, fall back to generic textures folder
+            if not main_textures:
+                main_textures = self._find_texture_folder(folder_path)
 
             # Determine common suffix pattern
             detected_suffix = self._detect_common_suffix(data['suffixes'])
@@ -200,7 +348,7 @@ class AssetScanner:
                 main_file=os.path.join(folder_path, main_file),
                 base_path=folder_path,
                 geo_variants=[os.path.join(folder_path, v) for v in variants],
-                texture_path=texture_path,
+                texture_path=main_textures,
                 material_variants=material_variants,
                 detected_suffix=detected_suffix
             )
@@ -228,14 +376,21 @@ class AssetScanner:
             name = os.path.splitext(name)[0]
 
         # 1. Check for exact suffix matches first (most specific)
-        for suffix in self.VARIANT_SUFFIXES:
-            if name.endswith(suffix):
-                base_name = name[:-len(suffix)].rstrip('_')
-                return (base_name, suffix)
+        for suffix in (self.variant_suffixes or self.VARIANT_SUFFIXES):
+            try:
+                if name.endswith(suffix):
+                    base_name = name[:-len(suffix)].rstrip('_')
+                    return (base_name, suffix)
+            except Exception:
+                continue
 
         # 2. Check for pattern-based variants (regex patterns)
-        for pattern in self.VARIANT_PATTERNS:
-            match = re.search(pattern, name)
+        for pattern in (self.variant_patterns or self.VARIANT_PATTERNS):
+            try:
+                match = re.search(pattern, name)
+            except re.error:
+                # Skip invalid regex patterns from config
+                match = None
             if match:
                 # Extract the matched suffix
                 suffix = match.group(0)
@@ -289,124 +444,196 @@ class AssetScanner:
 
         return ""
 
-    def _find_material_variants(self, base_path: str) -> List[str]:
-        """Find material variant folders."""
+    def _find_material_variants(self, base_path: str) -> Tuple[str, List[str]]:
+        """Find material variant folders and choose a single main variant.
+
+        Priority for main textures: 4K > 2K > 1K. If none of these exist,
+        fall back to the first detected variant. The returned main path will be
+        one of the detected variant folders; the remaining detected variant
+        folders will be returned as material variant list.
+
+        Returns:
+            (main_textures_path, material_variant_paths)
+        """
         texture_path = self._find_texture_folder(base_path)
 
         if not texture_path or not os.path.isdir(texture_path):
-            return []
+            return "", []
 
-        variants = []
+        # Use intelligent texture variant detector
+        detector = TextureVariantDetector()
+        detected_variants = detector.detect_variants(texture_path)
 
-        for item in os.listdir(texture_path):
-            item_path = os.path.join(texture_path, item)
+        if not detected_variants:
+            return "", []
 
-            if not os.path.isdir(item_path):
-                continue
-
-            # Check if folder matches material variant patterns
-            for pattern in self.MATERIAL_FOLDER_PATTERNS:
-                if re.match(pattern, item.lower()):
-                    variants.append(item_path)
-                    break
-
-        return variants
+        # Choose main/variant list using detector's configurable priority logic
+        best, others = detector.choose_main_variant(detected_variants)
+        if not best:
+            return "", []
+        main_path = best.folder_path
+        variants = [v.folder_path for v in others]
+        return main_path, variants
 
 
 class BatchUIProgressReporter:
-    """Progress reporter that shows per-asset logs and batch percentage in a single dialog.
+    """Simplified progress reporter based on a fixed number of tasks (materials).
 
-    Implements the interface expected by lops_asset_builder_cli.build_asset:
-    - set_total(total)
-    - step(message=None)
-    - log(message)
-    - is_cancelled()
-    - mark_finished(message=None)
+    - Total tasks are precomputed before building (sum of estimated materials per
+      material folder across all selected assets).
+    - Each time the builder logs "Created material …" we increment the done count
+      by 1. No dynamic total changes during build; the bar is stable and monotonic.
+    - When an asset finishes, we top up any remaining tasks allocated to that
+      asset to ensure the segment completes (useful when folders had zero
+      discoverable textures and templates were created instead).
     """
-    def __init__(self, dialog: SimpleProgressDialog, total_assets: int, asset_index: int, asset_label: str = ""):
+    def __init__(self, dialog: SimpleProgressDialog, asset_index: int, asset_label: str, expected_tasks_for_asset: int):
         self.dialog = dialog
-        self.total_assets = max(1, int(total_assets))
         self.asset_index = max(1, int(asset_index))
         self.asset_label = asset_label or f"Asset {self.asset_index}"
-        self.verbose = True
-        # inner progress
-        self._inner_total = 100
-        self._inner_step = 0
-        # Ensure dialog range accommodates batch percentage (0..total_assets*100)
+        self.expected = max(1, int(expected_tasks_for_asset))
+        self._local_done = 0
+        # Store total_assets for progress formatting
+        self.total_assets = getattr(dialog, '_total_assets', 0)
+        # Initialize shared counters on dialog
+        if not hasattr(self.dialog, "_tasks_total"):
+            self.dialog._tasks_total = 0
+        if not hasattr(self.dialog, "_tasks_done"):
+            self.dialog._tasks_done = 0
         try:
-            self.dialog.set_total(self.total_assets * 100)
-        except Exception:
-            pass
-        # Header for this asset
-        try:
-            self.dialog.log(f"\n=== [{self.asset_index}/{self.total_assets}] Building {self.asset_label} ===")
+            self.dialog.log(f"\n=== [{self.asset_index}] Building {self.asset_label} ===")
+            self.dialog.set_message(f"Starting {self.asset_label}…")
         except Exception:
             pass
 
-    def _update_overall_progress(self, message: str | None = None):
-        # Compute overall progress units out of total_assets*100
-        frac_inner = 0.0
-        if self._inner_total > 0:
-            frac_inner = float(self._inner_step) / float(self._inner_total)
-        overall_units = int(((self.asset_index - 1) + frac_inner) * 100)
+    def _inc(self, n: int = 1):
         try:
-            # Update message and bar
-            if message:
-                title = f"Building assets [{self.asset_index}/{self.total_assets}] — {self.asset_label}"
-                self.dialog.set_message(message)
-                # Also log message for history
-                self.dialog.log(f"[{self.asset_index}/{self.total_assets}] {message}")
-            self.dialog.set_value(overall_units)
+            self._local_done += n
+            self.dialog._tasks_done = min(int(self.dialog._tasks_done) + n, int(self.dialog._tasks_total))
+            self.dialog.set_value(int(self.dialog._tasks_done))
         except Exception:
             pass
 
     def set_total(self, total: int):
-        # Inner total for this asset
-        try:
-            self._inner_total = max(1, int(total))
-        except Exception:
-            self._inner_total = 100
-        self._inner_step = 0
-        self._update_overall_progress(f"Preparing {self.asset_label}")
+        # Not used; total is set by the caller using precomputed tasks
+        return
 
     def step(self, message: str = None):
-        self._inner_step += 1
         if self.is_cancelled():
             raise KeyboardInterrupt("Cancelled by user")
-        self._update_overall_progress(message)
+        if message:
+            try:
+                # Check if this is a material creation message
+                mat_match = re.search(r"Created material\s+(\d+)\s*/\s*(\d+)\s*:\s*(.+)", message)
+                if mat_match:
+                    # Extract material count and name from the message
+                    mat_current = mat_match.group(1)
+                    mat_total = mat_match.group(2)
+                    mat_name = mat_match.group(3)
+
+                    # Format asset progress (e.g., "24/85")
+                    if self.total_assets > 0:
+                        asset_progress = f"({self.asset_index}/{self.total_assets})"
+                    else:
+                        asset_progress = f"({self.asset_index})"
+
+                    # Enhanced message: "Building RootPlatform (24/85) - Created material 2/3: Material_Name"
+                    enhanced_message = f"Building {self.asset_label} {asset_progress} - Created material {mat_current}/{mat_total}: {mat_name}"
+                    self.dialog.set_message(enhanced_message)
+                    self.dialog.log(enhanced_message)
+                else:
+                    # Regular message without enhancement
+                    self.dialog.set_message(message)
+                    self.dialog.log(f"[{self.asset_index}] {message}")
+            except Exception:
+                # Fallback to original behavior on any error
+                try:
+                    self.dialog.set_message(message)
+                    self.dialog.log(f"[{self.asset_index}] {message}")
+                except Exception:
+                    pass
+            # Count material creation steps: "Created material n/X: ..."
+            try:
+                if re.search(r"Created material\s+\d+\s*/\s*\d+\s*:\s*", message):
+                    self._inc(1)
+            except Exception:
+                pass
 
     def log(self, message: str):
         try:
-            self.dialog.log(f"[{self.asset_index}/{self.total_assets}] {message}")
+            self.dialog.log(f"[{self.asset_index}] {message}")
         except Exception:
             pass
 
     def is_cancelled(self) -> bool:
-        # Pump events so ESC presses are handled
         try:
             QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
         except Exception:
             pass
         try:
-            # Consider both soft cancel and force kill flags
-            cancelled = bool(getattr(self.dialog, 'cancelled', False))
-            force_kill = bool(getattr(self.dialog, 'force_kill', False))
-            return cancelled or force_kill
+            return bool(getattr(self.dialog, 'cancelled', False) or getattr(self.dialog, 'force_kill', False))
         except Exception:
             return False
 
     def mark_finished(self, message: str | None = None):
-        # Do not emit an extra log by default to avoid duplicate "Done/Finished" lines
-        # The underlying builder will already call progress.mark_finished("Done").
+        # Top up remaining tasks for this asset so we reach its expected share
+        remaining = max(0, int(self.expected) - int(self._local_done))
+        if remaining:
+            self._inc(remaining)
         if message:
             try:
-                self.dialog.log(f"[{self.asset_index}/{self.total_assets}] {message}")
+                self.dialog.log(f"[{self.asset_index}] {message}")
             except Exception:
                 pass
-        # Force end of this asset to advance to the next boundary
-        self._inner_step = self._inner_total
-        # Update progress without adding an extra textual message when None
-        self._update_overall_progress(message)
+
+
+class CollapsibleSection(QtWidgets.QWidget):
+    """A simple collapsible container with a clickable header and a content area."""
+    def __init__(self, title: str = "", content: QtWidgets.QWidget | None = None, parent=None):
+        super().__init__(parent)
+        self._content_widget = None
+        self._content_area = QtWidgets.QScrollArea()
+        self._content_area.setWidgetResizable(True)
+        self._content_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+
+        self._toggle_button = QtWidgets.QToolButton(text=title, checkable=True, checked=True)
+        self._toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self._toggle_button.setArrowType(QtCore.Qt.DownArrow)
+        self._toggle_button.clicked.connect(self._on_toggled)
+        try:
+            self._toggle_button.setStyleSheet("QToolButton { font-weight: bold; }")
+        except Exception:
+            pass
+
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(4, 4, 4, 4)
+        lay.setSpacing(2)
+        lay.addWidget(self._toggle_button)
+        lay.addWidget(self._content_area)
+
+        if content is not None:
+            self.setContentWidget(content)
+
+    def setTitle(self, title: str):
+        self._toggle_button.setText(title)
+
+    def setContentWidget(self, widget: QtWidgets.QWidget):
+        self._content_widget = widget
+        self._content_area.setWidget(widget)
+
+    def _on_toggled(self):
+        expanded = self._toggle_button.isChecked()
+        self._toggle_button.setArrowType(QtCore.Qt.DownArrow if expanded else QtCore.Qt.RightArrow)
+        self._content_area.setVisible(expanded)
+        # Trigger a relayout so the parent dialog resizes the section height
+        try:
+            self.updateGeometry()
+            self.parentWidget() and self.parentWidget().updateGeometry()
+        except Exception:
+            pass
+
+    def isExpanded(self) -> bool:
+        return self._toggle_button.isChecked()
 
 
 class ConfigGeneratorDialog(QtWidgets.QDialog):
@@ -416,24 +643,35 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("LOPS Batch Asset Builder")
         self.setModal(False)
-        self.resize(720, 540)
+        # Increase overall UI height by ~25% for better visibility
+        self.resize(720, 675)
 
         self.scanner = AssetScanner()
         self.detected_assets: List[DetectedAsset] = []
         self.filtered_assets: List[DetectedAsset] = []
+        # Store selected environment light files (HDRIs)
+        self.env_light_paths: List[str] = []
 
         self._setup_ui()
 
     def _setup_ui(self):
         """Setup the user interface."""
-        layout = QtWidgets.QVBoxLayout(self)
+        outer_layout = QtWidgets.QVBoxLayout(self)
+
+        # Create a scroll area to contain the full UI so everything remains reachable
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QtWidgets.QWidget()
+        scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
+        scroll_layout.setContentsMargins(6, 6, 6, 6)
+        scroll_layout.setSpacing(6)
 
         # Header
         header = QtWidgets.QLabel(
             "Scan folders to detect assets and generate JSON configs for CLI batch processing"
         )
         header.setWordWrap(True)
-        layout.addWidget(header)
+        scroll_layout.addWidget(header)
 
         # Scan section
         scan_group = QtWidgets.QGroupBox("1. Scan for Assets")
@@ -467,20 +705,40 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         options_layout.addStretch()
         scan_layout.addLayout(options_layout)
 
+        # Variant generation mode
+        variant_mode_layout = QtWidgets.QHBoxLayout()
+        self.cb_generate_list_variants = QtWidgets.QCheckBox("Generate variants by list")
+        self.cb_generate_list_variants.setChecked(True)
+        self.cb_generate_list_variants.setToolTip(
+            "When checked: Main asset and variants are kept separate (PropCargo as main, PropCargo_B/C as variants).\n"
+            "When unchecked: All files treated as letter-based variants (PropCargo→A, PropCargo_B→B, PropCargo_C→C)"
+        )
+        variant_mode_layout.addWidget(self.cb_generate_list_variants)
+        variant_mode_layout.addStretch()
+        scan_layout.addLayout(variant_mode_layout)
+
         # Scan button
         self.btn_scan = QtWidgets.QPushButton("Scan Folder")
         self.btn_scan.setMinimumHeight(40)
         self.btn_scan.clicked.connect(self._scan_folder)
         scan_layout.addWidget(self.btn_scan)
 
-        layout.addWidget(scan_group)
+        scroll_layout.addWidget(scan_group)
 
-        # Results section
-        results_group = QtWidgets.QGroupBox("2. Detected Assets")
-        results_layout = QtWidgets.QVBoxLayout(results_group)
+        # Results section (non-collapsible)
+        results_content = QtWidgets.QWidget()
+        results_layout = QtWidgets.QVBoxLayout(results_content)
         results_layout.setContentsMargins(6, 6, 6, 6)
         results_layout.setSpacing(4)
-        results_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        results_content.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+
+        # Section title
+        results_title = QtWidgets.QLabel("2. Detected Assets")
+        try:
+            results_title.setStyleSheet("font-weight: bold;")
+        except Exception:
+            pass
+        scroll_layout.addWidget(results_title)
 
         # Filter and sort controls
         controls_layout = QtWidgets.QHBoxLayout()
@@ -526,18 +784,25 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
 
         results_layout.addLayout(btn_layout)
 
-        layout.addWidget(results_group)
+        scroll_layout.addWidget(results_content)
 
-        # Details section
-        details_group = QtWidgets.QGroupBox("3. Asset Details")
-        details_layout = QtWidgets.QVBoxLayout(details_group)
+        # Details section (non-collapsible)
+        details_content = QtWidgets.QWidget()
+        details_layout = QtWidgets.QVBoxLayout(details_content)
         details_layout.setContentsMargins(5, 5, 5, 5)
         details_layout.setSpacing(4)
+
+        details_title = QtWidgets.QLabel("3. Asset Details")
+        try:
+            details_title.setStyleSheet("font-weight: bold;")
+        except Exception:
+            pass
+        scroll_layout.addWidget(details_title)
 
         self.details_text = QtWidgets.QTextEdit()
         self.details_text.setReadOnly(True)
         # Make the details area larger and use space more efficiently
-        self.details_text.setMinimumHeight(200)
+        self.details_text.setMinimumHeight(280)
         self.details_text.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
         self.details_text.setStyleSheet("QTextEdit { padding: 2px; }")
         try:
@@ -547,25 +812,166 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
             pass
         details_layout.addWidget(self.details_text)
 
-        layout.addWidget(details_group)
+        scroll_layout.addWidget(details_content)
 
-        # Config options
-        config_group = QtWidgets.QGroupBox("4. Config Options")
-        config_layout = QtWidgets.QFormLayout(config_group)
+        # Config options (non-collapsible)
+        config_content = QtWidgets.QWidget()
+        config_layout = QtWidgets.QFormLayout(config_content)
 
+        config_title = QtWidgets.QLabel("4. Config Options")
+        try:
+            config_title.setStyleSheet("font-weight: bold;")
+        except Exception:
+            pass
+        scroll_layout.addWidget(config_title)
+
+        # === Network/Layout Settings ===
+        # Create Network Boxes
+        network_boxes_row = QtWidgets.QHBoxLayout()
+        self.cb_create_network_boxes = QtWidgets.QCheckBox()
+        self.cb_create_network_boxes.setChecked(False)
+        self.cb_create_network_boxes.setToolTip("Create network boxes around node groups (disable for easier layout)")
+        network_boxes_row.addWidget(self.cb_create_network_boxes)
+        network_boxes_help = QtWidgets.QLabel("Organize nodes in boxes (disable for flat layout)")
+        network_boxes_help.setStyleSheet("color: gray; font-size: 10px;")
+        network_boxes_row.addWidget(network_boxes_help)
+        network_boxes_row.addStretch(1)
+        config_layout.addRow("Create Network Boxes:", network_boxes_row)
+
+        # Skip MatchSize Node
+        skip_matchsize_row = QtWidgets.QHBoxLayout()
+        self.cb_skip_matchsize = QtWidgets.QCheckBox()
+        self.cb_skip_matchsize.setChecked(False)
+        self.cb_skip_matchsize.setToolTip("Skip matchsize node creation in component geometry (use when assets already have correct scale)")
+        skip_matchsize_row.addWidget(self.cb_skip_matchsize)
+        skip_matchsize_help = QtWidgets.QLabel("Skip size normalization (assets keep original scale)")
+        skip_matchsize_help.setStyleSheet("color: gray; font-size: 10px;")
+        skip_matchsize_row.addWidget(skip_matchsize_help)
+        skip_matchsize_row.addStretch(1)
+        config_layout.addRow("Skip MatchSize Node:", skip_matchsize_row)
+
+        # Lowercase Material Names
+        lowercase_row = QtWidgets.QHBoxLayout()
+        self.cb_lowercase_material_names = QtWidgets.QCheckBox()
+        self.cb_lowercase_material_names.setChecked(False)
+        self.cb_lowercase_material_names.setToolTip("Convert material path to lowercase before deriving prim name")
+        lowercase_row.addWidget(self.cb_lowercase_material_names)
+        lowercase_help = QtWidgets.QLabel("Lowercase material names in geometry builder")
+        lowercase_help.setStyleSheet("color: gray; font-size: 10px;")
+        lowercase_row.addWidget(lowercase_help)
+        lowercase_row.addStretch(1)
+        config_layout.addRow("Lowercase Material Names:", lowercase_row)
+
+        # Use Custom Component Output
+        custom_comp_row = QtWidgets.QHBoxLayout()
+        self.cb_use_custom_component_output = QtWidgets.QCheckBox()
+        self.cb_use_custom_component_output.setChecked(False)
+        self.cb_use_custom_component_output.setToolTip("When enabled, build with custom Component Output node; when off, use standard componentoutput")
+        custom_comp_row.addWidget(self.cb_use_custom_component_output)
+        custom_comp_help = QtWidgets.QLabel("Use custom Component Output node")
+        custom_comp_help.setStyleSheet("color: gray; font-size: 10px;")
+        custom_comp_row.addWidget(custom_comp_help)
+        custom_comp_row.addStretch(1)
+        config_layout.addRow("Use Custom Component Output:", custom_comp_row)
+
+        # Create Geo Variants
+        geo_variants_row = QtWidgets.QHBoxLayout()
+        self.cb_create_geo_variants = QtWidgets.QCheckBox()
+        self.cb_create_geo_variants.setChecked(False)
+        self.cb_create_geo_variants.setToolTip("Include geometry variants if detected (disable to use only main geometry file)")
+        geo_variants_row.addWidget(self.cb_create_geo_variants)
+        geo_variants_help = QtWidgets.QLabel("Include detected geometry variants")
+        geo_variants_help.setStyleSheet("color: gray; font-size: 10px;")
+        geo_variants_row.addWidget(geo_variants_help)
+        geo_variants_row.addStretch(1)
+        config_layout.addRow("Create Geo Variants:", geo_variants_row)
+
+        # Create Material Variants
+        material_variants_row = QtWidgets.QHBoxLayout()
+        self.cb_create_material_variants = QtWidgets.QCheckBox()
+        self.cb_create_material_variants.setChecked(False)
+        self.cb_create_material_variants.setToolTip("Include material variants if detected (disable to use only main texture folder)")
+        material_variants_row.addWidget(self.cb_create_material_variants)
+        material_variants_help = QtWidgets.QLabel("Include detected material variants")
+        material_variants_help.setStyleSheet("color: gray; font-size: 10px;")
+        material_variants_row.addWidget(material_variants_help)
+        material_variants_row.addStretch(1)
+        config_layout.addRow("Create Material Variants:", material_variants_row)
+
+        # Add separator
+        separator1 = QtWidgets.QFrame()
+        separator1.setFrameShape(QtWidgets.QFrame.HLine)
+        separator1.setFrameShadow(QtWidgets.QFrame.Sunken)
+        config_layout.addRow(separator1)
+
+        # === LookDev Settings ===
+        # Create Lookdev
+        lookdev_row = QtWidgets.QHBoxLayout()
         self.cb_create_lookdev = QtWidgets.QCheckBox()
-        self.cb_create_lookdev.setChecked(True)
-        config_layout.addRow("Create Lookdev:", self.cb_create_lookdev)
+        self.cb_create_lookdev.setChecked(False)
+        lookdev_row.addWidget(self.cb_create_lookdev)
+        lookdev_help = QtWidgets.QLabel("Setup turntable, camera, and render nodes")
+        lookdev_help.setStyleSheet("color: gray; font-size: 10px;")
+        lookdev_row.addWidget(lookdev_help)
+        lookdev_row.addStretch(1)
+        config_layout.addRow("Create Lookdev:", lookdev_row)
 
+        # Create Light Rig
+        light_rig_row = QtWidgets.QHBoxLayout()
         self.cb_create_light_rig = QtWidgets.QCheckBox()
-        self.cb_create_light_rig.setChecked(True)
-        config_layout.addRow("Create Light Rig:", self.cb_create_light_rig)
+        self.cb_create_light_rig.setChecked(False)
+        light_rig_row.addWidget(self.cb_create_light_rig)
+        light_rig_help = QtWidgets.QLabel("Add 3-point lighting setup (key, fill, rim)")
+        light_rig_help.setStyleSheet("color: gray; font-size: 10px;")
+        light_rig_row.addWidget(light_rig_help)
+        light_rig_row.addStretch(1)
+        config_layout.addRow("Create Light Rig:", light_rig_row)
 
-        self.cb_enable_env_lights = QtWidgets.QCheckBox()
+        # Env lights controls: inline checkbox + buttons + count + help text
+        env_row = QtWidgets.QHBoxLayout()
+        self.cb_enable_env_lights = QtWidgets.QCheckBox("Enable Env Lights")
         self.cb_enable_env_lights.setChecked(False)
-        config_layout.addRow("Enable Env Lights:", self.cb_enable_env_lights)
+        env_row.addWidget(self.cb_enable_env_lights)
+        env_lights_help = QtWidgets.QLabel("HDRI dome lighting")
+        env_lights_help.setStyleSheet("color: gray; font-size: 10px;")
+        env_row.addWidget(env_lights_help)
+        self.btn_add_env = QtWidgets.QPushButton("Add…")
+        self.btn_add_env.setToolTip("Add one or more HDRI files (.exr, .hdr, .rat) for environment lighting")
+        self.btn_add_env.clicked.connect(self._browse_env_lights)
+        env_row.addWidget(self.btn_add_env)
+        self.btn_clear_env = QtWidgets.QPushButton("Clear")
+        self.btn_clear_env.clicked.connect(self._clear_env_lights)
+        env_row.addWidget(self.btn_clear_env)
+        env_row.addStretch(1)
+        self.lbl_env_count = QtWidgets.QLabel("0 files")
+        env_row.addWidget(self.lbl_env_count)
+        config_layout.addRow("Environment Lights:", env_row)
 
-        layout.addWidget(config_group)
+        # Readonly box to display env light paths
+        self.env_paths_edit = QtWidgets.QTextEdit()
+        self.env_paths_edit.setReadOnly(True)
+        # Make the env lights box smaller per request
+        self.env_paths_edit.setMinimumHeight(48)
+        self.env_paths_edit.setPlaceholderText("Selected environment light paths will appear here…")
+        try:
+            self.env_paths_edit.setStyleSheet("QTextEdit { padding: 2px; font-family: Consolas, 'Courier New', monospace; font-size: 11px; }")
+            self.env_paths_edit.document().setDocumentMargin(4)
+        except Exception:
+            pass
+        config_layout.addRow("Env Light Paths:", self.env_paths_edit)
+        # Toggle enable state of env light controls based on checkbox
+        try:
+            self.cb_enable_env_lights.toggled.connect(self._update_env_enabled)
+        except Exception:
+            pass
+
+        scroll_layout.addWidget(config_content)
+
+        # Initialize env light controls enabled/disabled state
+        try:
+            self._update_env_enabled()
+        except Exception:
+            pass
 
         # Action buttons
         action_layout = QtWidgets.QHBoxLayout()
@@ -576,12 +982,42 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         self.btn_build_now.setStyleSheet("background-color: #4a7c59; font-weight: bold;")
         action_layout.addWidget(self.btn_build_now)
 
-        layout.addLayout(action_layout)
+        scroll_layout.addLayout(action_layout)
 
-        # Status bar
+        # Finalize scroll area
+        scroll.setWidget(scroll_widget)
+        outer_layout.addWidget(scroll)
+
+        # Status bar (kept outside the scroll area)
         self.status_label = QtWidgets.QLabel("Ready")
         self.status_label.setStyleSheet("padding: 5px; background-color: #333; color: #eee;")
-        layout.addWidget(self.status_label)
+        outer_layout.addWidget(self.status_label)
+
+    def _update_env_ui(self):
+        """Refresh env lights count label and paths display."""
+        try:
+            self.lbl_env_count.setText(f"{len(self.env_light_paths)} files")
+        except Exception:
+            pass
+        try:
+            self.env_paths_edit.setPlainText("\n".join(self.env_light_paths))
+        except Exception:
+            pass
+
+    def _update_env_enabled(self):
+        """Enable/disable env lights widgets based on the checkbox state."""
+        enabled = False
+        try:
+            enabled = bool(self.cb_enable_env_lights.isChecked())
+        except Exception:
+            enabled = False
+        # Disable or enable the Add and Clear buttons and the paths display box
+        for w in (getattr(self, 'btn_add_env', None), getattr(self, 'btn_clear_env', None), getattr(self, 'env_paths_edit', None)):
+            try:
+                if w is not None:
+                    w.setEnabled(enabled)
+            except Exception:
+                pass
 
     def _browse_folder(self):
         """Browse for folder."""
@@ -598,6 +1034,114 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         )
         if folder:
             self.textures_edit.setText(folder)
+
+    def _expand_assets_to_individual_variants(self, assets: List[DetectedAsset]) -> List[DetectedAsset]:
+        """
+        Expand each detected asset group into individual assets (one per geometry file).
+
+        Example:
+          Input:  1 asset with main=PropCargo, variants=[PropCargo_B, PropCargo_C]
+          Output: 3 assets:
+                  - PropCargo_A (main=PropCargo, variants=[PropCargo_B, PropCargo_C])
+                  - PropCargo_B (main=PropCargo_B, variants=[PropCargo, PropCargo_C])
+                  - PropCargo_C (main=PropCargo_C, variants=[PropCargo, PropCargo_B])
+        """
+        expanded_assets = []
+
+        for asset in assets:
+            # Collect all geometry files (main + variants)
+            all_geo_files = [asset.main_file] + asset.geo_variants
+
+            # Sort files to maintain consistent ordering
+            def _variant_sort_key(filepath: str):
+                filename = os.path.basename(filepath)
+                base_name, suffix = self._extract_base_and_suffix_from_path(filepath)
+                s = suffix or ""
+                s_low = s.lower()
+
+                # Single letter _A/_B/_C
+                m = re.match(r'^_([A-Za-z])$', s)
+                if m:
+                    ch = m.group(1).upper()
+                    return (0, ord(ch) - ord('A'))
+
+                # Files without suffix come first
+                if not s:
+                    return (-1, filename.lower())
+
+                # Pure numbered _1, _2
+                m = re.match(r'^_(\d+)$', s)
+                if m:
+                    return (1, int(m.group(1)))
+
+                # Fallback: lexicographic
+                return (9, filename.lower())
+
+            all_geo_files.sort(key=_variant_sort_key)
+
+            # Create one DetectedAsset for each geometry file
+            for i, geo_file in enumerate(all_geo_files):
+                # Determine asset name with letter suffix
+                base_filename = os.path.basename(geo_file)
+                name_without_ext = os.path.splitext(base_filename)[0]
+                if name_without_ext.lower().endswith('.bgeo'):
+                    name_without_ext = name_without_ext[:-5]  # Remove .bgeo from .bgeo.sc
+
+                # Extract base and suffix
+                base_name, existing_suffix = self._extract_base_and_suffix_from_path(geo_file)
+
+                # Assign letter position
+                letter = chr(ord('A') + i)
+
+                # If file already has a letter suffix, use it; otherwise add the letter
+                if existing_suffix and re.match(r'^_[A-Z]$', existing_suffix):
+                    display_name = f"{base_name}{existing_suffix}"
+                elif not existing_suffix:
+                    display_name = f"{base_name}_{letter}"
+                else:
+                    # Has a different suffix (like _B, _C from scanning), use as-is but show position
+                    display_name = name_without_ext
+
+                # Create variants list (all other files except this one)
+                variants = [f for f in all_geo_files if f != geo_file]
+
+                # Create new DetectedAsset for this specific file
+                individual_asset = DetectedAsset(
+                    name=display_name,
+                    main_file=geo_file,
+                    base_path=asset.base_path,
+                    geo_variants=variants,
+                    texture_path=asset.texture_path,
+                    material_variants=asset.material_variants,
+                    detected_suffix=f"Position {letter}"
+                )
+
+                expanded_assets.append(individual_asset)
+
+        return expanded_assets
+
+    def _browse_env_lights(self):
+        """Browse and add one or more environment light (HDRI) files."""
+        files, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            "Select Environment Light Files",
+            "",
+            "HDRI Files (*.exr *.hdr *.rat);;All Files (*)"
+        )
+        if files:
+            # Merge unique paths preserving order
+            existing = set(self.env_light_paths)
+            for f in files:
+                if f and f not in existing:
+                    self.env_light_paths.append(f)
+                    existing.add(f)
+            # Update UI to reflect new list
+            self._update_env_ui()
+
+    def _clear_env_lights(self):
+        """Clear selected environment lights list."""
+        self.env_light_paths = []
+        self._update_env_ui()
 
     def _scan_folder(self):
         """Scan folder for assets."""
@@ -618,6 +1162,10 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         recursive = self.cb_recursive.isChecked()
         self.detected_assets = self.scanner.scan_folder(folder, recursive)
 
+        # If "Generate variants by list" is unchecked, expand each asset into individual items
+        if not self.cb_generate_list_variants.isChecked():
+            self.detected_assets = self._expand_assets_to_individual_variants(self.detected_assets)
+
         # Update list via filter/sort pipeline
         self._apply_filter_and_sort()
         self.status_label.setText(f"Found {len(self.detected_assets)} assets")
@@ -632,7 +1180,18 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
             self.asset_list.addItem(item)
 
     def _apply_filter_and_sort(self):
-        """Filter detected assets by search text and sort by name asc/desc, then populate list."""
+        """Filter detected assets by search text and sort by name asc/desc, then populate list,
+        preserving current selections when possible (e.g., when clearing the search bar)."""
+        # Capture currently selected items' stable keys (use main_file path which is unique per asset)
+        selected_keys = set()
+        try:
+            for item in self.asset_list.selectedItems():
+                asset = item.data(QtCore.Qt.UserRole)
+                if asset and getattr(asset, 'main_file', None):
+                    selected_keys.add(asset.main_file)
+        except Exception:
+            selected_keys = set()
+
         assets = list(self.detected_assets) if self.detected_assets else []
 
         # Filter
@@ -656,11 +1215,21 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         self.filtered_assets = assets
         self._populate_asset_list(self.filtered_assets)
 
-        # Reset selection and details on new filter
-        if hasattr(self, 'lbl_selection_count'):
-            self.lbl_selection_count.setText("0 selected")
-        if hasattr(self, 'details_text'):
-            self.details_text.clear()
+        # Attempt to restore previous selection for items that are still visible under the new filter
+        restored = 0
+        try:
+            for i in range(self.asset_list.count()):
+                item = self.asset_list.item(i)
+                asset = item.data(QtCore.Qt.UserRole)
+                if asset and getattr(asset, 'main_file', None) in selected_keys:
+                    item.setSelected(True)
+                    restored += 1
+        except Exception:
+            pass
+
+        # If nothing is restored, itemSelectionChanged signal will have cleared details and count.
+        # If items were restored, _on_selection_changed will update details and selection count accordingly.
+        return
 
     def _on_selection_changed(self):
         """Handle selection change."""
@@ -725,24 +1294,90 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
 
         self.details_text.setHtml("<br>".join(details))
 
+    def _get_variant_list_by_mode(self, asset: DetectedAsset) -> Tuple[str, List[str]]:
+        """
+        Generate variant list based on the checkbox mode.
+
+        Note: When "Generate variants by list" is unchecked, assets are already
+        expanded into individual items during scanning, so each asset already has
+        its correct main_file and geo_variants set up.
+
+        Returns:
+            (main_asset_path, variant_paths_list)
+        """
+        # Simply return the asset's main file and variants as-is
+        # The expansion logic in _expand_assets_to_individual_variants already
+        # set these up correctly based on the checkbox state
+        return asset.main_file, asset.geo_variants
+
+    def _extract_base_and_suffix_from_path(self, filepath: str) -> Tuple[str, str]:
+        """Helper to extract base and suffix from full file path."""
+        filename = os.path.basename(filepath)
+
+        # Remove extension(s)
+        name = filename
+        if name.lower().endswith('.bgeo.sc'):
+            name = name[:-8]
+        else:
+            name = os.path.splitext(name)[0]
+
+        # Check for single letter suffix pattern _A, _B, _C
+        m = re.search(r'_([A-Z])$', name)
+        if m:
+            suffix = m.group(0)
+            base_name = name[:m.start()]
+            return (base_name, suffix)
+
+        # Check for other patterns
+        m = re.search(r'_([a-z])$', name)
+        if m:
+            suffix = m.group(0)
+            base_name = name[:m.start()]
+            return (base_name, suffix)
+
+        # No variant detected
+        return (name, "")
+
     def _get_config_for_asset(self, asset: DetectedAsset) -> Dict:
         """Generate config dictionary for an asset."""
+        # Get variant list based on mode
+        main_asset_path, variant_paths = self._get_variant_list_by_mode(asset)
+
         config = {
-            "main_asset_file_path": asset.main_file,
+            "main_asset_file_path": main_asset_path,
             "folder_textures": asset.texture_path or f"{asset.base_path}/textures",
             "asset_name": asset.name,
         }
 
-        if asset.geo_variants:
-            config["asset_variants"] = asset.geo_variants
+        # Add geometry variants only if checkbox is enabled
+        if variant_paths and self.cb_create_geo_variants.isChecked():
+            config["asset_variants"] = variant_paths
 
-        if asset.material_variants:
+        # Add material variants only if checkbox is enabled
+        if asset.material_variants and self.cb_create_material_variants.isChecked():
             config["mtl_variants"] = asset.material_variants
 
         # Add options
         config["create_lookdev"] = self.cb_create_lookdev.isChecked()
         config["create_light_rig"] = self.cb_create_light_rig.isChecked()
         config["enable_env_lights"] = self.cb_enable_env_lights.isChecked()
+        config["create_network_boxes"] = self.cb_create_network_boxes.isChecked()
+        config["skip_matchsize"] = self.cb_skip_matchsize.isChecked()
+        # Lowercase material names toggle for VEX wrangle
+        try:
+            config["lowercase_material_names"] = self.cb_lowercase_material_names.isChecked()
+        except Exception:
+            # Default to True if checkbox missing for any reason
+            config["lowercase_material_names"] = True
+        # Add env light files if provided
+        if getattr(self, 'env_light_paths', None):
+            config["env_light_paths"] = list(self.env_light_paths)
+
+        # Component output mode
+        try:
+            config["use_custom_component_output"] = self.cb_use_custom_component_output.isChecked()
+        except Exception:
+            config["use_custom_component_output"] = True
 
         return config
 
@@ -876,30 +1511,71 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
         # Build assets with progress UI
         results = []
         total_assets = len(selected)
-        progress_dialog = SimpleProgressDialog(title="LOPs Asset Builder v3 — Building Assets", parent=self)
+        assets_in_order: List[DetectedAsset] = []
+        for item in selected:
+            asset: DetectedAsset = item.data(QtCore.Qt.UserRole)
+            assets_in_order.append(asset)
+
+        # Create the progress dialog FIRST so it shows immediately
+        # We'll use a simple task count estimation (100 per asset) to avoid pre-scanning files
+        progress_dialog = SimpleProgressDialog(title="LOPs Asset Builder v3 — Building Assets", parent=None)
+
+        # Simple estimate: 100 tasks per asset (avoids slow file scanning before showing dialog)
+        total_tasks = total_assets * 100
+
         try:
             # Ensure the dialog is visible and brought to front so the progress bar is shown
             progress_dialog.show()
+            # Keep a strong reference so it doesn't close after completion due to GC
+            try:
+                _register_progress_dialog(progress_dialog)
+            except Exception:
+                pass
             try:
                 progress_dialog.raise_()
                 progress_dialog.activateWindow()
             except Exception:
                 pass
-            progress_dialog.set_total(total_assets * 100)
+            # Initialize progress range using total tasks and start at 0
+            try:
+                progress_dialog._tasks_total = int(total_tasks)
+                progress_dialog._tasks_done = 0
+                # Store total number of assets for progress formatting in reporter
+                progress_dialog._total_assets = int(total_assets)
+            except Exception:
+                pass
+            progress_dialog.set_total(int(total_tasks))
+            progress_dialog.set_value(0)
             progress_dialog.set_message(f"Starting batch build of {total_assets} asset(s)…")
-            progress_dialog.log(f"Starting batch build of {total_assets} asset(s)…")
+            progress_dialog.log(f"Starting batch build of {total_assets} asset(s). Progress is based on {total_tasks} material creation task(s).")
+            # Close the main dialog so only the progress window remains visible
+            try:
+                self.close()
+            except Exception:
+                try:
+                    self.hide()
+                except Exception:
+                    pass
         except Exception:
             pass
 
         cancelled = False
-        for idx, item in enumerate(selected, start=1):
-            asset: DetectedAsset = item.data(QtCore.Qt.UserRole)
+        for idx, asset in enumerate(assets_in_order, start=1):
             config = self._get_config_for_asset(asset)
 
-            self.status_label.setText(f"Building {asset.name} ({idx}/{total_assets})…")
+            # Log current building status to the progress dialog instead of updating the closed main dialog
+            try:
+                progress_dialog.log(f"Building {asset.name} ({idx}/{total_assets})…")
+            except Exception:
+                pass
             QtWidgets.QApplication.processEvents()
 
-            reporter = BatchUIProgressReporter(progress_dialog, total_assets=total_assets, asset_index=idx, asset_label=asset.name)
+            reporter = BatchUIProgressReporter(
+                progress_dialog,
+                asset_index=idx,
+                asset_label=asset.name,
+                expected_tasks_for_asset=100  # Simple fixed estimate per asset
+            )
 
             try:
                 result = lops_asset_builder_cli.build_asset(config, progress=reporter)
@@ -938,33 +1614,33 @@ class ConfigGeneratorDialog(QtWidgets.QDialog):
             except Exception:
                 pass
 
-        # Finalize progress dialog
+        # Finalize progress dialog and log summary directly in it (no extra dialogs)
         try:
-            if cancelled:
-                progress_dialog.set_message("Build cancelled by user")
-                progress_dialog.log("Build cancelled by user")
-            else:
-                progress_dialog.set_message("Batch build completed")
+            success_count = sum(1 for _, r in results if getattr(r, 'success', False))
+            failed_count = len(results) - success_count
+            summary_header = "Build cancelled by user" if cancelled else "Batch build completed"
+            progress_dialog.set_message(summary_header)
+            progress_dialog.log("\n=== SUMMARY ===")
+            progress_dialog.log(f"Success: {success_count}")
+            progress_dialog.log(f"Failed:  {failed_count}")
+            if failed_count > 0:
+                progress_dialog.log("Failed assets:")
+                for name, result in results:
+                    if not getattr(result, 'success', False):
+                        progress_dialog.log(f"  • {name}: {getattr(result, 'message', '')}")
+            # Clamp progress to 100% at the end using the precomputed tasks total
+            try:
+                total_final = int(getattr(progress_dialog, "_tasks_total", 0) or progress_dialog.progress_bar.maximum())
+                progress_dialog.set_total(total_final)
+                progress_dialog.set_value(total_final)
+            except Exception:
+                pass
             progress_dialog.mark_finished()
         except Exception:
             pass
 
-        # Show results
-        success_count = sum(1 for _, r in results if getattr(r, 'success', False))
-        failed_count = len(results) - success_count
-
-        message = f"Build {'Cancelled' if cancelled else 'Complete'}:\n\n"
-        message += f"Success: {success_count}\n"
-        message += f"Failed: {failed_count}\n\n"
-
-        if failed_count > 0:
-            message += "Failed assets:\n"
-            for name, result in results:
-                if not getattr(result, 'success', False):
-                    message += f"  • {name}: {getattr(result, 'message', '')}\n"
-
-        self.status_label.setText(f"Build {'cancelled' if cancelled else 'complete'}: {success_count} success, {failed_count} failed")
-        QtWidgets.QMessageBox.information(self, "Build Results", message)
+        # Do not show any QMessageBox or reopen the main dialog — only the progress dialog should remain visible
+        return
 
 
 def show_batch_asset_builder():
